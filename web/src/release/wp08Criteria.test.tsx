@@ -13,6 +13,9 @@ import { mockApi } from "../test/fetchMock";
 import { ME_OPERATOR } from "../test/fixtures";
 import { Workspace } from "../workspace/Workspace";
 import { WorkspaceProvider } from "../workspace/WorkspaceContext";
+import { initial, panes, reduce, type Action } from "../workspace/layout";
+import { VIEWS } from "../workspace/views";
+import type { WorkspaceApi } from "../workspace/WorkspaceContext";
 
 const SNAPSHOT = { snapshot: "4000", manifest_sha256: "b".repeat(64), estate: "test" };
 
@@ -143,3 +146,27 @@ describe("Two Analysis panes", () => {
   });
 });
 
+
+describe("A pane that switches to another view and back", () => {
+  it("returns to its session, section and selected run from the Analysis entry", () => {
+    let ws = initial();
+    const id = ws.focus;
+    ws = reduce(ws, { type: "open-analysis", id, sessionId: "session-1", section: "history", runId: "run-1" });
+    ws = reduce(ws, { type: "view", id, view: "explore" });
+    const entry = VIEWS.find((spec) => spec.view === "analysis")!;
+    entry.open({ state: ws, dispatch: (action: Action) => (ws = reduce(ws, action)) } as unknown as WorkspaceApi);
+
+    const pane = panes(ws.root).find((item) => item.id === id)!;
+    expect(pane.view).toBe("analysis");
+    expect([pane.analysisSessionId, pane.analysisSection, pane.analysisRunId]).toEqual(["session-1", "history", "run-1"]);
+  });
+
+  it("closes the session when the workspace navigates to no session", () => {
+    let ws = initial();
+    const id = ws.focus;
+    ws = reduce(ws, { type: "open-analysis", id, sessionId: "session-1", section: "history" });
+    ws = reduce(ws, { type: "open-analysis", id, sessionId: undefined });
+
+    expect(panes(ws.root).find((item) => item.id === id)!.analysisSessionId).toBeUndefined();
+  });
+});

@@ -98,10 +98,12 @@ function simulationFlows(result?: Record<string, unknown>): Record<string, unkno
 /** Whether a saved simulation result holds a prediction: Results shows it as
  *  Predicted, and only then does Verification have one to compare. */
 function hasPrediction(result?: Record<string, unknown>): boolean {
+  // an empty list is no prediction
+  const present = (value: unknown) => (Array.isArray(value) ? value.length > 0 : value != null);
   return (
     simulationFlows(result).some((item) => item.after != null) ||
     (!!result &&
-      ["predicted", "routing_consequence", "changed_devices"].some((key) => result[key] != null))
+      ["predicted", "routing_consequence", "changed_devices"].some((key) => present(result[key])))
   );
 }
 

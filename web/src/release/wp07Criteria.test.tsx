@@ -64,6 +64,21 @@ describe("A simulation without a prediction", () => {
     const verification = screen.getByRole("heading", { name: "Verification" }).parentElement!;
     expect(verification).toHaveTextContent("No prediction");
   });
+
+  it("shows no prediction for a completed run that traced no flow and changed no device", async () => {
+    const user = openSession(
+      simulation("completed", { simulation: { flows: [], changed_devices: [], stop_reason: "no-flow-to-trace" } }),
+    );
+
+    expect(await screen.findByText("Session execution: completed")).toBeInTheDocument();
+    const predicted = screen.getByRole("heading", { name: "Predicted" }).parentElement!;
+    expect(predicted).toHaveTextContent("No prediction");
+    expect(predicted.querySelector("pre")).toBeNull();
+
+    await user.click(screen.getByRole("tab", { name: "Verification" }));
+    const verification = screen.getByRole("heading", { name: "Verification" }).parentElement!;
+    expect(verification).toHaveTextContent("No prediction");
+  });
 });
 
 describe("Saved run export and legacy export", () => {

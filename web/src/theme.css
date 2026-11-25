@@ -283,6 +283,12 @@ textarea {
   color: inherit;
 }
 
+button {
+  background: var(--panel);
+  border: 1px solid var(--fieldb);
+  border-radius: var(--radius);
+}
+
 .primary {
   border: 0;
   cursor: pointer;

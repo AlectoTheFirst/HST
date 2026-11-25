@@ -146,7 +146,7 @@ export type Action =
   | { type: "open-assessment"; id: string; assessmentId?: string; runId?: string; draft?: AssessmentDraft }
   | { type: "open-application"; id: string; applicationId?: string }
   | { type: "set-application-draft"; id: string; draft?: ApplicationDraftRef }
-  | { type: "open-analysis"; id: string; sessionId?: string; mode?: "connection" | "simulation"; section?: Pane["analysisSection"]; runId?: string }
+  | { type: "open-analysis"; id: string; sessionId?: string; mode?: "connection" | "simulation"; section?: Pane["analysisSection"]; runId?: string; restore?: boolean }
   | { type: "set-analysis-section"; id: string; section: NonNullable<Pane["analysisSection"]> }
   | { type: "set-analysis-run"; id: string; runId?: string }
   | { type: "open-analysis-assessment"; id: string; assessmentId?: string; runId?: string }
@@ -287,19 +287,22 @@ export function reduce(state: Workspace, action: Action): Workspace {
       };
 
     case "open-analysis":
+      // `restore` returns the pane to the Analysis state that it holds
       return {
         ...state,
         root: mapNode(state.root, (leaf) => leaf.id === action.id
-          ? {
-              ...leaf,
-              view: "analysis",
-              analysisSessionId: action.sessionId,
-              analysisMode: action.mode,
-              analysisSection: action.section,
-              analysisRunId: action.runId,
-              assessmentId: undefined,
-              assessmentRunId: undefined,
-            }
+          ? action.restore
+            ? { ...leaf, view: "analysis" }
+            : {
+                ...leaf,
+                view: "analysis",
+                analysisSessionId: action.sessionId,
+                analysisMode: action.mode,
+                analysisSection: action.section,
+                analysisRunId: action.runId,
+                assessmentId: undefined,
+                assessmentRunId: undefined,
+              }
           : leaf),
       };
 
