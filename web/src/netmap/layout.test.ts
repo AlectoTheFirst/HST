@@ -265,4 +265,18 @@ describe("loose LAG members", () => {
     const line = elements.find((e) => e.data.id === "loose:lag:swd-01:po51:Eth1/5,Eth1/6:cable")!;
     expect(line.data.sourcePort).toBe("Eth1/5, Eth1/6");
   });
+
+  it("marks an exit to a neighbor with no device as undiscovered", async () => {
+    const model: TopologyModel = {
+      ...MODEL,
+      exits: [
+        ...MODEL.exits,
+        { dev: "swc-01", port: "Eth1/50", far_dev: "", far_port: "Gi0/1", far_name: "ap-07", source: "cdp, no cable" },
+      ],
+    };
+    const elements = toElements(model, await new ELK().layout(toElkGraph(model)));
+    const classes = (id: string) => elements.find((e) => e.data.id === id)!.classes;
+    expect(classes("exit:0")).toBe("exit");
+    expect(classes("exit:1")).toBe("exit undiscovered");
+  });
 });

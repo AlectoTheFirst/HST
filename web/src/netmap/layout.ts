@@ -73,6 +73,8 @@ interface Stub {
   farPort: string | null;
   source: string | null;
   kind: "exit" | "loose";
+  /** a CDP or LLDP neighbor of an exit with no device in the graph */
+  undiscovered: boolean;
 }
 
 export function stubs(model: TopologyModel): Stub[] {
@@ -85,6 +87,7 @@ export function stubs(model: TopologyModel): Stub[] {
     farPort: e.far_port,
     source: e.source,
     kind: "exit",
+    undiscovered: e.far_dev === "",
   }));
   for (const lag of model.lags) {
     const ports = lag.ports_without_cable;
@@ -99,6 +102,7 @@ export function stubs(model: TopologyModel): Stub[] {
       farPort: null,
       source: null,
       kind: "loose",
+      undiscovered: false,
     });
   }
   return out;
@@ -261,7 +265,7 @@ export function toElements(model: TopologyModel, laid: ElkNode): CyElement[] {
       group: "nodes",
       data: { id: stub.id, parent: home, label: stub.label, kind: stub.kind, width: pos.get(stub.id)!.width },
       position: centre(stub.id)!,
-      classes: stub.kind === "exit" ? "exit" : "exit loose",
+      classes: stub.kind === "loose" ? "exit loose" : stub.undiscovered ? "exit undiscovered" : "exit",
     });
   }
 

@@ -2118,7 +2118,7 @@ export interface TopologyCable {
 }
 
 /** A cable with one end outside the drawing, or a LAG member's CDP or LLDP
- *  neighbor that no collector reached (`far_dev` empty, `source` "cdp, not collected"). */
+ *  neighbor that no collector reached (`far_dev` empty, `source` "cdp, no cable" or "lldp, no cable"). */
 export interface TopologyExit {
   dev: string;
   port: string | null;
