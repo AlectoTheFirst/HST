@@ -27,7 +27,7 @@ cd web && npm ci
 CI and `deploy/Containerfile` install from the same lock. After a dependency change in
 `pyproject.toml`, run `uv lock` and commit the result. `make lock-check` is a CI gate.
 
-The lockfile needs uv 0.12 or later. CI pins 0.12.0 in `ci.yml`.
+The lockfile needs uv 0.12 or later. CI pins 0.13.10 in `ci.yml`.
 `uv self update` updates a standalone install. Change the CI pin, the uv stage in
 `deploy/Containerfile` and the lock in the same commit.
 
