@@ -96,7 +96,7 @@ RUN .venv/bin/python tools/run_limited.py --memory-mib 1024 --timeout 300 -- \
         tests/enterprise/test_compiled_sessions.py tests/enterprise/test_session_walk.py \
         tests/enterprise/test_network_compile.py tests/enterprise/test_counterfactual_model.py
 
-FROM node:26-alpine@sha256:2d984a15c9b54fd0aeb608b8e0d0d83529eb34d2966db27a1fb4f1edc3d298a3 AS enterprise-web-base
+FROM node:26-alpine@sha256:6bd9ab43c0ec0190ca7b2d193906cb8b7edf6e7f4afa43ddeccd6452710bffb5 AS enterprise-web-base
 WORKDIR /work/web
 COPY web/package.json web/package-lock.json ./
 RUN npm ci
