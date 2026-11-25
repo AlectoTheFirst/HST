@@ -20,6 +20,7 @@ import type {
 } from "./contracts";
 import { useAiContext, useAiPaneId } from "../ai/context";
 import { useAiDrawer, useOpenConversation } from "../ai/drawer";
+import { SessionRunComparison } from "./SessionRunComparison";
 import "./analysis.css";
 import "../changesim/changesim.css";
 
@@ -832,6 +833,9 @@ export default function AnalysisWorkspace({
                 </button>
               </article>
             ))}
+            {sessions.data && (
+              <SessionRunComparison sessionId={record.id} sessions={sessions.data.sessions} />
+            )}
           </section>
         )}
         {record && section === "verification" && (

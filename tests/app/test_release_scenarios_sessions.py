@@ -304,3 +304,42 @@ async def test_a_failed_and_a_cancelled_child_leave_the_session_incomplete(clien
         "failed",
         "cancelled",
     }
+
+
+async def test_an_old_and_a_new_session_run_stay_readable_for_a_comparison(client, store, monkeypatch):
+    """Historical integrity, run comparison: the snapshot advances, a second
+    session runs at the new snapshot, and each session returns its own run with
+    its own snapshot, session revision and input digest."""
+    inventory = Inventory("4000", {"4000": api_interface("10.20.0.10"), "4001": api_interface("10.20.0.99")})
+    install(monkeypatch, inventory)
+    await login(client, "otto")
+    assert (await commit_yaml(client, CHECKOUT_YAML)).status_code == 201
+
+    async def run_at(snapshot: str, title: str) -> tuple[dict, dict]:
+        resolution = await _resolved_checkout(client, snapshot)
+        session = await _session(
+            client, title, resolution["snapshot"], [_selection(resolution, "frontend-to-api")]
+        )
+        executed = await _run(client, session)
+        assert executed.status_code == 202, executed.text
+        (run,) = executed.json()["definition"]["runs"]
+        await _finish(store, {run["id"]: "completed"})
+        return session, run
+
+    old_session, old_run = await run_at("4000", "Frontend to API")
+    old_url = f"/api/analysis-sessions/{old_session['id']}/runs/{old_run['id']}"
+    before = await client.get(old_url)
+    assert before.status_code == 200, before.text
+
+    inventory.latest = "4001"
+    new_session, new_run = await run_at("4001", "Frontend to API again")
+    new = await client.get(f"/api/analysis-sessions/{new_session['id']}/runs/{new_run['id']}")
+    assert new.status_code == 200, new.text
+    after = await client.get(old_url)
+    assert after.content == before.content
+
+    old_value, new_value = after.json(), new.json()
+    assert old_value["run"]["snapshot_refs"] == [reference("4000")]
+    assert new_value["run"]["snapshot_refs"] == [reference("4001")]
+    assert old_value["run"]["input_digest"] != new_value["run"]["input_digest"]
+    assert old_value["summary"]["id"] == old_run["id"] and new_value["summary"]["id"] == new_run["id"]
