@@ -225,7 +225,7 @@ postgres:
   # The patch tag and the manifest-list digest. The kubelet pulls by the digest.
   # Dependabot does not update images in Helm values (.github/dependabot.yml). A manual
   # update changes the tag and the digest together (`skopeo inspect`, `crane digest`).
-  image: docker.io/library/postgres:16.14@sha256:95206741a5b214807675e14165369d05b93a9cf692223b616d07cca227e74b0b
+  image: docker.io/library/postgres:16.15@sha256:f9a7b9ebf6f56201f949db745e47bc423c0f0f8294bafe991cc10bf74b029657
   database: hst
   username: hst
   # The format is postgresql+asyncpg://user:pass@host:5432/db. The value is required with
@@ -261,7 +261,7 @@ neo4j:
   enabled: true
   # The 5.26 LTS line, as in compose.yaml. A manual update changes the patch tag and the
   # digest together, as for postgres.image above.
-  image: docker.io/library/neo4j:5.26.29-community@sha256:d9dd3dc7d1c78fa959191ff02dbdcbefadceaf83eee23428fb92a58cac8ad3fe
+  image: docker.io/library/neo4j:5.26.33-community@sha256:51d0314ef86074f519003da8dd4daaa9fff72b8479672b742d7cab7f3064e3ed
   externalUri: ""    # bolt://neo4j.example:7687
   tls:
     # Verified TLS to Neo4j (NEO4J_TLS_CA_FILE). caSecret is a Secret in this namespace

@@ -14,16 +14,20 @@ class CpuTime:
 
 
 @contextmanager
-def cpu_time() -> Iterator[CpuTime]:
-    """Measure the CPU time that the threads of this process use in the block.
+def cpu_time(*, all_threads: bool = False) -> Iterator[CpuTime]:
+    """Measure the CPU time that the calling thread uses in the block.
 
-    `seconds` is set when the block ends. The time that the process waits for
+    With `all_threads`, the time is that of all threads of the process. A
+    thread that an earlier test left running then adds its time too.
+
+    `seconds` is set when the block ends. The time that the thread waits for
     the scheduler, for a sleep or for another process is not in it, so the load
     of the machine does not move a bound on it.
     """
+    clock = time.process_time if all_threads else time.thread_time
     spent = CpuTime()
-    started = time.process_time()
+    started = clock()
     try:
         yield spent
     finally:
-        spent.seconds = time.process_time() - started
+        spent.seconds = clock() - started

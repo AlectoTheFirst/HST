@@ -462,7 +462,7 @@ image of the dump pod is the tag of `neo4j.image` in `values.yaml`:
 ```
 kubectl -n hst scale statefulset hst-neo4j --replicas=0
 kubectl -n hst run neo4j-dump --rm -i --restart=Never \
-  --image=docker.io/library/neo4j:5.26.29-community --overrides='{"spec":{"containers":[{"name":"neo4j-dump","image":"docker.io/library/neo4j:5.26.29-community","command":["neo4j-admin","database","dump","neo4j","--to-path=/dumps"],"volumeMounts":[{"name":"data","mountPath":"/data"},{"name":"dumps","mountPath":"/dumps"}]}],"volumes":[{"name":"data","persistentVolumeClaim":{"claimName":"data-hst-neo4j-0"}},{"name":"dumps","emptyDir":{}}]}}' \
+  --image=docker.io/library/neo4j:5.26.33-community --overrides='{"spec":{"containers":[{"name":"neo4j-dump","image":"docker.io/library/neo4j:5.26.33-community","command":["neo4j-admin","database","dump","neo4j","--to-path=/dumps"],"volumeMounts":[{"name":"data","mountPath":"/data"},{"name":"dumps","mountPath":"/dumps"}]}],"volumes":[{"name":"data","persistentVolumeClaim":{"claimName":"data-hst-neo4j-0"}},{"name":"dumps","emptyDir":{}}]}}' \
   -- true
 kubectl -n hst scale statefulset hst-neo4j --replicas=1
 ```

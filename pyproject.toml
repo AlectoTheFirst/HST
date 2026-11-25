@@ -17,33 +17,33 @@ requires-python = ">=3.13"
 dependencies = [
   "neo4j>=6.4.1",
   "netutils>=1.19.2",
-  "ntc-templates>=9.3.0",
+  "ntc-templates>=9.4.0",
   # GHSA-r374-rxx8-8654 has no fix in paramiko 4.x.
   "paramiko>=5.1.0,<6",
   "asyncssh>=2.24.1",
-  "pydantic>=2.14.3",
+  "pydantic>=2.14.4",
   "pydantic-settings>=2.16.3",
   "httpx>=0.28",
   "httpcore>=1.0.9,<2",  # Public network backend API for HTTPS over SSH jump hosts.
-  "typer>=0.29.1",
+  "typer>=0.29.2",
   "rich>=15.0",
-  "pyyaml>=6.0.3",
+  "pyyaml>=6.0.4",
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=9.2.0", "ruff>=0.17.5", "pytest-asyncio>=1.5.0", "mypy>=2.4.1", "pytest-cov>=7.1", "types-PyYAML", "psycopg[binary]>=3.3.9", "pytest-xdist>=3.8"]
+dev = ["pytest>=9.2.0", "ruff>=0.17.6", "pytest-asyncio>=1.5.0", "mypy>=2.4.1", "pytest-cov>=7.1", "types-PyYAML", "psycopg[binary]>=3.3.9", "pytest-xdist>=3.8"]
 # mcp_server.py uses the `MCPServer` API of mcp 2.x.
 mcp = ["mcp>=2.3.0,<3"]
-sidestore = ["duckdb>=2.0.0", "pyarrow>=26.0.1"]
+sidestore = ["duckdb>=2.0.1", "pyarrow>=26.0.1"]
 app = [
-  "fastapi>=0.163.0",
+  "fastapi>=0.165.0",
   "uvicorn[standard]>=0.54.0",
-  "sqlalchemy[asyncio]>=2.1.8",
+  "sqlalchemy[asyncio]>=2.1.9",
   "asyncpg>=0.32.0",
   "alembic>=1.20.1",
   "argon2-cffi>=25.1",
   "cryptography>=50.0.2",  # PYSEC-2026-3552 (fixed in 50.0.0)
-  "authlib>=1.9.6",
+  "authlib>=1.9.10",
   # The floor has the fix for CVE-2026-26007.
   "pysaml2>=7.5.5",
   # override-dependencies in [tool.uv] has the same bound.
@@ -52,8 +52,8 @@ app = [
 ]
 # The OpenRouter provider uses `openai`.
 agent = [
-  "anthropic[bedrock]>=2.8.0",
-  "openai>=3.51.0",
+  "anthropic[bedrock]>=2.12.0",
+  "openai>=3.57.0",
 ]
 # dd needs these packages at runtime. `make symbolic-install` installs the dd wheel.
 symbolic = [

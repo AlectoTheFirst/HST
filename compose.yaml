@@ -134,7 +134,7 @@ services:
   neo4j:
     # Pinned to the 5.26 LTS line rather than `5-community`, which floats across
     # minor versions. Bump the pin explicitly.
-    image: docker.io/library/neo4j:5.26.29-community@sha256:d9dd3dc7d1c78fa959191ff02dbdcbefadceaf83eee23428fb92a58cac8ad3fe
+    image: docker.io/library/neo4j:5.26.33-community@sha256:51d0314ef86074f519003da8dd4daaa9fff72b8479672b742d7cab7f3064e3ed
     environment:
       # Applied ONLY when /data is empty. On a volume that already holds a graph
       # the image skips it and the old password stays in force, so NEO4J_PASSWORD
@@ -177,7 +177,7 @@ services:
     security_opt: ["no-new-privileges:true"]
     <<: *logging
   pg:
-    image: docker.io/library/postgres:16.14@sha256:95206741a5b214807675e14165369d05b93a9cf692223b616d07cca227e74b0b
+    image: docker.io/library/postgres:16.15@sha256:f9a7b9ebf6f56201f949db745e47bc423c0f0f8294bafe991cc10bf74b029657
     environment:
       POSTGRES_USER: hst
       POSTGRES_PASSWORD: ${HST_PG_PASSWORD:?set in .env}
@@ -207,7 +207,7 @@ services:
   # drop it.
   backup:
     profiles: ["backup"]
-    image: docker.io/library/postgres:16.14@sha256:95206741a5b214807675e14165369d05b93a9cf692223b616d07cca227e74b0b
+    image: docker.io/library/postgres:16.15@sha256:f9a7b9ebf6f56201f949db745e47bc423c0f0f8294bafe991cc10bf74b029657
     environment:
       PGPASSWORD: ${HST_PG_PASSWORD:?set in .env}
     volumes: ["./backups:/backups:U"]
@@ -230,7 +230,7 @@ services:
   # Runs the same image the stack runs, against the volume directly.
   backup-neo4j:
     profiles: ["backup"]
-    image: docker.io/library/neo4j:5.26.29-community@sha256:d9dd3dc7d1c78fa959191ff02dbdcbefadceaf83eee23428fb92a58cac8ad3fe
+    image: docker.io/library/neo4j:5.26.33-community@sha256:51d0314ef86074f519003da8dd4daaa9fff72b8479672b742d7cab7f3064e3ed
     volumes:
       - "hst-neo4j-data:/data"
       - "./backups:/backups:U"
