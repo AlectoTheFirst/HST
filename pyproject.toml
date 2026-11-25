@@ -38,7 +38,7 @@ sidestore = ["duckdb>=2.0.1", "pyarrow>=26.0.1"]
 app = [
   "fastapi>=0.165.0",
   "uvicorn[standard]>=0.54.0",
-  "sqlalchemy[asyncio]>=2.1.8",
+  "sqlalchemy[asyncio]>=2.1.9",
   "asyncpg>=0.32.0",
   "alembic>=1.20.1",
   "argon2-cffi>=25.1",
@@ -52,7 +52,7 @@ app = [
 ]
 # The OpenRouter provider uses `openai`.
 agent = [
-  "anthropic[bedrock]>=2.8.0",
+  "anthropic[bedrock]>=2.12.0",
   "openai>=3.57.0",
 ]
 # dd needs these packages at runtime. `make symbolic-install` installs the dd wheel.
