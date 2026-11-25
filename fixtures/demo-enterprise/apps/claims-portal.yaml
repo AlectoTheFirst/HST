@@ -1,0 +1,86 @@
+schema_version: 1
+kind: BusinessApplication
+id: claims-portal-production
+name: Claims Portal
+description: "Claims handling: web and application tiers in Frankfurt, database in Munich."
+environment: production
+state: draft
+services:
+  - id: claims-portal-service
+    name: Claims Portal service
+    connection_ids:
+      - agents-to-vip
+      - web-to-app
+      - app-to-db
+    component_roles:
+      - group_id: frontend
+        role: endpoint
+groups:
+  - id: agents
+    name: Claims agents
+    members:
+      - id: vienna-users
+        address: 10.11.10.0/24
+      - id: warsaw-users
+        address: 10.13.10.0/24
+      - id: zurich-users
+        address: 10.16.10.0/24
+  - id: frontend
+    name: Claims VIP
+    members:
+      - id: claims-vip
+        address: 10.1.30.12
+  - id: app
+    name: Application tier
+    members:
+      - id: claims-app-01
+        address: 10.1.14.11
+      - id: claims-app-02
+        address: 10.1.14.12
+      - id: claims-app-03
+        address: 10.1.14.13
+      - id: claims-app-04
+        address: 10.1.14.14
+  - id: db
+    name: Database in dc2
+    members:
+      - id: claims-db-01
+        address: 10.2.13.11
+      - id: claims-db-02
+        address: 10.2.13.12
+      - id: claims-db-03
+        address: 10.2.13.13
+connections:
+  - id: agents-to-vip
+    name: Agents to VIP
+    source: agents
+    destination: frontend
+    protocol: tcp
+    destination_ports:
+      - 443
+    success: session
+    destination_condition:
+      kind: member
+      member: claims-vip
+  - id: web-to-app
+    name: Web to application tier
+    source: frontend
+    destination: app
+    protocol: tcp
+    destination_ports:
+      - 8009
+    success: round-trip
+    destination_condition:
+      kind: member
+      member: claims-app-01
+  - id: app-to-db
+    name: Application tier to database
+    source: app
+    destination: db
+    protocol: tcp
+    destination_ports:
+      - 5432
+    success: session
+    destination_condition:
+      kind: member
+      member: claims-db-01

@@ -1,0 +1,97 @@
+/* The diagram panes (map/diagram.ts): SD-WAN and Equinix Fabric. Moved from
+   theme.css; these views load lazily. */
+
+/* ---- the chips, notes and tab bodies the diagram panes share
+   (map/diagram.ts): SD-WAN and Equinix Fabric ---- */
+.netmap-chip {
+  cursor: pointer;
+}
+
+.netmap-chip.on rect {
+  stroke: var(--acctext);
+  stroke-width: 2.5;
+}
+
+/* a device of the picture */
+.netmap-chip-device rect {
+  stroke: var(--kind-Device, var(--kind-fallback));
+  stroke-width: 2;
+}
+
+/* a far end outside the picture, or a link: dashed */
+.netmap-chip-far rect {
+  fill: var(--panel2);
+  stroke-dasharray: 4 3;
+}
+
+/* a drawn element that opens a panel shows the keyboard focus */
+.netmap-chip:focus-visible rect,
+.netmap-cable:focus-visible path:not(.netmap-cablehit) {
+  stroke: var(--accent);
+  stroke-width: 3;
+}
+
+.netmap-chip:focus,
+.netmap-cable:focus {
+  outline: none;
+}
+
+.netmap-note {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  font: 500 11.5px var(--ui);
+  color: var(--muted);
+}
+
+.netmap-tabbody {
+  flex: 1;
+  min-width: 0;
+  overflow: auto;
+  padding: 52px 14px 14px;
+}
+
+.netmap-cable.sdwan-tunnel path:not(.netmap-cablehit) {
+  stroke: var(--accent);
+  stroke-width: 1.5;
+  stroke-dasharray: 5 4;
+}
+
+.netmap-cable.sdwan-tunnel-gateway path:not(.netmap-cablehit) {
+  stroke: var(--muted);
+}
+
+.netmap-cable.sdwan-tunnel.on path:not(.netmap-cablehit) {
+  stroke: var(--acctext);
+  stroke-width: 3;
+}
+
+.sdwan-policy h3 {
+  margin: 0 0 8px;
+  font: 600 14px var(--ui);
+  color: var(--text);
+}
+
+.sdwan-policy h4 {
+  margin: 16px 0 6px;
+  font: 600 12px var(--ui);
+  color: var(--muted2);
+}
+
+.sdwan-gap {
+  font: 400 12px var(--ui);
+  color: var(--warntext);
+}
+
+.sdwan-default td {
+  color: var(--muted2);
+}
+
+.sdwan-tag {
+  margin-left: 6px;
+  padding: 0 5px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font: 500 10px var(--ui);
+  color: var(--muted);
+}

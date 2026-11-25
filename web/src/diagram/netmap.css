@@ -1,0 +1,173 @@
+/* The canvas, the toolbar and the panel of the diagrams in the SD-WAN, Equinix
+   and What changed panes. These views load lazily. */
+
+/* ---- network map pane ---- */
+
+.netmap {
+  position: relative;
+  height: 100%;
+  display: flex;
+}
+
+/* the scope select, the layer switch and the layer's picker, floating over
+   the canvas' top-left corner in one row */
+.netmap-toolbar {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.netmap-toolbar select {
+  width: auto;
+  max-width: 220px;
+  font: 500 12px var(--ui);
+  color: var(--text);
+  background: var(--field);
+  border: 1px solid var(--fieldb);
+  border-radius: 6px;
+  padding: 5px 9px;
+  outline: none;
+}
+
+.netmap-toolbar select:focus-visible {
+  border-color: var(--accent);
+}
+
+.netmap-empty {
+  margin: auto;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.netmap-canvas {
+  flex: 1;
+  min-width: 0;
+  background: var(--panel2);
+  cursor: grab;
+  touch-action: none; /* a drag pans the map, not the page */
+}
+
+.netmap-cable path {
+  fill: none;
+  stroke: var(--border);
+  stroke-width: 2;
+}
+
+/* the frame around one site's devices when the map spans more than one site */
+.netmap-frame rect {
+  fill: var(--panel);
+  stroke: var(--border);
+  stroke-dasharray: 6 4;
+}
+
+.netmap-frame text {
+  font: 600 13px var(--ui);
+  fill: var(--muted2);
+}
+
+.netmap-node rect {
+  fill: var(--panel);
+  stroke: var(--border);
+  stroke-width: 1.5;
+}
+
+.netmap-name {
+  font-size: 12px;
+  font-weight: 600;
+  fill: var(--text);
+}
+
+.netmap-caption {
+  font-size: 9.5px;
+  letter-spacing: 0.03em;
+  fill: var(--muted);
+}
+
+.netmap-clients {
+  position: absolute;
+  right: 10px;
+  top: 10px;
+  width: 240px;
+  max-height: calc(100% - 20px);
+  overflow: auto;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 12px;
+}
+
+.netmap-clients header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+  color: var(--muted2);
+  font-weight: 600;
+}
+
+.netmap-clients header button {
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.netmap-clients ul {
+  list-style: none;
+  margin: 0;
+  padding: 4px 0;
+}
+
+.netmap-clients li {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 3px 10px;
+}
+
+.netmap-cable {
+  cursor: pointer;
+}
+
+.netmap-cablehit {
+  fill: none;
+  stroke: transparent;
+  stroke-width: 14;
+}
+
+.netmap-cable.on path:not(.netmap-cablehit) {
+  stroke: var(--acctext);
+  stroke-width: 3;
+}
+
+.netmap-cable.netmap-dim path:not(.netmap-cablehit) {
+  stroke-opacity: 0.35;
+}
+
+.netmap-linkends {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 4px 10px;
+  margin: 0;
+  padding: 8px 10px;
+}
+
+.netmap-linkends dt {
+  color: var(--muted);
+}
+
+.netmap-linkends dd {
+  margin: 0;
+  color: var(--text);
+}
+
+.netmap-port {
+  color: var(--muted2);
+  font-family: ui-monospace, monospace;
+  font-size: 11px;
+}

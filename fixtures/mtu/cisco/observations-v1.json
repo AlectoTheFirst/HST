@@ -1,0 +1,25 @@
+{
+  "format_version": 1,
+  "provenance": "Invented fixtures from documented CLI syntax; no device capture or live validation.",
+  "iosxe": {
+    "show ip interface": "GigabitEthernet1/0/1 is up, line protocol is up\n  MTU is 1500 bytes\nVlan10 is up, line protocol is up\n  MTU is 1400 bytes\n",
+    "show ipv6 interface": "GigabitEthernet1/0/1 is up, line protocol is up\n  MTU is 1280 bytes\n",
+    "show system mtu": "System MTU size is 9198 bytes\n",
+    "show etherchannel summary": "Flags: D - down P - bundled in port-channel\nGroup Port-channel Protocol Ports\n1 Po1(SU) LACP Gi1/0/1(P) Gi1/0/2(H)\n  Gi1/0/3(Z)\n"
+  },
+  "iosxr": {
+    "show ipv4 interface": "GigabitEthernet0/0/0/0 is Up, ipv4 protocol is Up\n  MTU is 1514 (1500 is available to IP)\nGigabitEthernet0/0/0/0.20 is Up, ipv4 protocol is Up\n  MTU is 1518 (1500 is available to IP)\n",
+    "show ipv6 interface": "GigabitEthernet0/0/0/0 is Up, ipv6 protocol is Up\n  MTU is 1514 (1480 is available to IPv6)\n",
+    "show running-config interface": "interface GigabitEthernet0/0/0/0\n mtu 1514\n ipv4 mtu 1400\n bundle id 10 mode active\n!\ninterface GigabitEthernet0/0/0/0.20\n encapsulation dot1q 20\n ipv4 mtu 1450\n!\ninterface Bundle-Ether10\n mtu 9216\n!\n",
+    "show bundle": "Bundle-Ether 10\n  Status: Up\n  Port Device State Port ID B/W, kbps\n  Gi0/0/0/0 Local Active 0x8000, 0x0001 1000000\n  Gi0/0/0/1 Local Standby 0x8000, 0x0002 1000000\n  Gi0/0/0/2 192.0.2.20 Active 0x8000, 0x0003 1000000\n"
+  },
+  "nxos": {
+    "show interface": "Ethernet1/1 is up\n  MTU 9216 bytes, BW 1000000 Kbit\nVlan10 is up, line protocol is up\n  MTU 9000 bytes, BW 1000000 Kbit\n",
+    "show ip interface": "Ethernet1/1, Interface status: protocol-up/link-up/admin-up, iod: 5\n  IP MTU: 9000 bytes (using link MTU)\n",
+    "show ipv6 interface": "Ethernet1/1, Interface status: protocol-up/link-up/admin-up, iod: 5\n  IPv6 MTU: 1500 (using link MTU)\n",
+    "show running-config all | i jumbomtu": "system jumbomtu 9216\n",
+    "show policy-map system type network-qos": "Type network-qos policy-maps\n policy-map type network-qos mtu-test\n   class type network-qos default\n     mtu 1500\n   class type network-qos storage\n     mtu 9216\n",
+    "show queuing interface": "Ethernet1/1 queuing information:\n  TX Queuing\n    qos-group 0\n  RX Queuing\n    qos-group 0\n    q-size: 4096, HW MTU: 9216 (9216 configured)\n    qos-group 1\n    q-size: 4096, HW MTU: 1500 (1500 configured)\n",
+    "show port-channel summary": "Flags: D - Down P - Up in port-channel\nGroup Port-Channel Type Protocol Member Ports\n1 Po1(SU) Eth LACP Eth1/1(P) Eth1/2(D)\n"
+  }
+}

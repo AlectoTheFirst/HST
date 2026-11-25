@@ -1,0 +1,309 @@
+# Hand-made Equinix site in the demo shape: an NX-OS core pair with an HSRP gateway and a
+# vPC domain, an NX-OS external switch, a Check Point VSX appliance with two virtual
+# systems, an ASR pair with a default route and source NAT, and one Equinix Fabric circuit
+# stub toward a second site.
+#
+# Every label, relationship and property here exists in core/labels.py. The member SVIs
+# hold the HSRP virtual address with the `fhrp` properties the NX-OS collector writes, the
+# FirewallInstance authority equals the scope the management Device loads under (the join
+# the legacy trace applies), and the Fabric port realizes the external switch port the
+# way the Equinix collector binds it. The Z end at PA3 has no device port here, so the
+# reasoner draws no link for the circuit. The scenarios in src/hst/demo.py that read
+# this fixture are written against the shape below.
+#
+# Addressing is documentation and test space only. Nothing here was captured from a device.
+#
+# Load AFTER fixtures/mini-dc.yaml and fixtures/mini-enterprise.yaml:
+#   hst load-fixture fixtures/mini-dc.yaml
+#   hst load-fixture fixtures/mini-enterprise.yaml
+#   hst load-fixture fixtures/equinix-site.yaml
+#   hst validate-demo
+source: fixture
+scope: "fixture:equinix-site"
+
+nodes:
+  # --- sites
+  - {label: Site, uid: "site:eqx-fr2", props: {code: eqx-fr2, name: Equinix FR2, kind: colo}}
+  - {label: Site, uid: "site:eqx-pa3", props: {code: eqx-pa3, name: Equinix PA3, kind: colo}}
+
+  # --- routing domains: one per site, declared
+  - {label: RoutingDomain, uid: "rdom:fr2-inside", props: {name: fr2-inside}}
+  - {label: RoutingDomain, uid: "rdom:fr2-partner", props: {name: fr2-partner}}
+  - {label: RoutingDomain, uid: "rdom:fr2-transit", props: {name: fr2-transit}}
+
+  # --- devices
+  - {label: Device, uid: "dev:fr2-core-01", props: {hostname: fr2-core-01, platform: nxos, role: router, vendor: cisco, serial: FDO26FR2C001, mgmt_ip: 10.72.0.11}}
+  - {label: Device, uid: "dev:fr2-core-02", props: {hostname: fr2-core-02, platform: nxos, role: router, vendor: cisco, serial: FDO26FR2C002, mgmt_ip: 10.72.0.12}}
+  - {label: Device, uid: "dev:fr2-ext-01", props: {hostname: fr2-ext-01, platform: nxos, role: switch, vendor: cisco, serial: FDO26FR2X001, mgmt_ip: 10.72.0.13}}
+  # The VSX appliance as the Gaia source observes it (collectors/checkpoint_gateway.py) and
+  # as the management source lists the cluster member: one node, keyed by the management
+  # object uid (fix 2 identity rule).
+  - {label: Device, uid: "dev:fr2-vsx-01", props: {hostname: fr2-vsx-01, platform: checkpoint-gaia, role: firewall, vendor: checkpoint, mgmt_ip: 10.72.0.21, cp_type: CpmiVsxClusterMember, cp_raw_uid: vsx-fr2-member-1, observation_uid: obs-fr2-vsx-01}}
+  # The virtual systems as management objects: the installation targets of the layers.
+  - {label: Device, uid: "dev:fr2-vs-inside", props: {hostname: fr2-vs-inside, platform: checkpoint, role: firewall, vendor: checkpoint, cp_type: CpmiVsClusterNetobj, cp_raw_uid: vs-fr2-inside}}
+  - {label: Device, uid: "dev:fr2-vs-partner", props: {hostname: fr2-vs-partner, platform: checkpoint, role: firewall, vendor: checkpoint, cp_type: CpmiVsClusterNetobj, cp_raw_uid: vs-fr2-partner}}
+  - {label: Device, uid: "dev:fr2-asr-01", props: {hostname: fr2-asr-01, platform: iosxe, role: router, vendor: cisco, serial: FXS26FR2A001, mgmt_ip: 10.72.0.31}}
+  - {label: Device, uid: "dev:fr2-asr-02", props: {hostname: fr2-asr-02, platform: iosxe, role: router, vendor: cisco, serial: FXS26FR2A002, mgmt_ip: 10.72.0.32}}
+
+  # --- redundancy groups
+  - {label: RedundancyGroup, uid: "rgrp:vpc:nxos-fr2:100", props: {kind: vpc, name: fr2-core-vpc-100, domain_id: 100, peer_link: port-channel1}}
+  - {label: RedundancyGroup, uid: "rgrp:cp-cluster:cp-mgmt-fr2:vsx-fr2", props: {kind: cp-cluster, name: vsx-fr2, cp_type: CpmiVsxClusterNetobj}}
+
+  # --- virtual systems (FirewallInstance per VSID)
+  - {label: FirewallInstance, uid: "firewall-instance:fr2-vs-inside", props: {name: fr2-vs-inside, vsid: 1, gateway_object_uid: vs-fr2-inside, authority: "fixture:equinix-site", domain: smc}}
+  - {label: FirewallInstance, uid: "firewall-instance:fr2-vs-partner", props: {name: fr2-vs-partner, vsid: 2, gateway_object_uid: vs-fr2-partner, authority: "fixture:equinix-site", domain: smc}}
+
+  # --- L2: server VLAN on the core pair and the external switch
+  - {label: BridgeDomain, uid: "l2seg:fr2-servers", props: {name: fr2-servers}}
+  - {label: VlanInstance, uid: "vlan:dev:fr2-core-01:100", props: {vid: 100, name: servers}}
+  - {label: VlanInstance, uid: "vlan:dev:fr2-core-02:100", props: {vid: 100, name: servers}}
+  - {label: VlanInstance, uid: "vlan:dev:fr2-ext-01:100", props: {vid: 100, name: servers}}
+
+  # --- ports and cabling
+  - {label: Port, uid: "dev:fr2-core-01/port/eth1-1", props: {name: ethernet1/1, speed_mbps: 10000}}
+  - {label: Port, uid: "dev:fr2-core-01/port/eth1-47", props: {name: ethernet1/47, speed_mbps: 10000}}
+  - {label: Port, uid: "dev:fr2-core-02/port/eth1-1", props: {name: ethernet1/1, speed_mbps: 10000}}
+  - {label: Port, uid: "dev:fr2-core-02/port/eth1-47", props: {name: ethernet1/47, speed_mbps: 10000}}
+  - {label: Port, uid: "dev:fr2-ext-01/port/eth1-1", props: {name: ethernet1/1, speed_mbps: 10000}}
+  - {label: Port, uid: "dev:fr2-ext-01/port/eth1-2", props: {name: ethernet1/2, speed_mbps: 10000}}
+  - {label: Port, uid: "dev:fr2-ext-01/port/eth1-49", props: {name: ethernet1/49, speed_mbps: 10000}}
+
+  # --- interfaces
+  - {label: Interface, uid: "dev:fr2-core-01/if/vlan100", props: {name: vlan100, kind: svi, vlan: 100}}
+  - {label: Interface, uid: "dev:fr2-core-02/if/vlan100", props: {name: vlan100, kind: svi, vlan: 100}}
+  - {label: Interface, uid: "dev:fr2-core-01/if/eth1-10", props: {name: ethernet1/10, kind: phys}}
+  - {label: Interface, uid: "dev:fr2-core-02/if/eth1-10", props: {name: ethernet1/10, kind: phys}}
+  - {label: Interface, uid: "fwctx:fr2-vs-inside/if/eth1", props: {name: eth1, vsid: 1}}
+  - {label: Interface, uid: "fwctx:fr2-vs-inside/if/eth2", props: {name: eth2, vsid: 1}}
+  - {label: Interface, uid: "fwctx:fr2-vs-partner/if/eth3", props: {name: eth3, vsid: 2}}
+  - {label: Interface, uid: "fwctx:fr2-vs-partner/if/eth4", props: {name: eth4, vsid: 2}}
+  - {label: Interface, uid: "dev:fr2-asr-01/if/gi0-0-0", props: {name: GigabitEthernet0/0/0, kind: phys, nat_role: inside}}
+  - {label: Interface, uid: "dev:fr2-asr-01/if/gi0-0-1", props: {name: GigabitEthernet0/0/1, kind: phys, nat_role: outside}}
+  - {label: Interface, uid: "dev:fr2-asr-02/if/gi0-0-0", props: {name: GigabitEthernet0/0/0, kind: phys, nat_role: inside}}
+  - {label: Interface, uid: "dev:fr2-asr-02/if/gi0-0-1", props: {name: GigabitEthernet0/0/1, kind: phys, nat_role: outside}}
+
+  # --- HSRP gateway of the server VLAN (the shape fixtures/mini-enterprise.yaml uses)
+  - {label: FhrpGroup, uid: "fhrp:hsrp:fr2-inside:10.72.100.1", props: {kind: hsrp, group_id: 100, vip: 10.72.100.1}}
+
+  # --- VRFs
+  - {label: VrfInstance, uid: "vrf:dev:fr2-core-01:inside", props: {name: inside}}
+  - {label: VrfInstance, uid: "vrf:dev:fr2-core-02:inside", props: {name: inside}}
+  - {label: VrfInstance, uid: "vrf:fwctx:fr2-vs-inside:vs-1", props: {name: "vs:1", firewall_instance_uid: "firewall-instance:fr2-vs-inside"}}
+  - {label: VrfInstance, uid: "vrf:fwctx:fr2-vs-partner:vs-2", props: {name: "vs:2", firewall_instance_uid: "firewall-instance:fr2-vs-partner"}}
+  - {label: VrfInstance, uid: "vrf:dev:fr2-asr-01:default", props: {name: default}}
+  - {label: VrfInstance, uid: "vrf:dev:fr2-asr-02:default", props: {name: default}}
+
+  # --- addressing
+  - {label: Prefix, uid: "pfx:fr2-inside:10.72.0.0/16", props: {cidr: 10.72.0.0/16, af: 4, kind: aggregate, l3dom: fr2-inside, name: fr2-inside, anchor: fr2-inside}}
+  - {label: Prefix, uid: "pfx:fr2-inside:10.72.100.0/24", props: {cidr: 10.72.100.0/24, af: 4, kind: connected, l3dom: fr2-inside, name: fr2-servers, anchor: fr2-inside}}
+  - {label: Prefix, uid: "pfx:fr2-inside:10.72.1.0/29", props: {cidr: 10.72.1.0/29, af: 4, kind: connected, l3dom: fr2-inside, name: fr2-core-to-vs-inside, anchor: fr2-inside}}
+  - {label: Prefix, uid: "pfx:fr2-partner:10.72.3.0/29", props: {cidr: 10.72.3.0/29, af: 4, kind: connected, l3dom: fr2-partner, name: fr2-partner-to-vs-partner, anchor: fr2-partner}}
+  - {label: Prefix, uid: "pfx:fr2-partner:10.73.0.0/24", props: {cidr: 10.73.0.0/24, af: 4, kind: aggregate, l3dom: fr2-partner, name: fr2-partner-servers, anchor: fr2-partner}}
+  - {label: Prefix, uid: "pfx:fr2-transit:10.72.2.0/29", props: {cidr: 10.72.2.0/29, af: 4, kind: connected, l3dom: fr2-transit, name: fr2-vs-inside-to-asr, anchor: fr2-transit}}
+  - {label: Prefix, uid: "pfx:fr2-transit:10.72.2.8/29", props: {cidr: 10.72.2.8/29, af: 4, kind: connected, l3dom: fr2-transit, name: fr2-vs-partner-to-asr, anchor: fr2-transit}}
+  - {label: Prefix, uid: "pfx:fr2-transit:198.51.100.0/30", props: {cidr: 198.51.100.0/30, af: 4, kind: connected, l3dom: fr2-transit, name: fr2-asr-01-upstream, anchor: fr2-transit}}
+  - {label: Prefix, uid: "pfx:fr2-transit:198.51.100.4/30", props: {cidr: 198.51.100.4/30, af: 4, kind: connected, l3dom: fr2-transit, name: fr2-asr-02-upstream, anchor: fr2-transit}}
+  - {label: Prefix, uid: "pfx:fr2-transit:0.0.0.0/0", props: {cidr: 0.0.0.0/0, af: 4, kind: default, l3dom: fr2-transit, name: default, anchor: fr2-transit}}
+  - {label: IpAddress, uid: "ip:fr2-inside:10.72.100.1", props: {ip: 10.72.100.1, af: 4, l3dom: fr2-inside, anchor: fr2-inside}}
+  - {label: IpAddress, uid: "ip:fr2-inside:10.72.100.2", props: {ip: 10.72.100.2, af: 4, l3dom: fr2-inside, anchor: fr2-inside}}
+  - {label: IpAddress, uid: "ip:fr2-inside:10.72.100.3", props: {ip: 10.72.100.3, af: 4, l3dom: fr2-inside, anchor: fr2-inside}}
+  - {label: IpAddress, uid: "ip:fr2-inside:10.72.100.50", props: {ip: 10.72.100.50, af: 4, l3dom: fr2-inside, name: fr2-app-01, anchor: fr2-inside}}
+  - {label: IpAddress, uid: "ip:fr2-inside:10.72.1.1", props: {ip: 10.72.1.1, af: 4, l3dom: fr2-inside, anchor: fr2-inside}}
+  - {label: IpAddress, uid: "ip:fr2-inside:10.72.1.2", props: {ip: 10.72.1.2, af: 4, l3dom: fr2-inside, anchor: fr2-inside}}
+  - {label: IpAddress, uid: "ip:fr2-inside:10.72.1.6", props: {ip: 10.72.1.6, af: 4, l3dom: fr2-inside, anchor: fr2-inside}}
+  - {label: IpAddress, uid: "ip:fr2-partner:10.72.3.6", props: {ip: 10.72.3.6, af: 4, l3dom: fr2-partner, anchor: fr2-partner}}
+  - {label: IpAddress, uid: "ip:fr2-transit:10.72.2.1", props: {ip: 10.72.2.1, af: 4, l3dom: fr2-transit, anchor: fr2-transit}}
+  - {label: IpAddress, uid: "ip:fr2-transit:10.72.2.2", props: {ip: 10.72.2.2, af: 4, l3dom: fr2-transit, anchor: fr2-transit}}
+  - {label: IpAddress, uid: "ip:fr2-transit:10.72.2.6", props: {ip: 10.72.2.6, af: 4, l3dom: fr2-transit, anchor: fr2-transit}}
+  - {label: IpAddress, uid: "ip:fr2-transit:10.72.2.14", props: {ip: 10.72.2.14, af: 4, l3dom: fr2-transit, anchor: fr2-transit}}
+  - {label: IpAddress, uid: "ip:fr2-transit:198.51.100.2", props: {ip: 198.51.100.2, af: 4, l3dom: fr2-transit, anchor: fr2-transit}}
+  - {label: IpAddress, uid: "ip:fr2-transit:198.51.100.6", props: {ip: 198.51.100.6, af: 4, l3dom: fr2-transit, anchor: fr2-transit}}
+
+  # --- Check Point policy per virtual system
+  - {label: FwRulebase, uid: "cp:mgmt-fr2:smc:layer-fr2-inside", props: {name: fr2-inside-access, kind: access, vendor: checkpoint, default_action: drop, match_context: device}}
+  - {label: FwRulebase, uid: "cp:mgmt-fr2:smc:layer-fr2-partner", props: {name: fr2-partner-access, kind: access, vendor: checkpoint, default_action: drop, match_context: device}}
+  - {label: FwRule, uid: "cp:mgmt-fr2:smc:rule-inside-to-internet", props: {name: servers to internet, position: 1, action: accept, enabled: true, rule_uid: 0f2a7c3e-0000-4000-8000-0000000000a1}}
+  - {label: FwRule, uid: "cp:mgmt-fr2:smc:rule-partner-to-internet", props: {name: partner to internet, position: 1, action: accept, enabled: true, rule_uid: 0f2a7c3e-0000-4000-8000-0000000000b1}}
+  - {label: NetObject, uid: "cp:mgmt-fr2:smc:obj-fr2-servers", props: {name: fr2-servers, kind: network}}
+  - {label: NetObject, uid: "cp:mgmt-fr2:smc:obj-fr2-partner-servers", props: {name: fr2-partner-servers, kind: network}}
+  - {label: NetObject, uid: "cp:mgmt-fr2:smc:obj-internet", props: {name: internet, kind: network}}
+  - {label: SvcObject, uid: "cp:mgmt-fr2:smc:svc-https", props: {name: https, proto: tcp, ports: "443"}}
+
+  # --- ASR source NAT (the shape collectors/cisco_common.py's NAT stage emits)
+  - {label: FwRulebase, uid: "iosxe:fr2-asr-01:nat:inside-source", props: {name: nat-inside-source, kind: nat, vendor: cisco}}
+  - {label: FwRulebase, uid: "iosxe:fr2-asr-02:nat:inside-source", props: {name: nat-inside-source, kind: nat, vendor: cisco}}
+  - {label: NatRule, uid: "iosxe:fr2-asr-01:nat:inside-source:1", props: {name: inside-source-overload, kind: snat, position: 1, direction: inside-source, overload: true, enabled: true, in_if: GigabitEthernet0/0/0, out_if: GigabitEthernet0/0/1, translation_interface: GigabitEthernet0/0/1}}
+  - {label: NatRule, uid: "iosxe:fr2-asr-02:nat:inside-source:1", props: {name: inside-source-overload, kind: snat, position: 1, direction: inside-source, overload: true, enabled: true, in_if: GigabitEthernet0/0/0, out_if: GigabitEthernet0/0/1, translation_interface: GigabitEthernet0/0/1}}
+  - {label: NetObject, uid: "iosxe:fr2-asr-01:acl:NAT-INSIDE", props: {name: NAT-INSIDE, kind: acl}}
+  - {label: NetObject, uid: "iosxe:fr2-asr-02:acl:NAT-INSIDE", props: {name: NAT-INSIDE, kind: acl}}
+
+  # --- Equinix Fabric circuit stub
+  - {label: FabricPort, uid: "eqx:port:fr2-00000000-0000-0001", props: {name: fr2-fabric-10g-1, speed: 10g, bound_port_uid: "dev:fr2-ext-01/port/eth1-49"}}
+  - {label: FabricPort, uid: "eqx:port:pa3-00000000-0000-0001", props: {name: pa3-fabric-10g-1, speed: 10g}}
+  - {label: VirtualCircuit, uid: "eqx:vc:fr2-pa3-00000000-0001", props: {name: fr2-to-pa3, bandwidth_mbps: 1000, state: active}}
+
+rels:
+  # --- location and membership
+  - {type: LOCATED_IN, start: [Device, "dev:fr2-core-01"], end: [Site, "site:eqx-fr2"]}
+  - {type: LOCATED_IN, start: [Device, "dev:fr2-core-02"], end: [Site, "site:eqx-fr2"]}
+  - {type: LOCATED_IN, start: [Device, "dev:fr2-ext-01"], end: [Site, "site:eqx-fr2"]}
+  - {type: LOCATED_IN, start: [Device, "dev:fr2-vsx-01"], end: [Site, "site:eqx-fr2"]}
+  - {type: LOCATED_IN, start: [Device, "dev:fr2-asr-01"], end: [Site, "site:eqx-fr2"]}
+  - {type: LOCATED_IN, start: [Device, "dev:fr2-asr-02"], end: [Site, "site:eqx-fr2"]}
+  - {type: LOCATED_IN, start: [FabricPort, "eqx:port:fr2-00000000-0000-0001"], end: [Site, "site:eqx-fr2"]}
+  - {type: LOCATED_IN, start: [FabricPort, "eqx:port:pa3-00000000-0000-0001"], end: [Site, "site:eqx-pa3"]}
+  - {type: MEMBER_OF, start: [Device, "dev:fr2-core-01"], end: [RedundancyGroup, "rgrp:vpc:nxos-fr2:100"], props: {role: primary}}
+  - {type: MEMBER_OF, start: [Device, "dev:fr2-core-02"], end: [RedundancyGroup, "rgrp:vpc:nxos-fr2:100"], props: {role: secondary}}
+  - {type: MEMBER_OF, start: [Device, "dev:fr2-vsx-01"], end: [RedundancyGroup, "rgrp:cp-cluster:cp-mgmt-fr2:vsx-fr2"]}
+  - {type: MEMBER_OF, start: [VrfInstance, "vrf:dev:fr2-core-01:inside"], end: [RoutingDomain, "rdom:fr2-inside"], props: {basis: declared}}
+  - {type: MEMBER_OF, start: [VrfInstance, "vrf:dev:fr2-core-02:inside"], end: [RoutingDomain, "rdom:fr2-inside"], props: {basis: declared}}
+  - {type: MEMBER_OF, start: [VrfInstance, "vrf:dev:fr2-asr-01:default"], end: [RoutingDomain, "rdom:fr2-transit"], props: {basis: declared}}
+  - {type: MEMBER_OF, start: [VrfInstance, "vrf:dev:fr2-asr-02:default"], end: [RoutingDomain, "rdom:fr2-transit"], props: {basis: declared}}
+
+  # --- ports, cabling, the vPC peer link and the fabric cross-connect
+  - {type: "ON", start: [Port, "dev:fr2-core-01/port/eth1-1"], end: [Device, "dev:fr2-core-01"]}
+  - {type: "ON", start: [Port, "dev:fr2-core-01/port/eth1-47"], end: [Device, "dev:fr2-core-01"]}
+  - {type: "ON", start: [Port, "dev:fr2-core-02/port/eth1-1"], end: [Device, "dev:fr2-core-02"]}
+  - {type: "ON", start: [Port, "dev:fr2-core-02/port/eth1-47"], end: [Device, "dev:fr2-core-02"]}
+  - {type: "ON", start: [Port, "dev:fr2-ext-01/port/eth1-1"], end: [Device, "dev:fr2-ext-01"]}
+  - {type: "ON", start: [Port, "dev:fr2-ext-01/port/eth1-2"], end: [Device, "dev:fr2-ext-01"]}
+  - {type: "ON", start: [Port, "dev:fr2-ext-01/port/eth1-49"], end: [Device, "dev:fr2-ext-01"]}
+  - {type: CONNECTED_TO, start: [Port, "dev:fr2-core-01/port/eth1-1"], end: [Port, "dev:fr2-ext-01/port/eth1-1"], props: {source: fixture}}
+  - {type: CONNECTED_TO, start: [Port, "dev:fr2-core-02/port/eth1-1"], end: [Port, "dev:fr2-ext-01/port/eth1-2"], props: {source: fixture}}
+  - {type: CONNECTED_TO, start: [Port, "dev:fr2-core-01/port/eth1-47"], end: [Port, "dev:fr2-core-02/port/eth1-47"], props: {source: fixture, role: vpc-peer-link}}
+  - {type: REALIZED_BY, start: [FabricPort, "eqx:port:fr2-00000000-0000-0001"], end: [Port, "dev:fr2-ext-01/port/eth1-49"]}
+
+  # --- interfaces on devices
+  - {type: "ON", start: [Interface, "dev:fr2-core-01/if/vlan100"], end: [Device, "dev:fr2-core-01"]}
+  - {type: "ON", start: [Interface, "dev:fr2-core-02/if/vlan100"], end: [Device, "dev:fr2-core-02"]}
+  - {type: "ON", start: [Interface, "dev:fr2-core-01/if/eth1-10"], end: [Device, "dev:fr2-core-01"]}
+  - {type: "ON", start: [Interface, "dev:fr2-core-02/if/eth1-10"], end: [Device, "dev:fr2-core-02"]}
+  - {type: "ON", start: [Interface, "fwctx:fr2-vs-inside/if/eth1"], end: [Device, "dev:fr2-vsx-01"]}
+  - {type: "ON", start: [Interface, "fwctx:fr2-vs-inside/if/eth2"], end: [Device, "dev:fr2-vsx-01"]}
+  - {type: "ON", start: [Interface, "fwctx:fr2-vs-partner/if/eth3"], end: [Device, "dev:fr2-vsx-01"]}
+  - {type: "ON", start: [Interface, "fwctx:fr2-vs-partner/if/eth4"], end: [Device, "dev:fr2-vsx-01"]}
+  - {type: "ON", start: [Interface, "dev:fr2-asr-01/if/gi0-0-0"], end: [Device, "dev:fr2-asr-01"]}
+  - {type: "ON", start: [Interface, "dev:fr2-asr-01/if/gi0-0-1"], end: [Device, "dev:fr2-asr-01"]}
+  - {type: "ON", start: [Interface, "dev:fr2-asr-02/if/gi0-0-0"], end: [Device, "dev:fr2-asr-02"]}
+  - {type: "ON", start: [Interface, "dev:fr2-asr-02/if/gi0-0-1"], end: [Device, "dev:fr2-asr-02"]}
+
+  # --- L2 stitching
+  - {type: REALIZES, start: [VlanInstance, "vlan:dev:fr2-core-01:100"], end: [BridgeDomain, "l2seg:fr2-servers"]}
+  - {type: REALIZES, start: [VlanInstance, "vlan:dev:fr2-core-02:100"], end: [BridgeDomain, "l2seg:fr2-servers"]}
+  - {type: REALIZES, start: [VlanInstance, "vlan:dev:fr2-ext-01:100"], end: [BridgeDomain, "l2seg:fr2-servers"]}
+  - {type: BOUND_TO, start: [Interface, "dev:fr2-core-01/if/vlan100"], end: [VlanInstance, "vlan:dev:fr2-core-01:100"]}
+  - {type: BOUND_TO, start: [Interface, "dev:fr2-core-02/if/vlan100"], end: [VlanInstance, "vlan:dev:fr2-core-02:100"]}
+
+  # --- HSRP: both SVIs hold their own address, the group holds the virtual one
+  - {type: MEMBER_OF, start: [Interface, "dev:fr2-core-01/if/vlan100"], end: [FhrpGroup, "fhrp:hsrp:fr2-inside:10.72.100.1"], props: {priority: 110, state: active}}
+  - {type: MEMBER_OF, start: [Interface, "dev:fr2-core-02/if/vlan100"], end: [FhrpGroup, "fhrp:hsrp:fr2-inside:10.72.100.1"], props: {priority: 90, state: standby}}
+  - {type: GATEWAY_FOR, start: [FhrpGroup, "fhrp:hsrp:fr2-inside:10.72.100.1"], end: [Prefix, "pfx:fr2-inside:10.72.100.0/24"]}
+  - {type: HAS_IP, start: [FhrpGroup, "fhrp:hsrp:fr2-inside:10.72.100.1"], end: [IpAddress, "ip:fr2-inside:10.72.100.1"]}
+  - {type: HAS_IP, start: [Interface, "dev:fr2-core-01/if/vlan100"], end: [IpAddress, "ip:fr2-inside:10.72.100.1"], props: {fhrp: hsrp, group: 100, state: active}}
+  - {type: HAS_IP, start: [Interface, "dev:fr2-core-02/if/vlan100"], end: [IpAddress, "ip:fr2-inside:10.72.100.1"], props: {fhrp: hsrp, group: 100, state: standby}}
+  - {type: HAS_IP, start: [Interface, "dev:fr2-core-01/if/vlan100"], end: [IpAddress, "ip:fr2-inside:10.72.100.2"]}
+  - {type: HAS_IP, start: [Interface, "dev:fr2-core-02/if/vlan100"], end: [IpAddress, "ip:fr2-inside:10.72.100.3"]}
+
+  # --- VRF membership and the remaining interface addresses
+  - {type: IN_VRF, start: [Interface, "dev:fr2-core-01/if/vlan100"], end: [VrfInstance, "vrf:dev:fr2-core-01:inside"]}
+  - {type: IN_VRF, start: [Interface, "dev:fr2-core-02/if/vlan100"], end: [VrfInstance, "vrf:dev:fr2-core-02:inside"]}
+  - {type: IN_VRF, start: [Interface, "dev:fr2-core-01/if/eth1-10"], end: [VrfInstance, "vrf:dev:fr2-core-01:inside"]}
+  - {type: IN_VRF, start: [Interface, "dev:fr2-core-02/if/eth1-10"], end: [VrfInstance, "vrf:dev:fr2-core-02:inside"]}
+  - {type: IN_VRF, start: [Interface, "dev:fr2-asr-01/if/gi0-0-0"], end: [VrfInstance, "vrf:dev:fr2-asr-01:default"]}
+  - {type: IN_VRF, start: [Interface, "dev:fr2-asr-01/if/gi0-0-1"], end: [VrfInstance, "vrf:dev:fr2-asr-01:default"]}
+  - {type: IN_VRF, start: [Interface, "dev:fr2-asr-02/if/gi0-0-0"], end: [VrfInstance, "vrf:dev:fr2-asr-02:default"]}
+  - {type: IN_VRF, start: [Interface, "dev:fr2-asr-02/if/gi0-0-1"], end: [VrfInstance, "vrf:dev:fr2-asr-02:default"]}
+  - {type: HAS_IP, start: [Interface, "dev:fr2-core-01/if/eth1-10"], end: [IpAddress, "ip:fr2-inside:10.72.1.1"]}
+  - {type: HAS_IP, start: [Interface, "dev:fr2-core-02/if/eth1-10"], end: [IpAddress, "ip:fr2-inside:10.72.1.2"]}
+  - {type: HAS_IP, start: [Interface, "dev:fr2-asr-01/if/gi0-0-0"], end: [IpAddress, "ip:fr2-transit:10.72.2.1"]}
+  - {type: HAS_IP, start: [Interface, "dev:fr2-asr-01/if/gi0-0-1"], end: [IpAddress, "ip:fr2-transit:198.51.100.2"]}
+  - {type: HAS_IP, start: [Interface, "dev:fr2-asr-02/if/gi0-0-0"], end: [IpAddress, "ip:fr2-transit:10.72.2.2"]}
+  - {type: HAS_IP, start: [Interface, "dev:fr2-asr-02/if/gi0-0-1"], end: [IpAddress, "ip:fr2-transit:198.51.100.6"]}
+
+  # --- VSX contexts (the shape collectors/checkpoint_gateway.py emits)
+  - {type: RUNS_ON, start: [FirewallInstance, "firewall-instance:fr2-vs-inside"], end: [Device, "dev:fr2-vsx-01"]}
+  - {type: RUNS_ON, start: [FirewallInstance, "firewall-instance:fr2-vs-partner"], end: [Device, "dev:fr2-vsx-01"]}
+  - {type: OWNED_BY, start: [VrfInstance, "vrf:fwctx:fr2-vs-inside:vs-1"], end: [Device, "dev:fr2-vsx-01"]}
+  - {type: OWNED_BY, start: [VrfInstance, "vrf:fwctx:fr2-vs-partner:vs-2"], end: [Device, "dev:fr2-vsx-01"]}
+  - {type: IN_CONTEXT, start: [VrfInstance, "vrf:fwctx:fr2-vs-inside:vs-1"], end: [FirewallInstance, "firewall-instance:fr2-vs-inside"]}
+  - {type: IN_CONTEXT, start: [VrfInstance, "vrf:fwctx:fr2-vs-partner:vs-2"], end: [FirewallInstance, "firewall-instance:fr2-vs-partner"]}
+  - {type: IN_VRF, start: [Interface, "fwctx:fr2-vs-inside/if/eth1"], end: [VrfInstance, "vrf:fwctx:fr2-vs-inside:vs-1"]}
+  - {type: IN_VRF, start: [Interface, "fwctx:fr2-vs-inside/if/eth2"], end: [VrfInstance, "vrf:fwctx:fr2-vs-inside:vs-1"]}
+  - {type: IN_VRF, start: [Interface, "fwctx:fr2-vs-partner/if/eth3"], end: [VrfInstance, "vrf:fwctx:fr2-vs-partner:vs-2"]}
+  - {type: IN_VRF, start: [Interface, "fwctx:fr2-vs-partner/if/eth4"], end: [VrfInstance, "vrf:fwctx:fr2-vs-partner:vs-2"]}
+  - {type: IN_CONTEXT, start: [Interface, "fwctx:fr2-vs-inside/if/eth1"], end: [FirewallInstance, "firewall-instance:fr2-vs-inside"]}
+  - {type: IN_CONTEXT, start: [Interface, "fwctx:fr2-vs-inside/if/eth2"], end: [FirewallInstance, "firewall-instance:fr2-vs-inside"]}
+  - {type: IN_CONTEXT, start: [Interface, "fwctx:fr2-vs-partner/if/eth3"], end: [FirewallInstance, "firewall-instance:fr2-vs-partner"]}
+  - {type: IN_CONTEXT, start: [Interface, "fwctx:fr2-vs-partner/if/eth4"], end: [FirewallInstance, "firewall-instance:fr2-vs-partner"]}
+  - {type: HAS_IP, start: [Interface, "fwctx:fr2-vs-inside/if/eth1"], end: [IpAddress, "ip:fr2-inside:10.72.1.6"]}
+  - {type: HAS_IP, start: [Interface, "fwctx:fr2-vs-inside/if/eth2"], end: [IpAddress, "ip:fr2-transit:10.72.2.6"]}
+  - {type: HAS_IP, start: [Interface, "fwctx:fr2-vs-partner/if/eth3"], end: [IpAddress, "ip:fr2-partner:10.72.3.6"]}
+  - {type: HAS_IP, start: [Interface, "fwctx:fr2-vs-partner/if/eth4"], end: [IpAddress, "ip:fr2-transit:10.72.2.14"]}
+  - {type: MEMBER_OF, start: [VrfInstance, "vrf:fwctx:fr2-vs-inside:vs-1"], end: [RoutingDomain, "rdom:fr2-inside"], props: {basis: declared}}
+  - {type: MEMBER_OF, start: [VrfInstance, "vrf:fwctx:fr2-vs-partner:vs-2"], end: [RoutingDomain, "rdom:fr2-partner"], props: {basis: declared}}
+  - {type: INTERCONNECTED_BY, start: [RoutingDomain, "rdom:fr2-inside"], end: [Device, "dev:fr2-vsx-01"], props: {derived: true, rule: fixture-demo, kind: firewall}}
+  - {type: INTERCONNECTED_BY, start: [RoutingDomain, "rdom:fr2-partner"], end: [Device, "dev:fr2-vsx-01"], props: {derived: true, rule: fixture-demo, kind: firewall}}
+  - {type: INTERCONNECTED_BY, start: [RoutingDomain, "rdom:fr2-transit"], end: [Device, "dev:fr2-vsx-01"], props: {derived: true, rule: fixture-demo, kind: firewall}}
+
+  # --- Check Point policy: each layer is bound to its virtual system object (configured)
+  - {type: ENFORCES, start: [Device, "dev:fr2-vs-inside"], end: [FwRulebase, "cp:mgmt-fr2:smc:layer-fr2-inside"], props: {configured: true}}
+  - {type: ENFORCES, start: [Device, "dev:fr2-vs-partner"], end: [FwRulebase, "cp:mgmt-fr2:smc:layer-fr2-partner"], props: {configured: true}}
+  - {type: HAS_RULE, start: [FwRulebase, "cp:mgmt-fr2:smc:layer-fr2-inside"], end: [FwRule, "cp:mgmt-fr2:smc:rule-inside-to-internet"]}
+  - {type: HAS_RULE, start: [FwRulebase, "cp:mgmt-fr2:smc:layer-fr2-partner"], end: [FwRule, "cp:mgmt-fr2:smc:rule-partner-to-internet"]}
+  - {type: SRC, start: [FwRule, "cp:mgmt-fr2:smc:rule-inside-to-internet"], end: [NetObject, "cp:mgmt-fr2:smc:obj-fr2-servers"]}
+  - {type: DST, start: [FwRule, "cp:mgmt-fr2:smc:rule-inside-to-internet"], end: [NetObject, "cp:mgmt-fr2:smc:obj-internet"]}
+  - {type: SVC, start: [FwRule, "cp:mgmt-fr2:smc:rule-inside-to-internet"], end: [SvcObject, "cp:mgmt-fr2:smc:svc-https"]}
+  - {type: SRC, start: [FwRule, "cp:mgmt-fr2:smc:rule-partner-to-internet"], end: [NetObject, "cp:mgmt-fr2:smc:obj-fr2-partner-servers"]}
+  - {type: DST, start: [FwRule, "cp:mgmt-fr2:smc:rule-partner-to-internet"], end: [NetObject, "cp:mgmt-fr2:smc:obj-internet"]}
+  - {type: SVC, start: [FwRule, "cp:mgmt-fr2:smc:rule-partner-to-internet"], end: [SvcObject, "cp:mgmt-fr2:smc:svc-https"]}
+  - {type: RESOLVES_TO, start: [NetObject, "cp:mgmt-fr2:smc:obj-fr2-servers"], end: [Prefix, "pfx:fr2-inside:10.72.100.0/24"]}
+  - {type: RESOLVES_TO, start: [NetObject, "cp:mgmt-fr2:smc:obj-fr2-partner-servers"], end: [Prefix, "pfx:fr2-partner:10.73.0.0/24"]}
+  - {type: RESOLVES_TO, start: [NetObject, "cp:mgmt-fr2:smc:obj-internet"], end: [Prefix, "pfx:fr2-transit:0.0.0.0/0"]}
+
+  # --- ASR pair: static default route and interface-overload source NAT
+  - {type: ORIGINATES, start: [VrfInstance, "vrf:dev:fr2-asr-01:default"], end: [Prefix, "pfx:fr2-transit:0.0.0.0/0"], props: {proto: static, next_hop: 198.51.100.1}}
+  - {type: ORIGINATES, start: [VrfInstance, "vrf:dev:fr2-asr-02:default"], end: [Prefix, "pfx:fr2-transit:0.0.0.0/0"], props: {proto: static, next_hop: 198.51.100.5}}
+  - {type: ORIGINATES, start: [VrfInstance, "vrf:dev:fr2-asr-01:default"], end: [Prefix, "pfx:fr2-transit:198.51.100.0/30"], props: {proto: connected}}
+  - {type: ORIGINATES, start: [VrfInstance, "vrf:dev:fr2-asr-02:default"], end: [Prefix, "pfx:fr2-transit:198.51.100.4/30"], props: {proto: connected}}
+  - {type: ORIGINATES, start: [VrfInstance, "vrf:dev:fr2-asr-01:default"], end: [Prefix, "pfx:fr2-transit:10.72.2.0/29"], props: {proto: connected}}
+  - {type: ORIGINATES, start: [VrfInstance, "vrf:dev:fr2-asr-02:default"], end: [Prefix, "pfx:fr2-transit:10.72.2.0/29"], props: {proto: connected}}
+  - {type: ENFORCES, start: [Device, "dev:fr2-asr-01"], end: [FwRulebase, "iosxe:fr2-asr-01:nat:inside-source"]}
+  - {type: ENFORCES, start: [Device, "dev:fr2-asr-02"], end: [FwRulebase, "iosxe:fr2-asr-02:nat:inside-source"]}
+  - {type: HAS_RULE, start: [FwRulebase, "iosxe:fr2-asr-01:nat:inside-source"], end: [NatRule, "iosxe:fr2-asr-01:nat:inside-source:1"]}
+  - {type: HAS_RULE, start: [FwRulebase, "iosxe:fr2-asr-02:nat:inside-source"], end: [NatRule, "iosxe:fr2-asr-02:nat:inside-source:1"]}
+  - {type: ORIG_SRC, start: [NatRule, "iosxe:fr2-asr-01:nat:inside-source:1"], end: [NetObject, "iosxe:fr2-asr-01:acl:NAT-INSIDE"]}
+  - {type: ORIG_SRC, start: [NatRule, "iosxe:fr2-asr-02:nat:inside-source:1"], end: [NetObject, "iosxe:fr2-asr-02:acl:NAT-INSIDE"]}
+  - {type: RESOLVES_TO, start: [NetObject, "iosxe:fr2-asr-01:acl:NAT-INSIDE"], end: [Prefix, "pfx:fr2-inside:10.72.0.0/16"]}
+  - {type: RESOLVES_TO, start: [NetObject, "iosxe:fr2-asr-02:acl:NAT-INSIDE"], end: [Prefix, "pfx:fr2-inside:10.72.0.0/16"]}
+  - {type: XLATE_SRC, start: [NatRule, "iosxe:fr2-asr-01:nat:inside-source:1"], end: [IpAddress, "ip:fr2-transit:198.51.100.2"]}
+  - {type: XLATE_SRC, start: [NatRule, "iosxe:fr2-asr-02:nat:inside-source:1"], end: [IpAddress, "ip:fr2-transit:198.51.100.6"]}
+
+  # --- addressing tree
+  - {type: IN, start: [IpAddress, "ip:fr2-inside:10.72.100.1"], end: [Prefix, "pfx:fr2-inside:10.72.100.0/24"]}
+  - {type: IN, start: [IpAddress, "ip:fr2-inside:10.72.100.2"], end: [Prefix, "pfx:fr2-inside:10.72.100.0/24"]}
+  - {type: IN, start: [IpAddress, "ip:fr2-inside:10.72.100.3"], end: [Prefix, "pfx:fr2-inside:10.72.100.0/24"]}
+  - {type: IN, start: [IpAddress, "ip:fr2-inside:10.72.100.50"], end: [Prefix, "pfx:fr2-inside:10.72.100.0/24"]}
+  - {type: IN, start: [IpAddress, "ip:fr2-inside:10.72.1.1"], end: [Prefix, "pfx:fr2-inside:10.72.1.0/29"]}
+  - {type: IN, start: [IpAddress, "ip:fr2-inside:10.72.1.2"], end: [Prefix, "pfx:fr2-inside:10.72.1.0/29"]}
+  - {type: IN, start: [IpAddress, "ip:fr2-inside:10.72.1.6"], end: [Prefix, "pfx:fr2-inside:10.72.1.0/29"]}
+  - {type: IN, start: [IpAddress, "ip:fr2-partner:10.72.3.6"], end: [Prefix, "pfx:fr2-partner:10.72.3.0/29"]}
+  - {type: IN, start: [IpAddress, "ip:fr2-transit:10.72.2.1"], end: [Prefix, "pfx:fr2-transit:10.72.2.0/29"]}
+  - {type: IN, start: [IpAddress, "ip:fr2-transit:10.72.2.2"], end: [Prefix, "pfx:fr2-transit:10.72.2.0/29"]}
+  - {type: IN, start: [IpAddress, "ip:fr2-transit:10.72.2.6"], end: [Prefix, "pfx:fr2-transit:10.72.2.0/29"]}
+  - {type: IN, start: [IpAddress, "ip:fr2-transit:10.72.2.14"], end: [Prefix, "pfx:fr2-transit:10.72.2.8/29"]}
+  - {type: IN, start: [IpAddress, "ip:fr2-transit:198.51.100.2"], end: [Prefix, "pfx:fr2-transit:198.51.100.0/30"]}
+  - {type: IN, start: [IpAddress, "ip:fr2-transit:198.51.100.6"], end: [Prefix, "pfx:fr2-transit:198.51.100.4/30"]}
+  - {type: WITHIN, start: [Prefix, "pfx:fr2-inside:10.72.100.0/24"], end: [Prefix, "pfx:fr2-inside:10.72.0.0/16"]}
+  - {type: WITHIN, start: [Prefix, "pfx:fr2-inside:10.72.1.0/29"], end: [Prefix, "pfx:fr2-inside:10.72.0.0/16"]}
+  - {type: ORIGINATES, start: [VrfInstance, "vrf:dev:fr2-core-01:inside"], end: [Prefix, "pfx:fr2-inside:10.72.100.0/24"], props: {proto: connected}}
+  - {type: ORIGINATES, start: [VrfInstance, "vrf:dev:fr2-core-02:inside"], end: [Prefix, "pfx:fr2-inside:10.72.100.0/24"], props: {proto: connected}}
+  - {type: ORIGINATES, start: [VrfInstance, "vrf:dev:fr2-core-01:inside"], end: [Prefix, "pfx:fr2-inside:10.72.1.0/29"], props: {proto: connected}}
+  - {type: ORIGINATES, start: [VrfInstance, "vrf:dev:fr2-core-02:inside"], end: [Prefix, "pfx:fr2-inside:10.72.1.0/29"], props: {proto: connected}}
+  - {type: ORIGINATES, start: [VrfInstance, "vrf:fwctx:fr2-vs-inside:vs-1"], end: [Prefix, "pfx:fr2-inside:10.72.1.0/29"], props: {proto: connected}}
+  - {type: ORIGINATES, start: [VrfInstance, "vrf:fwctx:fr2-vs-inside:vs-1"], end: [Prefix, "pfx:fr2-transit:10.72.2.0/29"], props: {proto: connected}}
+  - {type: ORIGINATES, start: [VrfInstance, "vrf:fwctx:fr2-vs-partner:vs-2"], end: [Prefix, "pfx:fr2-partner:10.72.3.0/29"], props: {proto: connected}}
+  - {type: ORIGINATES, start: [VrfInstance, "vrf:fwctx:fr2-vs-partner:vs-2"], end: [Prefix, "pfx:fr2-transit:10.72.2.8/29"], props: {proto: connected}}
+
+  # --- Equinix Fabric circuit: A end at FR2, Z end at PA3
+  - {type: A_END, start: [VirtualCircuit, "eqx:vc:fr2-pa3-00000000-0001"], end: [FabricPort, "eqx:port:fr2-00000000-0000-0001"], props: {link_protocol: dot1q, vlan_tag: 100}}
+  - {type: Z_END, start: [VirtualCircuit, "eqx:vc:fr2-pa3-00000000-0001"], end: [FabricPort, "eqx:port:pa3-00000000-0000-0001"], props: {link_protocol: dot1q, vlan_tag: 100}}

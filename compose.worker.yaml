@@ -1,0 +1,69 @@
+# Collection in its own container. Start the stack with both files:
+#
+#     podman compose -f compose.yaml -f compose.worker.yaml up -d --build
+#
+# Every later compose command names both files too (or set
+# COMPOSE_FILE=compose.yaml:compose.worker.yaml in the shell).
+#
+# With this file `app` serves requests only: SCHEDULER_ENABLED=false turns its scheduler
+# and executor off, and RUN_EXECUTION=queue turns a run triggered from the UI or
+# POST /api/runs into a `collect.run` job. `worker` runs `hst worker`: the scheduler,
+# the executor, and so every collection run, under its own mem_limit. A worker killed for
+# memory ends the collection it was running; `app` keeps serving.
+#
+# Both containers mount hst-data. The raw store, the side store, the progress records
+# and the cancel requests are files the two processes share.
+services:
+  app:
+    environment:
+      SCHEDULER_ENABLED: "false"
+      RUN_EXECUTION: queue
+  worker:
+    image: hst:local
+    # The image's own command refuses the "change-me" placeholder before it starts the
+    # server; a `command:` here replaces it, so the same check runs first. `$$` leaves the
+    # variables to the container's shell rather than to compose's interpolation.
+    command:
+      - sh
+      - -c
+      - >-
+        case "$$HST_SECRET_KEY$$NEO4J_PASSWORD$$POSTGRES_DSN" in *change-me*)
+        echo 'refusing to start: the placeholder credential "change-me" is still set' >&2;
+        exit 1;; esac; exec hst worker
+    # The same credentials and paths as `app` (compose.yaml), and nothing else.
+    environment:
+      POSTGRES_DSN: postgresql+asyncpg://hst:${HST_PG_PASSWORD:?set in .env}@pg:5432/hst
+      NEO4J_URI: ${NEO4J_URI_CONTAINER:-bolt://neo4j:7687}
+      HST_SECRET_KEY: ${HST_SECRET_KEY:?generate one with `hst secret-key`}
+      NEO4J_PASSWORD: ${NEO4J_PASSWORD:?set in .env}
+      HST_DATA_DIR: /srv/data
+      NEO4J_USER: ${NEO4J_USER:-neo4j}
+      NEO4J_DATABASE: ${NEO4J_DATABASE:-neo4j}
+    depends_on:
+      pg: { condition: service_healthy }
+      neo4j: { condition: service_started }
+      # `app` builds the hst:local image this service runs.
+      app: { condition: service_started }
+    restart: unless-stopped
+    # The executor cancels its jobs on SIGTERM. A cancelled run waits for its builder
+    # thread, which stops before its next device's load, between the stages of the load
+    # in flight or before the next row group of the side table it writes; its SSH
+    # collectors, the devices of a fetch window in flight included, stop before their
+    # next command, and a command already sent ends at its answer or its read timeout.
+    # One still running after 60 s is logged at ERROR and waited for. The kill at the
+    # end of the grace period ends it, and the run row then reads `orphaned by crash`
+    # once a worker starts again.
+    stop_grace_period: 90s
+    mem_limit: ${HST_WORKER_MEM_LIMIT:-4g}
+    cpus: 2.0
+    pids_limit: 2048
+    # The image's HEALTHCHECK asks the HTTP server on 8787, which this process does
+    # not run.
+    healthcheck:
+      disable: true
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: ["ALL"]
+    logging:
+      driver: json-file
+      options: { max-size: "10m" }
+    volumes: ["hst-data:/srv/data"]

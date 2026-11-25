@@ -1,0 +1,64 @@
+{
+  "cases": {
+    "iosxe/fixture/no_trailing_newline": {
+      "inter": "30b7ee2f8f240d64977be075a70b132b582f6f332754c5cbb4aa26943a50ba0e"
+    },
+    "iosxe/fixture/plain": {
+      "inter": "30b7ee2f8f240d64977be075a70b132b582f6f332754c5cbb4aa26943a50ba0e"
+    },
+    "iosxe/fixture/unicode": {
+      "inter": "cfb339742ca5e87190b7b15d1cad893b7ffebe7e800eac99e31150498f6936b3"
+    },
+    "iosxe/medium/no_trailing_newline": {
+      "inter": "91d95a544b519539a049e96a2ca664b91601c15bedbf1262b02286cb27235cd4"
+    },
+    "iosxe/medium/plain": {
+      "inter": "91d95a544b519539a049e96a2ca664b91601c15bedbf1262b02286cb27235cd4"
+    },
+    "iosxe/medium/unicode": {
+      "inter": "9402d110875ef5d29c603748214b1d273c14eb0a6f8f24644c0adfbc7e074322"
+    },
+    "iosxe/small/no_trailing_newline": {
+      "inter": "283e999085a543d37b853184b12f59a5cf293e961ebe339a500a73fae1a5381b"
+    },
+    "iosxe/small/plain": {
+      "inter": "283e999085a543d37b853184b12f59a5cf293e961ebe339a500a73fae1a5381b"
+    },
+    "iosxe/small/unicode": {
+      "inter": "a8372f2a93b746d998cb11f9730716fd8bda5dcf2e32ebca513943c7bfd2bc38"
+    },
+    "iosxe/tenth/plain": {
+      "inter": "c49784a2c66a420da59be2a9f7f21ca4518bc736b8e1d2a4258d713379c6abf2"
+    },
+    "nxos/fixture/no_trailing_newline": {
+      "inter": "7b1ca1ce9956a43ec7ecf1f408fee1bb9d4bb7ef27cd4ca7b4bdda167191883e"
+    },
+    "nxos/fixture/plain": {
+      "inter": "7b1ca1ce9956a43ec7ecf1f408fee1bb9d4bb7ef27cd4ca7b4bdda167191883e"
+    },
+    "nxos/fixture/unicode": {
+      "inter": "b6e1701f3b5f9537a7e2e60ee4b8582df3ad470e12384c35ecc779e616bc7bcd"
+    },
+    "nxos/medium/no_trailing_newline": {
+      "inter": "ca7815f2ec5fd3e87a146d5e0556f3f8b02609b739b2d2982738def82b757355"
+    },
+    "nxos/medium/plain": {
+      "inter": "ca7815f2ec5fd3e87a146d5e0556f3f8b02609b739b2d2982738def82b757355"
+    },
+    "nxos/medium/unicode": {
+      "inter": "47d97de6d6f7e85132f50deecb36d2f538acb275b6886f6067045c1d28821103"
+    },
+    "nxos/small/no_trailing_newline": {
+      "inter": "c16240ba27b6b8dd2c0eb9753a45f0c4db60ff404b3cf00735b79c567f664a9b"
+    },
+    "nxos/small/plain": {
+      "inter": "c16240ba27b6b8dd2c0eb9753a45f0c4db60ff404b3cf00735b79c567f664a9b"
+    },
+    "nxos/small/unicode": {
+      "inter": "ed00e43b29c3e07f437021c18ae7e21433a28b28a660d6ad089059315497a731"
+    }
+  },
+  "fields": [
+    "inter"
+  ]
+}

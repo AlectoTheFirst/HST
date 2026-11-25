@@ -1,0 +1,26 @@
+name: Bug
+description: Wrong behavior of the code
+labels: [bug]
+body:
+  - type: textarea
+    id: does
+    attributes:
+      label: What the code does
+      description: The function, the file and the line number
+    validations: { required: true }
+  - type: textarea
+    id: fails
+    attributes:
+      label: The case that fails
+      description: The input, the source or fixture, and the wrong output
+    validations: { required: true }
+  - type: textarea
+    id: fix
+    attributes:
+      label: Proposed fix
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      options: [high, medium, low]
+    validations: { required: true }

@@ -1,0 +1,38 @@
+.composer .advanced-toggle { font: 600 11px var(--ui); color: var(--muted2); background: none; border: 0; padding: 0; cursor: pointer; }
+.composer .advanced-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.composer-advanced { display: flex; flex: 1 0 100%; align-items: center; flex-wrap: wrap; gap: 8px; border-top: 1px solid var(--border); margin: 4px 0 0; padding: 8px 0 0; min-width: 0; }
+.mtu-controls { display: flex; flex: 1 0 100%; align-items: flex-end; flex-wrap: wrap; gap: 10px; border: 0; margin: 0; padding: 2px 0 0; min-width: 0; }
+.mtu-controls legend { color: var(--muted); font-size: 11px; padding-right: 8px; }
+.mtu-controls label { display: flex; flex-direction: column; gap: 4px; font-size: 11px; color: var(--muted); max-width: 100%; }
+.mtu-controls input { width: 150px; max-width: 100%; box-sizing: border-box; }
+.mtu-help { color: var(--muted); font-size: 11px; line-height: 1.5; overflow-wrap: anywhere; }
+.mtu-controls > .mtu-help { flex: 1 1 180px; padding: 5px 0; }
+.mtu-heading { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+.mtu-details { font-size: 12px; overflow-wrap: anywhere; }
+.mtu-details h4 { margin: 10px 0; font-size: 12px; }
+.mtu-stages { display: grid; gap: 8px; list-style: decimal; padding-left: 24px; }
+.mtu-stages > li { border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; }
+.mtu-stages p { margin: 6px 0; }
+.mtu-subject { font-family: var(--mono); }
+.mtu-limiting { border-left: 3px solid var(--accent) !important; }
+.mtu-observation { border-top: 1px solid var(--border); padding: 4px 0; }
+.mtu-evidence { display: grid; grid-template-columns: 135px minmax(0, 1fr); gap: 6px 12px; }
+.mtu-evidence dt { color: var(--muted); }
+.mtu-evidence dd { margin: 0; overflow-wrap: anywhere; }
+.pt-row .mtu-hop { display: inline; margin: 0; padding: 0; }
+.pt-row .mtu-leg { flex-wrap: nowrap; padding: 0; white-space: nowrap; }
+.st-label-mtu { display: block; font: 500 9px var(--mono); color: var(--muted2); letter-spacing: 0.02em; }
+.mtu-leg { display: flex; flex-wrap: wrap; gap: 4px 12px; padding: 4px 12px 8px; font-size: 11px; color: var(--muted); overflow-wrap: anywhere; }
+.mtu-leg-outcome { font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
+.mtu-leg.mtu-fail .mtu-leg-outcome { color: var(--bad); }
+.mtu-leg.mtu-pass .mtu-leg-outcome { color: var(--ok); }
+.mtu-leg.mtu-fits_known_limits .mtu-leg-outcome { color: color-mix(in srgb, var(--ok) 65%, var(--muted)); }
+.inspector-leg .mtu-leg { padding: 4px 0 0; flex-basis: 100%; }
+.mtu-hop { display: block; margin: 0 12px 8px 32px; padding-left: 8px; color: var(--muted); font-size: 11px; line-height: 1.5; overflow-wrap: anywhere; }
+@media (max-width: 600px) {
+  .mtu-controls { gap: 8px; }
+  .mtu-controls label { flex: 1 1 130px; }
+  .composer .mtu-controls input, .composer .mtu-controls select { width: 100%; min-width: 0; }
+  .mtu-evidence { grid-template-columns: minmax(0, 1fr); gap: 4px; }
+  .mtu-evidence dd { margin-bottom: 6px; }
+}

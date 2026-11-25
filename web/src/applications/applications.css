@@ -1,0 +1,38 @@
+.applications-page { display: grid; grid-template-columns: minmax(240px, 30%) 1fr; height: 100%; min-height: 0; }
+.application-catalog, .application-detail { overflow: auto; padding: 18px; }
+.application-catalog { border-right: 1px solid var(--line); background: var(--panel); }
+.application-catalog ul { list-style: none; padding: 0; }
+.application-catalog li button { width: 100%; text-align: left; padding: 10px; }
+.application-catalog li button span, .application-catalog li button.on { display: block; }
+.application-catalog li button.on { background: var(--sel); }
+.application-catalog textarea, .application-editor textarea, .application-draft textarea { width: 100%; }
+.application-detail > header, .application-section-heading, .application-row > div { display: flex; justify-content: space-between; gap: 12px; align-items: start; }
+.application-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; }
+.application-grid article, .application-row, .application-edit-card { border: 1px solid var(--line); border-radius: 8px; padding: 12px; margin: 10px 0; }
+.application-row code, .application-grid code { display: block; overflow-wrap: anywhere; }
+.application-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; }
+.application-fields label, .application-member label, .application-editor > label, .application-catalog label, .application-field { display: grid; gap: 5px; }
+.application-fields input, .application-fields select, .application-member input, .application-member select { width: 100%; }
+.application-member { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; align-items: end; border-top: 1px solid var(--line); padding: 10px 0; }
+.application-checks { display: flex; flex-wrap: wrap; gap: 10px; }
+.application-file { margin: 10px 0; }
+.application-empty { max-width: 520px; margin: 15vh auto; }
+@media (max-width: 720px) { .applications-page { grid-template-columns: 1fr; grid-template-rows: auto 1fr; } .application-catalog { max-height: 42vh; border-right: 0; border-bottom: 1px solid var(--line); } }
+.trace-connection-actions { position: relative; }
+.trace-connection-popover { position: absolute; z-index: 20; top: 100%; right: 0; width: min(420px, 80vw); padding: 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); box-shadow: 0 8px 30px rgb(0 0 0 / 20%); }
+.trace-connection-popover label { display: grid; gap: 4px; margin: 8px 0; }
+.yaml-editor { display: flex; border: 1px solid var(--line); border-radius: 4px; overflow: hidden; font-family: var(--mono); font-size: 13px; line-height: 1.5; }
+.yaml-editor-gutter { overflow: hidden; min-width: 4ch; padding: 4px 6px; text-align: right; color: var(--muted); background: var(--bg); user-select: none; }
+.yaml-editor-gutter span { display: block; }
+.yaml-editor-gutter span.error { color: var(--bad); font-weight: 600; }
+.application-catalog .yaml-editor textarea, .application-draft .yaml-editor textarea { flex: 1; width: auto; min-width: 0; border: 0; padding: 4px 6px; font: inherit; line-height: inherit; white-space: pre; overflow: auto; resize: vertical; }
+.application-structure table { width: 100%; border-collapse: collapse; }
+.application-structure th, .application-structure td { padding: 4px 6px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+.application-structure-mode { display: flex; gap: 6px; margin: 8px 0; }
+.application-structure-mode button[aria-pressed="true"] { background: var(--sel); font-weight: 600; }
+.application-structure-graph-head { display: flex; justify-content: space-between; gap: 12px; align-items: start; }
+.application-structure-canvas { height: 360px; border: 1px solid var(--border); border-radius: 6px; background: var(--panel2); touch-action: none; }
+.application-draft > label { display: block; margin: 12px 0 5px; }
+.resolution-report .application-row p { margin: 4px 0; }
+.resolution-bind { display: flex; flex-wrap: wrap; gap: 8px; align-items: end; }
+.resolution-bind label { display: grid; gap: 4px; }

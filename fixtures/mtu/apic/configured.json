@@ -1,0 +1,31 @@
+{
+  "fabricNode": [
+    {"fabricNode": {"attributes": {"dn": "topology/pod-1/node-101", "serial": "SYNTHETIC-ACI-101", "name": "synthetic-leaf", "role": "leaf", "version": "synthetic"}}}
+  ],
+  "l1PhysIf": [
+    {"l1PhysIf": {"attributes": {"dn": "topology/pod-1/node-101/sys/phys-[eth1/1]", "id": "eth1/1", "mtu": "9000"}}},
+    {"l1PhysIf": {"attributes": {"dn": "topology/pod-1/node-101/sys/phys-[eth1/2]", "id": "eth1/2", "mtu": "1500"}}}
+  ],
+  "pcAggrIf": [
+    {"pcAggrIf": {"attributes": {"dn": "topology/pod-1/node-101/sys/aggr-[po1]", "id": "po1", "mtu": "9000"}}}
+  ],
+  "pcRsMbrIfs": [
+    {"pcRsMbrIfs": {"attributes": {"dn": "topology/pod-1/node-101/sys/aggr-[po1]/rsmbrIfs-[topology/pod-1/node-101/sys/phys-[eth1/1]]", "tDn": "topology/pod-1/node-101/sys/phys-[eth1/1]"}}}
+  ],
+  "l2InstPol": [
+    {"l2InstPol": {"attributes": {"dn": "uni/fabric/l2pol-default", "fabricMtu": "9000"}}}
+  ],
+  "fvTenant": [
+    {"fvTenant": {"attributes": {"dn": "uni/tn-synthetic", "name": "synthetic"}}}
+  ],
+  "l3extOut": [
+    {"l3extOut": {"attributes": {"dn": "uni/tn-synthetic/out-external", "name": "external"}}}
+  ],
+  "l3extRsPathL3OutAtt": [
+    {"l3extRsPathL3OutAtt": {"attributes": {"dn": "uni/tn-synthetic/out-external/lnodep-leaf/lifp-direct/rspathL3OutAtt-[topology/pod-1/paths-101/pathep-[eth1/2]]", "tDn": "topology/pod-1/paths-101/pathep-[eth1/2]", "ifInstT": "l3-port", "addr": "192.0.2.1/30", "mtu": "1500"}}},
+    {"l3extRsPathL3OutAtt": {"attributes": {"dn": "uni/tn-synthetic/out-external/lnodep-leaf/lifp-aggregate/rspathL3OutAtt-[topology/pod-1/paths-101/pathep-[po1]]", "tDn": "topology/pod-1/paths-101/pathep-[po1]", "ifInstT": "ext-svi", "addr": "198.51.100.1/30", "encap": "vlan-200", "mtu": "inherit"}}}
+  ],
+  "l3extVirtualLIfP": [
+    {"l3extVirtualLIfP": {"attributes": {"dn": "uni/tn-synthetic/out-external/lnodep-leaf/lifp-floating/virtualLIfP-[topology/pod-1/node-101]-[vlan-201]", "nodeDn": "topology/pod-1/node-101", "ifInstT": "ext-svi", "addr": "203.0.113.1/30", "encap": "vlan-201", "mtu": "inherit"}}}
+  ]
+}

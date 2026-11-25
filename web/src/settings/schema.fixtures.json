@@ -1,0 +1,684 @@
+{
+  "apic": {
+    "$defs": {
+      "ClientCert": {
+        "description": "A client certificate and its key for mutual TLS, both as PEM text.\n\nThe two fields are required together. `key` is sealed as a source secret.",
+        "properties": {
+          "cert": {
+            "minLength": 1,
+            "title": "Cert",
+            "type": "string"
+          },
+          "key": {
+            "format": "password",
+            "title": "Key",
+            "type": "string",
+            "writeOnly": true
+          }
+        },
+        "required": [
+          "cert",
+          "key"
+        ],
+        "title": "ClientCert",
+        "type": "object"
+      },
+      "TlsConfig": {
+        "description": "Trust material for an HTTPS backend.\n\n`verify=False` turns off the check of the server certificate.\n\n`client_cert` adds mutual TLS, for example for APIC and Check Point. It is\nan optional block. `secret_paths_for_payload` in `app/sources.py` skips an\nabsent block, so a source without mutual TLS asks for no key.",
+        "properties": {
+          "verify": {
+            "default": true,
+            "title": "Verify",
+            "type": "boolean"
+          },
+          "ca_bundle": {
+            "default": "",
+            "title": "Ca Bundle",
+            "type": "string"
+          },
+          "client_cert": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/ClientCert"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          }
+        },
+        "title": "TlsConfig",
+        "type": "object"
+      },
+      "UserPassword": {
+        "properties": {
+          "method": {
+            "const": "user_password",
+            "default": "user_password",
+            "title": "Method",
+            "type": "string"
+          },
+          "username": {
+            "minLength": 1,
+            "title": "Username",
+            "type": "string"
+          },
+          "password": {
+            "format": "password",
+            "title": "Password",
+            "type": "string",
+            "writeOnly": true
+          }
+        },
+        "required": [
+          "username",
+          "password"
+        ],
+        "title": "UserPassword",
+        "type": "object"
+      }
+    },
+    "properties": {
+      "site_code": {
+        "default": "home",
+        "title": "Site Code",
+        "type": "string"
+      },
+      "routing_scope": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Sources with the same scope treat same-named VRFs as one network. Leave empty to use the site code.",
+        "title": "Routing scope"
+      },
+      "interval_s": {
+        "default": 0,
+        "description": "Collect this group's devices every this many seconds. 0 leaves the group to full cycles only.",
+        "title": "Collection interval (seconds)",
+        "type": "integer"
+      },
+      "capture_bgp": {
+        "default": "all",
+        "description": "Which BGP observations to read from this source's devices: all (observed session state and the per-session path tables), sessions (observed session state only), or none.",
+        "enum": [
+          "all",
+          "sessions",
+          "none"
+        ],
+        "title": "BGP observation capture",
+        "type": "string"
+      },
+      "source_name": {
+        "default": "",
+        "title": "Source Name",
+        "type": "string"
+      },
+      "l2fabric": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Canonical bridging identity, or null to inherit.",
+        "title": "L2 fabric"
+      },
+      "resolved_origins": {
+        "additionalProperties": {
+          "type": "string"
+        },
+        "title": "Resolved Origins",
+        "type": "object"
+      },
+      "url": {
+        "title": "Url",
+        "type": "string"
+      },
+      "auth": {
+        "$ref": "#/$defs/UserPassword"
+      },
+      "fabric": {
+        "title": "Fabric",
+        "type": "string"
+      },
+      "capture_mtu": {
+        "default": false,
+        "title": "Capture Mtu",
+        "type": "boolean"
+      },
+      "tls": {
+        "$ref": "#/$defs/TlsConfig",
+        "default": {
+          "verify": true,
+          "ca_bundle": "",
+          "client_cert": null
+        }
+      }
+    },
+    "required": [
+      "url",
+      "auth",
+      "fabric"
+    ],
+    "title": "ApicConfig",
+    "type": "object"
+  },
+  "nxos": {
+    "$defs": {
+      "SshAgent": {
+        "properties": {
+          "method": {
+            "const": "agent",
+            "default": "agent",
+            "title": "Method",
+            "type": "string"
+          },
+          "username": {
+            "minLength": 1,
+            "title": "Username",
+            "type": "string"
+          }
+        },
+        "required": [
+          "username"
+        ],
+        "title": "SshAgent",
+        "type": "object"
+      },
+      "SshJumpHost": {
+        "description": "A bastion with its own address, port, credentials and pinned host key.\n\nThe credentials of the device are never sent to the bastion. The host key\nis pinned at the first contact.",
+        "properties": {
+          "host": {
+            "minLength": 1,
+            "title": "Host",
+            "type": "string"
+          },
+          "port": {
+            "default": 22,
+            "title": "Port",
+            "type": "integer"
+          },
+          "auth": {
+            "discriminator": {
+              "mapping": {
+                "agent": "#/$defs/SshAgent",
+                "password": "#/$defs/SshPassword",
+                "private_key": "#/$defs/SshPrivateKey"
+              },
+              "propertyName": "method"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/$defs/SshPassword"
+              },
+              {
+                "$ref": "#/$defs/SshPrivateKey"
+              },
+              {
+                "$ref": "#/$defs/SshAgent"
+              }
+            ],
+            "title": "Auth"
+          },
+          "host_key": {
+            "default": "",
+            "title": "Host Key",
+            "type": "string"
+          }
+        },
+        "required": [
+          "host",
+          "auth"
+        ],
+        "title": "SshJumpHost",
+        "type": "object"
+      },
+      "SshPassword": {
+        "properties": {
+          "method": {
+            "const": "password",
+            "default": "password",
+            "title": "Method",
+            "type": "string"
+          },
+          "username": {
+            "minLength": 1,
+            "title": "Username",
+            "type": "string"
+          },
+          "password": {
+            "format": "password",
+            "title": "Password",
+            "type": "string",
+            "writeOnly": true
+          }
+        },
+        "required": [
+          "username",
+          "password"
+        ],
+        "title": "SshPassword",
+        "type": "object"
+      },
+      "SshPrivateKey": {
+        "properties": {
+          "method": {
+            "const": "private_key",
+            "default": "private_key",
+            "title": "Method",
+            "type": "string"
+          },
+          "username": {
+            "minLength": 1,
+            "title": "Username",
+            "type": "string"
+          },
+          "private_key": {
+            "format": "password",
+            "title": "Private Key",
+            "type": "string",
+            "writeOnly": true
+          },
+          "passphrase": {
+            "default": "",
+            "format": "password",
+            "title": "Passphrase",
+            "type": "string",
+            "writeOnly": true
+          }
+        },
+        "required": [
+          "username",
+          "private_key"
+        ],
+        "title": "SshPrivateKey",
+        "type": "object"
+      }
+    },
+    "properties": {
+      "site_code": {
+        "default": "home",
+        "title": "Site Code",
+        "type": "string"
+      },
+      "routing_scope": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Sources with the same scope treat same-named VRFs as one network. Leave empty to use the site code.",
+        "title": "Routing scope"
+      },
+      "interval_s": {
+        "default": 0,
+        "description": "Collect this group's devices every this many seconds. 0 leaves the group to full cycles only.",
+        "title": "Collection interval (seconds)",
+        "type": "integer"
+      },
+      "capture_bgp": {
+        "default": "all",
+        "description": "Which BGP observations to read from this source's devices: all (observed session state and the per-session path tables), sessions (observed session state only), or none.",
+        "enum": [
+          "all",
+          "sessions",
+          "none"
+        ],
+        "title": "BGP observation capture",
+        "type": "string"
+      },
+      "source_name": {
+        "default": "",
+        "title": "Source Name",
+        "type": "string"
+      },
+      "l2fabric": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Canonical bridging identity, or null to inherit.",
+        "title": "L2 fabric"
+      },
+      "resolved_origins": {
+        "additionalProperties": {
+          "type": "string"
+        },
+        "title": "Resolved Origins",
+        "type": "object"
+      },
+      "host": {
+        "default": "",
+        "title": "Host",
+        "type": "string"
+      },
+      "auth": {
+        "discriminator": {
+          "mapping": {
+            "agent": "#/$defs/SshAgent",
+            "password": "#/$defs/SshPassword",
+            "private_key": "#/$defs/SshPrivateKey"
+          },
+          "propertyName": "method"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/$defs/SshPassword"
+          },
+          {
+            "$ref": "#/$defs/SshPrivateKey"
+          },
+          {
+            "$ref": "#/$defs/SshAgent"
+          }
+        ],
+        "title": "Auth"
+      },
+      "port": {
+        "default": 22,
+        "title": "Port",
+        "type": "integer"
+      },
+      "jump_host": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/SshJumpHost"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null
+      },
+      "host_key": {
+        "default": "",
+        "title": "Host Key",
+        "type": "string"
+      },
+      "transport": {
+        "default": "asyncssh",
+        "enum": [
+          "asyncssh",
+          "paramiko"
+        ],
+        "title": "Transport",
+        "type": "string"
+      },
+      "fresh_connection_per_command": {
+        "default": false,
+        "description": "Open a fresh SSH connection for each command. Enable for devices that close the connection after one command. Adds a login for every command and can make collection slower.",
+        "title": "Fresh Connection Per Command",
+        "type": "boolean"
+      },
+      "channel": {
+        "default": "exec",
+        "description": "How commands reach the device. 'exec' opens one exec channel per command. 'shell' opens one interactive shell for the whole fetch and delimits each command by the device's prompt, so a login banner arrives once and reaches no parser. Use 'shell' for a device that answers no exec channel, or that prints a banner into every one.",
+        "enum": [
+          "exec",
+          "shell"
+        ],
+        "title": "Channel",
+        "type": "string"
+      },
+      "timeout": {
+        "default": 120,
+        "title": "Timeout",
+        "type": "integer"
+      },
+      "connect_timeout": {
+        "default": 10,
+        "title": "Connect Timeout",
+        "type": "integer"
+      },
+      "read_timeout": {
+        "default": 300,
+        "title": "Read Timeout",
+        "type": "integer"
+      },
+      "capture_mtu": {
+        "default": false,
+        "title": "Capture Mtu",
+        "type": "boolean"
+      },
+      "json_native": {
+        "default": false,
+        "title": "Json Native",
+        "type": "boolean"
+      }
+    },
+    "required": [
+      "auth"
+    ],
+    "title": "NxosConfig",
+    "type": "object"
+  },
+  "checkpoint": {
+    "$defs": {
+      "ApiKeyCredential": {
+        "properties": {
+          "method": {
+            "const": "api_key",
+            "default": "api_key",
+            "title": "Method",
+            "type": "string"
+          },
+          "key": {
+            "format": "password",
+            "title": "Key",
+            "type": "string",
+            "writeOnly": true
+          }
+        },
+        "required": [
+          "key"
+        ],
+        "title": "ApiKeyCredential",
+        "type": "object"
+      },
+      "ClientCert": {
+        "description": "A client certificate and its key for mutual TLS, both as PEM text.\n\nThe two fields are required together. `key` is sealed as a source secret.",
+        "properties": {
+          "cert": {
+            "minLength": 1,
+            "title": "Cert",
+            "type": "string"
+          },
+          "key": {
+            "format": "password",
+            "title": "Key",
+            "type": "string",
+            "writeOnly": true
+          }
+        },
+        "required": [
+          "cert",
+          "key"
+        ],
+        "title": "ClientCert",
+        "type": "object"
+      },
+      "TlsConfig": {
+        "description": "Trust material for an HTTPS backend.\n\n`verify=False` turns off the check of the server certificate.\n\n`client_cert` adds mutual TLS, for example for APIC and Check Point. It is\nan optional block. `secret_paths_for_payload` in `app/sources.py` skips an\nabsent block, so a source without mutual TLS asks for no key.",
+        "properties": {
+          "verify": {
+            "default": true,
+            "title": "Verify",
+            "type": "boolean"
+          },
+          "ca_bundle": {
+            "default": "",
+            "title": "Ca Bundle",
+            "type": "string"
+          },
+          "client_cert": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/ClientCert"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          }
+        },
+        "title": "TlsConfig",
+        "type": "object"
+      },
+      "UserPassword": {
+        "properties": {
+          "method": {
+            "const": "user_password",
+            "default": "user_password",
+            "title": "Method",
+            "type": "string"
+          },
+          "username": {
+            "minLength": 1,
+            "title": "Username",
+            "type": "string"
+          },
+          "password": {
+            "format": "password",
+            "title": "Password",
+            "type": "string",
+            "writeOnly": true
+          }
+        },
+        "required": [
+          "username",
+          "password"
+        ],
+        "title": "UserPassword",
+        "type": "object"
+      }
+    },
+    "properties": {
+      "site_code": {
+        "default": "home",
+        "title": "Site Code",
+        "type": "string"
+      },
+      "routing_scope": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Sources with the same scope treat same-named VRFs as one network. Leave empty to use the site code.",
+        "title": "Routing scope"
+      },
+      "interval_s": {
+        "default": 0,
+        "description": "Collect this group's devices every this many seconds. 0 leaves the group to full cycles only.",
+        "title": "Collection interval (seconds)",
+        "type": "integer"
+      },
+      "capture_bgp": {
+        "default": "all",
+        "description": "Which BGP observations to read from this source's devices: all (observed session state and the per-session path tables), sessions (observed session state only), or none.",
+        "enum": [
+          "all",
+          "sessions",
+          "none"
+        ],
+        "title": "BGP observation capture",
+        "type": "string"
+      },
+      "source_name": {
+        "default": "",
+        "title": "Source Name",
+        "type": "string"
+      },
+      "l2fabric": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Canonical bridging identity, or null to inherit.",
+        "title": "L2 fabric"
+      },
+      "resolved_origins": {
+        "additionalProperties": {
+          "type": "string"
+        },
+        "title": "Resolved Origins",
+        "type": "object"
+      },
+      "host": {
+        "title": "Host",
+        "type": "string"
+      },
+      "port": {
+        "default": 443,
+        "title": "Port",
+        "type": "integer"
+      },
+      "auth": {
+        "discriminator": {
+          "mapping": {
+            "api_key": "#/$defs/ApiKeyCredential",
+            "user_password": "#/$defs/UserPassword"
+          },
+          "propertyName": "method"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/$defs/ApiKeyCredential"
+          },
+          {
+            "$ref": "#/$defs/UserPassword"
+          }
+        ],
+        "title": "Auth"
+      },
+      "domain": {
+        "default": "",
+        "title": "Domain",
+        "type": "string"
+      },
+      "tls": {
+        "$ref": "#/$defs/TlsConfig",
+        "default": {
+          "verify": true,
+          "ca_bundle": "",
+          "client_cert": null
+        }
+      }
+    },
+    "required": [
+      "host",
+      "auth"
+    ],
+    "title": "CpConfig",
+    "type": "object"
+  }
+}

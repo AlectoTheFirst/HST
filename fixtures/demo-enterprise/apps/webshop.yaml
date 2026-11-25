@@ -1,0 +1,101 @@
+schema_version: 1
+kind: BusinessApplication
+id: webshop-production
+name: Webshop
+description: "Customer-facing shop: office clients to the NetScaler VIP, web to API, API to PostgreSQL."
+environment: production
+state: draft
+services:
+  - id: webshop-service
+    name: Webshop service
+    connection_ids:
+      - clients-to-vip
+      - web-to-api
+      - api-to-db
+    component_roles:
+      - group_id: frontend
+        role: endpoint
+groups:
+  - id: office-clients
+    name: Office clients
+    members:
+      - id: vienna-users
+        address: 10.11.10.0/24
+      - id: warsaw-users
+        address: 10.13.10.0/24
+      - id: zurich-users
+        address: 10.16.10.0/24
+  - id: frontend
+    name: Webshop VIP
+    members:
+      - id: webshop-vip
+        address: 10.1.30.10
+  - id: web
+    name: Web tier
+    members:
+      - id: webshop-web-01
+        address: 10.1.10.11
+      - id: webshop-web-02
+        address: 10.1.10.12
+      - id: webshop-web-03
+        address: 10.1.10.13
+      - id: webshop-web-04
+        address: 10.1.10.14
+      - id: webshop-web-05
+        address: 10.1.10.15
+  - id: api
+    name: API tier
+    members:
+      - id: webshop-api-01
+        address: 10.1.11.11
+      - id: webshop-api-02
+        address: 10.1.11.12
+      - id: webshop-api-03
+        address: 10.1.11.13
+      - id: webshop-api-04
+        address: 10.1.11.14
+      - id: webshop-api-05
+        address: 10.1.11.15
+  - id: db
+    name: Database
+    members:
+      - id: webshop-db-01
+        address: 10.1.12.11
+      - id: webshop-db-02
+        address: 10.1.12.12
+      - id: webshop-db-03
+        address: 10.1.12.13
+connections:
+  - id: clients-to-vip
+    name: Office clients to VIP
+    source: office-clients
+    destination: frontend
+    protocol: tcp
+    destination_ports:
+      - 443
+    success: session
+    destination_condition:
+      kind: member
+      member: webshop-vip
+  - id: web-to-api
+    name: Web to API
+    source: web
+    destination: api
+    protocol: tcp
+    destination_ports:
+      - 8080
+    success: round-trip
+    destination_condition:
+      kind: member
+      member: webshop-api-01
+  - id: api-to-db
+    name: API to database
+    source: api
+    destination: db
+    protocol: tcp
+    destination_ports:
+      - 5432
+    success: session
+    destination_condition:
+      kind: member
+      member: webshop-db-01

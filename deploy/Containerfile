@@ -1,0 +1,122 @@
+# Each base image has a tag and a digest. Dependabot updates both.
+FROM node:26-alpine@sha256:2d984a15c9b54fd0aeb608b8e0d0d83529eb34d2966db27a1fb4f1edc3d298a3 AS web-build
+WORKDIR /web
+COPY web/package*.json ./
+RUN npm ci
+COPY web/ ./
+RUN npm run build
+
+# tools/build_symbolic_wheels.py builds the dd.cudd wheel from the inputs that
+# third_party/symbolic/build-lock.json pins by SHA-256.
+FROM python:3.14-slim@sha256:ce40764625a4ff50df3548277632e7f96c4e77fe75fa848aae9885476e7df5a4 AS symbolic-build
+WORKDIR /build
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends build-essential make patch \
+    && rm -rf /var/lib/apt/lists/*
+COPY tools/build_symbolic_wheels.py tools/build_symbolic_wheels.py
+COPY third_party/symbolic/ third_party/symbolic/
+RUN python tools/build_symbolic_wheels.py --work-dir /tmp/hst-symbolic-build --out-dir /wheelhouse \
+    && python -c 'import json,pathlib; d=json.loads(pathlib.Path("/wheelhouse/symbolic-artifacts.json").read_text()); assert (pathlib.Path("/wheelhouse") / d["wheel"]).is_file()'
+
+# The uv version matches the pin in .github/workflows/ci.yml.
+FROM ghcr.io/astral-sh/uv:0.12.0@sha256:606e70c71c852d03f611b1e56a195d08648507018a7057fab82c4974c4eae105 AS uv
+
+FROM python:3.14-slim@sha256:ce40764625a4ff50df3548277632e7f96c4e77fe75fa848aae9885476e7df5a4 AS runtime
+WORKDIR /srv
+
+# pysaml2 verifies XML signatures with the xmlsec1 binary.
+# `apt-get upgrade` installs the Debian security fixes that are newer than the base image.
+# release.yml passes its run id as APT_REFRESH. A new value rebuilds this layer.
+ARG APT_REFRESH=unset
+RUN echo "apt refresh ${APT_REFRESH}" \
+    && apt-get update \
+    && apt-get upgrade -y --no-install-recommends \
+    && apt-get install -y --no-install-recommends xmlsec1 \
+    && rm -rf /var/lib/apt/lists/*
+
+# The extras of pyproject.toml that the image installs.
+ARG EXTRAS="app,agent,sidestore,symbolic,mcp"
+
+# compose.yaml and release.yml pass VERSION and VCS_REF. The image labels hold both.
+ARG VERSION="0.1.0"
+ARG VCS_REF="unknown"
+
+# uv exports the requirements from uv.lock with hashes. pip installs them with
+# `--require-hashes` and `--no-deps`. The export holds the full dependency set with
+# the override-dependencies of [tool.uv] in pyproject.toml, which pip does not read.
+# The 2 RUN steps that call uv mount the binary from the stage `uv`. No layer of the
+# runtime image holds it.
+
+# The dependency layer installs from pyproject.toml and uv.lock before src is copied.
+# hatchling reads the version from `__version__` in src/hst/__init__.py. The layer
+# writes a stub of that file.
+COPY pyproject.toml uv.lock README.md LICENSE ./
+COPY third_party/symbolic/licenses/ /usr/share/licenses/hst-symbolic/
+COPY --from=symbolic-build /wheelhouse/ /tmp/symbolic-wheelhouse/
+COPY --from=symbolic-build /wheelhouse/symbolic-artifacts.json /usr/share/hst/symbolic-build.json
+RUN --mount=type=bind,from=uv,source=/uv,target=/tmp/uv \
+    mkdir -p src/hst \
+    && printf '__version__ = "0.0.0"\n' > src/hst/__init__.py \
+    && set -eu; flags=""; \
+       for e in $(echo "$EXTRAS" | tr ',' ' '); do flags="$flags --extra $e"; done; \
+       /tmp/uv export --frozen --no-emit-project --no-dev $flags -o /tmp/requirements.txt \
+    && pip install --no-cache-dir --no-deps --require-hashes -r /tmp/requirements.txt \
+    && rm -f /tmp/requirements.txt \
+    && wheel=$(find /tmp/symbolic-wheelhouse -maxdepth 1 -name 'dd-0.6.0-*.whl' -print -quit) \
+    && test -n "$wheel" \
+    && pip install --no-cache-dir --no-deps --no-index "$wheel" \
+    && python -c 'import gc,dd.cudd as c; assert c.__version__ == "3.0.0"; b=c.BDD(); b.configure(reordering=False); b.declare("x", "y", "z"); x=b.var("x"); y=b.var("y"); z=b.var("z"); f=x & y; assert b.exist(["y"], f) == x; assert b.let({"x": "z"}, f) == (z & y); assert b.support(f) == {"x", "y"}; del f,x,y,z; gc.collect(); assert len(b) == 0' \
+    && rm -rf /tmp/symbolic-wheelhouse
+
+COPY src ./src
+# pip installs the hst package without dependencies. The dependency layer holds them.
+RUN --mount=type=bind,from=uv,source=/uv,target=/tmp/uv \
+    /tmp/uv export --frozen --no-emit-project --only-group build -o /tmp/build-requirements.txt \
+    && pip install --no-cache-dir --no-deps --require-hashes --target /tmp/build-env -r /tmp/build-requirements.txt \
+    && PYTHONPATH=/tmp/build-env pip install --no-cache-dir --no-deps --no-build-isolation --force-reinstall . \
+    && rm -rf /tmp/build-env /tmp/build-requirements.txt
+# The runtime image holds no pip, setuptools or msgpack. No dependency imports
+# pkg_resources.
+RUN pip uninstall -y msgpack setuptools pip
+COPY --from=web-build /web/dist ./web/dist
+
+# The synthetic demo estate for `hst load-fixture`.
+COPY fixtures/demo-enterprise /usr/share/hst/demo-enterprise
+
+# core/config.py reads HST_BUILD_REVISION as `hst_build_revision`. /api/health reports it.
+ENV HST_BUILD_REVISION=${VCS_REF}
+
+# The image runs as the user hst with uid 10001. The user owns /srv/data only.
+# A named volume mounted at /srv/data takes the ownership of that directory.
+# /srv/web/dist and /srv/src belong to root.
+RUN useradd --system --create-home --uid 10001 hst \
+    && mkdir -p /srv/data \
+    && chown -R hst:hst /srv/data
+USER hst
+
+LABEL org.opencontainers.image.title="hst" \
+      org.opencontainers.image.description="Network digital twin on Neo4j" \
+      org.opencontainers.image.source="https://github.com/AlectoTheFirst/HST" \
+      org.opencontainers.image.revision="${VCS_REF}" \
+      org.opencontainers.image.version="${VERSION}" \
+      org.opencontainers.image.licenses="LicenseRef-Proprietary"
+
+EXPOSE 8787
+# The probe requests /api/livez on the loopback address. It uses HTTPS without
+# certificate verification when TLS_CERT_FILE is set.
+HEALTHCHECK --interval=15s --timeout=5s --start-period=30s --retries=5 \
+  CMD ["python", "-c", "import os, ssl, urllib.request as u; tls = bool(os.environ.get('TLS_CERT_FILE')); ctx = ssl._create_unverified_context() if tls else None; u.urlopen(('https' if tls else 'http') + '://127.0.0.1:8787/api/livez', timeout=4, context=ctx)"]
+# The command exits with status 1 when HST_SECRET_KEY, NEO4J_PASSWORD or POSTGRES_DSN
+# holds "change-me", the placeholder of .env.example and core/config.py. The Helm
+# chart sets `args` and checks the Secret values in templates/_validate.tpl.
+CMD ["sh", "-c", "case \"$HST_SECRET_KEY$NEO4J_PASSWORD$POSTGRES_DSN\" in *change-me*) echo 'refusing to start: the placeholder credential \"change-me\" is still set' >&2; exit 1;; esac; exec hst serve --host 0.0.0.0 --port 8787"]
+
+# tools/smoke_image.py checks the packaged routes and assets in the runtime image.
+# The final stage copies the result file of the check.
+FROM runtime AS smoke
+RUN --mount=type=bind,source=tools/smoke_image.py,target=/tmp/smoke_image.py \
+    python /tmp/smoke_image.py /tmp/hst-smoke.ok
+
+FROM runtime AS final
+COPY --from=smoke /tmp/hst-smoke.ok /usr/share/hst/smoke.ok
+USER hst

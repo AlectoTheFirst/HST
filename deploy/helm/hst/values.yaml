@@ -1,0 +1,347 @@
+nameOverride: ""
+fullnameOverride: ""
+
+image:
+  repository: hst
+  tag: ""            # empty takes .Chart.AppVersion
+  # A sha256 digest. It wins over tag.
+  digest: ""
+  # `make k8s-image` gives each build a new tag, so IfNotPresent pulls every new build.
+  pullPolicy: IfNotPresent
+  # The image sets HST_BUILD_REVISION to the git SHA of its build, and /api/health
+  # reports it. A value here overrides it.
+  buildRevision: ""
+# The names of kubernetes.io/dockerconfigjson Secrets for every pod of the chart. A
+# private registry requires them.
+#   imagePullSecrets:
+#     - name: harbor-pull
+imagePullSecrets: []
+
+# The uid, the gid and the fsGroup of the application. The app Deployment, the worker
+# Deployment and the backup CronJob read them. The backup reads the 0700 raw-snapshot
+# directories as this uid.
+#
+# The uid must equal the uid of the image (deploy/Containerfile). After a change, the
+# files of an existing data volume need a chown.
+podSecurityContext:
+  runAsUser: 10001
+  runAsGroup: 10001
+  fsGroup: 10001
+
+app:
+  replicaCount: 1
+  # More than 1 replica is supported. The migrations run in a Job. Without the worker a
+  # collection run executes in the app pod that received the trigger, and a Postgres
+  # partial unique index allows 1 run per source across the pods.
+  #
+  # Without the worker the memory limit covers collection in this pod. A load holds about
+  # 1.1 GB for an IOS-XE full-table device and about 3.6 GB for an NX-OS one. A node with
+  # less free memory than the limit can end the pod under memory pressure.
+  resources:
+    requests: { cpu: 100m, memory: 256Mi }
+    limits:   { cpu: "2",  memory: 4Gi }
+  # The securityContext of the app and worker containers. runAsUser and runAsGroup come
+  # from `podSecurityContext` above, and a value for either here is ignored.
+  securityContext:
+    runAsNonRoot: true
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    capabilities: { drop: ["ALL"] }
+    seccompProfile: { type: RuntimeDefault }
+  podAnnotations: {}
+  # With ingress.enabled=true the chart sets HST_FORWARDED_ALLOW_IPS of the app pod to
+  # this value. It lists the addresses and networks whose X-Forwarded-For and
+  # X-Forwarded-Proto the app accepts, separated by commas, or "*". With "" the app
+  # trusts no proxy. Every request then has the address of the ingress pod and the scheme
+  # http, so all users share 1 login rate-limit bucket, the audit source is the ingress
+  # address and the app sends no HSTS header.
+  #
+  # The default is the private and loopback ranges, which hold the pod network of common
+  # clusters. A peer inside the list chooses its own client address, so the chart
+  # renders a value here only with networkPolicy.enabled=true and a peer in
+  # networkPolicy.ingressFrom. The ingress must replace the X-Forwarded-For of a client.
+  # If the ingress appends to it, a client inside the list chooses its own address.
+  #
+  # An HST_FORWARDED_ALLOW_IPS entry in extraEnv below replaces this value, and the chart
+  # does not check that entry. An entry from envFrom does not replace this value.
+  forwardedAllowIps: "10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,100.64.0.0/10,fc00::/7,127.0.0.1,::1"
+  # The origin that users reach (HST_PUBLIC_URL), for example https://hst.example.net,
+  # with no path. SAML and OIDC sign-in need it. Empty with ingress.enabled=true gives
+  # https://<ingress.host> when ingress.tls.enabled is true and http://<ingress.host>
+  # otherwise.
+  publicUrl: ""
+  # Appended after the chart's own env, so these override it. Standard core/v1 EnvVar
+  # entries, valueFrom included.
+  extraEnv: []
+  # Standard core/v1 EnvFromSource entries (configMapRef / secretRef).
+  envFrom: []
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+  # The volume of the raw snapshots. The collectors cannot rebuild them.
+  persistence:
+    enabled: true
+    size: 5Gi
+    storageClass: ""     # "" uses the cluster default
+    accessMode: ReadWriteOnce
+
+# With enabled=false the app pod runs the scheduler, the job executor and every
+# collection run beside the API. With enabled=true a second Deployment runs `hst worker`
+# (the scheduler and the executor, no HTTP server) under its own memory limit, and the app
+# pod serves requests and queues the triggered runs (SCHEDULER_ENABLED=false,
+# RUN_EXECUTION=queue).
+#
+# Both pods mount the data volume. With app.persistence.accessMode ReadWriteOnce the
+# worker runs on the app pod's node, as the backup CronJob does. With ReadWriteMany the
+# worker has no required node. The chart refuses ReadWriteOncePod and an emptyDir
+# (app.persistence.enabled=false) with the worker.
+worker:
+  enabled: false
+  replicaCount: 1
+  resources:
+    requests: { cpu: 250m, memory: 1Gi }
+    limits:   { cpu: "2",  memory: 4Gi }
+  # The executor cancels its jobs on SIGTERM. A cancelled run waits for its builder thread
+  # before it records the outcome. The thread stops before the load of its next device,
+  # between the stages of the load in flight or before the next row group of the side
+  # table that it writes. Its SSH collectors stop before their next command, and a sent
+  # command ends at its answer or at its read timeout. A thread that still runs after
+  # 60 s (runs_exec.DRAIN_TIMEOUT_S) is logged at ERROR and waited for. The kill at the
+  # end of the grace period ends a thread that has not stopped, and the run row then
+  # reads `orphaned by crash` once a worker starts again.
+  terminationGracePeriodSeconds: 90
+  podAnnotations: {}
+  # The worker receives app.extraEnv and then these entries.
+  extraEnv: []
+  envFrom: []
+  nodeSelector: {}
+  # Empty takes app.tolerations. A value here replaces app.tolerations.
+  tolerations: []
+  # Empty gives a required affinity to the app pod's node on a ReadWriteOnce volume. A
+  # value here replaces it.
+  affinity: {}
+
+analysis:
+  # The standard profile runs the engine legacy-v1. The enterprise profile runs
+  # symbolic-v2 in 1 isolated worker process, so workers is 1.
+  # The resources of a profile override app.resources. For the memory limit the larger of
+  # the 2 values applies. The analysis worker runs in the app pod beside collection, so
+  # enterprise sets the limit to 6Gi, the 4Gi of the app plus the 2048 MiB of the worker.
+  # clockQuality and clockAssumption are the clock declaration of the collector host
+  # (COLLECTOR_CLOCK_QUALITY, COLLECTOR_CLOCK_ASSUMPTION). The quality trusted requires
+  # the assumption that states the basis for the trust. The evidence keys are the
+  # evidence policy of the symbolic analysis (ANALYSIS_EVIDENCE_*). The consistency
+  # stable-window-assumption requires evidenceStableWindowAssumption.
+  profile: standard
+  profiles:
+    standard: { engine: legacy-v1, workers: 1, memoryMb: 1024, timeoutSeconds: 120, cacheMb: 10240, resultMb: 10240, resources: {}, clockQuality: unknown, clockAssumption: "", evidenceMaxAgeSeconds: 3600, evidenceMaxSkewSeconds: 300, evidenceConsistency: bounded-window, evidenceStableWindowAssumption: "" }
+    enterprise: { engine: symbolic-v2, workers: 1, memoryMb: 2048, timeoutSeconds: 300, cacheMb: 20480, resultMb: 20480, resources: { limits: { memory: 6Gi } }, clockQuality: unknown, clockAssumption: "", evidenceMaxAgeSeconds: 3600, evidenceMaxSkewSeconds: 300, evidenceConsistency: bounded-window, evidenceStableWindowAssumption: "" }
+
+service:
+  type: ClusterIP
+  port: 8787
+
+ingress:
+  enabled: true
+  # Empty omits ingressClassName, so the cluster's default IngressClass applies.
+  className: ""
+  host: hst.localtest.me
+  # More hostnames of the same backend. An Ingress matches on the Host header, so a
+  # request to a hostname outside `host` and `extraHosts` gets a 404 from the ingress
+  # controller. Each entry is a DNS name. The API server rejects an IP literal.
+  extraHosts:
+    - localhost
+  annotations: {}
+  tls:
+    enabled: false
+    secretName: ""
+  # The app serves plain HTTP, and TLS ends at the ingress. The chart refuses to render
+  # an ingress without TLS unless this is true.
+  acceptInsecureHttp: false
+
+# The folder of the synthetic demo estate (fixtures/demo-enterprise/README.md). The image
+# holds it at /usr/share/hst/demo-enterprise. With a value an admin can load the estate
+# from the Runs page as a `demo` run. The load writes 3 runs for the 3 estate versions,
+# the sites and the business applications. With "" the instance offers no demo load. The
+# app and the worker receive the value as HST_DEMO_FIXTURES.
+demo:
+  fixtures: ""
+
+auth:
+  # true marks the session cookie Secure. A browser sends a Secure cookie only over
+  # HTTPS, so true without TLS breaks login.
+  cookieSecure: false
+  sessionTtlHours: 168
+  loginRateLimit: 5
+  loginRateWindowSeconds: 60
+
+secrets:
+  # The name of a Secret with the keys secret-key, neo4j-password and postgres-password.
+  # With postgres.enabled=false the Secret also has the key postgres-dsn.
+  existingSecret: ""
+  # With existingSecret the chart cannot read the Secret, so a rotation rolls no pod. A
+  # new value here (a date, a counter) rolls the pods on the next `helm upgrade`.
+  rotationStamp: ""
+  # The 3 values of the chart-rendered Secret. Each is required when existingSecret is
+  # empty.
+  secretKey: ""
+  neo4jPassword: ""
+  postgresPassword: ""
+
+migrations:
+  # With true a Job runs Alembic, the app and worker pods wait for it in an init
+  # container, and HST_RUN_MIGRATIONS is false in the pods.
+  enabled: true
+  backoffLimit: 3
+  # Kubernetes deletes the finished Job and its logs after this time.
+  ttlSecondsAfterFinished: 86400
+  # The init container of the app polls `hst migrate --check` every 3 s, and the init
+  # container of the Job polls pg_isready every 2 s. After this count of polls the
+  # container fails.
+  waitAttempts: 200
+  # The resources of the `migrate` container and of the 2 init containers.
+  resources:
+    requests: { cpu: 50m, memory: 128Mi }
+    limits:   { cpu: "1", memory: 512Mi }
+
+initDb:
+  # With true a Job runs `hst init-db` on every release. It applies the Neo4j constraints
+  # and the fulltext index of the Explore page, and every statement is IF NOT EXISTS.
+  enabled: true
+  backoffLimit: 6
+  ttlSecondsAfterFinished: 86400
+  # The init container polls Neo4j with cypher-shell every 3 s. After this count of polls
+  # the container fails.
+  waitAttempts: 200
+  # The resources of the `initdb` container and of the init container `wait-for-neo4j`.
+  resources:
+    requests: { cpu: 50m, memory: 128Mi }
+    limits:   { cpu: "1", memory: 512Mi }
+
+postgres:
+  # The identity and configuration store of the app. With false, the pods read
+  # POSTGRES_DSN from the key postgres-dsn of the Secret.
+  enabled: true
+  # The patch tag and the manifest-list digest. The kubelet pulls by the digest.
+  # Dependabot does not update images in Helm values (.github/dependabot.yml). A manual
+  # update changes the tag and the digest together (`skopeo inspect`, `crane digest`).
+  image: docker.io/library/postgres:16.14@sha256:95206741a5b214807675e14165369d05b93a9cf692223b616d07cca227e74b0b
+  database: hst
+  username: hst
+  # The format is postgresql+asyncpg://user:pass@host:5432/db. The value is required with
+  # enabled=false and an empty secrets.existingSecret.
+  externalDsn: ""
+  tls:
+    # Verified TLS to Postgres (POSTGRES_CA_FILE). caSecret is a Secret in this namespace
+    # with the CA certificate under the key `ca.crt`. The chart mounts it read-only into
+    # the app pod and the migrate Job and sets POSTGRES_CA_FILE to its path. The bundled
+    # Postgres has a TLS listener only with serverSecret.
+    enabled: false
+    caSecret: ""
+    # The TLS listener of the bundled Postgres. The value is the name of a
+    # kubernetes.io/tls Secret (tls.crt, tls.key) whose certificate has the name
+    # <release fullname>-postgres, the host of the DSN. The server then runs with ssl=on.
+    # It requires tls.enabled=true and a caSecret with the CA of that certificate. A
+    # cert-manager Secret holds ca.crt, so 1 Secret can serve as both.
+    serverSecret: ""
+  # The chart refuses to render a non-loopback `externalDsn` with tls.enabled=false
+  # unless this is true. The chart refuses enabled=false with secrets.existingSecret and
+  # tls.enabled=false unless this is true.
+  acceptInsecure: false
+  resources:
+    requests: { cpu: 100m, memory: 256Mi }
+    limits:   { cpu: "1",  memory: 1Gi }
+  persistence:
+    size: 10Gi
+    storageClass: ""
+
+neo4j:
+  # The graph database of the twin. With false, `externalUri` is the URI of an external
+  # Neo4j.
+  enabled: true
+  # The 5.26 LTS line, as in compose.yaml. A manual update changes the patch tag and the
+  # digest together, as for postgres.image above.
+  image: docker.io/library/neo4j:5.26.29-community@sha256:d9dd3dc7d1c78fa959191ff02dbdcbefadceaf83eee23428fb92a58cac8ad3fe
+  externalUri: ""    # bolt://neo4j.example:7687
+  tls:
+    # Verified TLS to Neo4j (NEO4J_TLS_CA_FILE). caSecret is a Secret in this namespace
+    # with the CA certificate under the key `ca.crt`. The chart mounts it read-only into
+    # the app pod and the init-db Job and sets NEO4J_TLS_CA_FILE to its path. The bundled
+    # Neo4j has a TLS listener only with serverSecret.
+    enabled: false
+    caSecret: ""
+    # The bolt TLS listener of the bundled Neo4j. The value is the name of a
+    # kubernetes.io/tls Secret (tls.crt, tls.key) whose certificate has the name
+    # <release fullname>-neo4j, the host of the URI. Bolt then requires TLS. It requires
+    # tls.enabled=true and a caSecret with the CA of that certificate. A cert-manager
+    # Secret holds ca.crt, so 1 Secret can serve as both.
+    serverSecret: ""
+  # The chart refuses to render a non-loopback `externalUri` with tls.enabled=false
+  # unless this is true.
+  acceptInsecure: false
+  # The heap and the page cache fit in the memory limit below. Without them the JVM
+  # sizes both from the RAM of the node.
+  heap: 1G
+  pagecache: 1G
+  transactionMemory: 1G
+  resources:
+    requests: { cpu: 250m, memory: 1Gi }
+    limits:   { cpu: "2",  memory: 3Gi }
+  persistence:
+    size: 20Gi
+    storageClass: ""
+
+networkPolicy:
+  # With true only the pods of this release reach the bundled Neo4j and Postgres, and
+  # only the peers in ingressFrom reach port 8787 of the app pod. No peer reaches the
+  # worker, backup, migrate and initdb pods. The CNI must enforce NetworkPolicy.
+  enabled: true
+  # The `from` peers of port 8787 of the app pod, in the form of a NetworkPolicy. They
+  # are the pods of the ingress controller. app.forwardedAllowIps requires 1 peer or
+  # more. With no peer the chart renders no policy for the app pod, and every pod in the
+  # cluster reaches port 8787. A controller on the host network is no pod peer and needs
+  # an ipBlock with the node addresses.
+  #   - namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: ingress-nginx}}
+  ingressFrom: []
+  # The `to` peers of the DNS egress rule of the databases. Empty allows port 53 to any
+  # host. With the DNS pods of the cluster as peers, port 53 reaches only them, e.g.
+  #   - namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: kube-system}}
+  #     podSelector: {matchLabels: {k8s-app: kube-dns}}
+  dnsTo: []
+
+serviceAccount:
+  create: true
+  name: ""
+  annotations: {}
+
+podDisruptionBudget:
+  # The budget covers the app pods. minAvailable 1 with replicaCount 1 blocks every node
+  # drain, so true needs a replicaCount above minAvailable.
+  enabled: false
+  minAvailable: 1
+
+backup:
+  # With true a CronJob uploads a recovery set to S3 (chart README, "Backups").
+  enabled: false
+  schedule: "0 3 * * *"
+  # Secret with `encryption-key`, a Fernet key kept separately from the HST
+  # operator key. It encrypts the operator key, the configuration and the
+  # Postgres dump of each set.
+  recoverySecretName: ""
+  s3:
+    endpoint: ""             # an https:// URL, e.g. https://s3.example.com
+    bucket: ""
+    prefix: ""                # optional key prefix, e.g. "hst/prod"
+    secretName: ""             # Secret with keys `accessKey` and `secretKey`
+  # The image of the `upload` container, which runs `aws s3 cp` and `aws s3api
+  # head-object` with `--endpoint-url`. A manual update changes the tag and the digest
+  # together, as for postgres.image above.
+  s3ClientImage: "docker.io/amazon/aws-cli:2.31.34@sha256:5298b656f8b825f6fd43f7f5281a91b95579723472e2cf961fd8462b48281206"
+  # The `dump` and `upload` containers get these resources.
+  resources:
+    requests: { cpu: 50m, memory: 64Mi }
+    limits:   { cpu: 500m, memory: 256Mi }
+  # The `prepare` and `finalize` containers get these resources.
+  recoveryResources:
+    requests: { cpu: 100m, memory: 256Mi }
+    limits:   { cpu: "1", memory: 1Gi }

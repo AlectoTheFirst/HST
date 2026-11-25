@@ -1,0 +1,159 @@
+{{- if .Values.neo4j.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "hst.neo4jHost" . }}
+  labels: {{- include "hst.labels" . | nindent 4 }}
+spec:
+  clusterIP: None
+  ports:
+    - port: 7687
+      targetPort: bolt
+      name: bolt
+    - port: 7474
+      targetPort: http
+      name: http
+  selector: {{- include "hst.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: neo4j
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "hst.neo4jHost" . }}
+  labels: {{- include "hst.labels" . | nindent 4 }}
+spec:
+  serviceName: {{ include "hst.neo4jHost" . }}
+  # Neo4j Community does not cluster, so the count is 1.
+  replicas: 1
+  selector:
+    matchLabels: {{- include "hst.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: neo4j
+  template:
+    metadata:
+      labels: {{- include "hst.labels" . | nindent 8 }}
+        app.kubernetes.io/component: neo4j
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets: {{- toYaml . | nindent 8 }}
+      {{- end }}
+      automountServiceAccountToken: false
+      securityContext:
+        fsGroup: 7474         # the neo4j uid/gid in the official image
+        seccompProfile: { type: RuntimeDefault }
+      # Neo4j writes a checkpoint on shutdown. The value equals stop_grace_period of
+      # neo4j in compose.yaml.
+      terminationGracePeriodSeconds: 60
+      containers:
+        - name: neo4j
+          image: {{ .Values.neo4j.image | quote }}
+          imagePullPolicy: IfNotPresent
+          # The root filesystem is writable. The image entrypoint writes the NEO4J_*
+          # variables below into the neo4j.conf of the image.
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 7474
+            allowPrivilegeEscalation: false
+            capabilities: { drop: ["ALL"] }
+          env:
+            # The image turns every NEO4J_* variable into a neo4j.conf setting and
+            # refuses to start on an unknown setting, so this name has no NEO4J_ prefix.
+            - name: CYPHER_PW
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "hst.secretName" . }}
+                  key: neo4j-password
+            - name: NEO4J_AUTH
+              # The image reads NEO4J_AUTH itself and writes no setting for it. It applies
+              # the password only when /data is empty.
+              value: "neo4j/$(CYPHER_PW)"
+            # The heap and the page cache fit in the memory limit of the container.
+            # Without these settings the JVM sizes them from the RAM of the node.
+            - name: NEO4J_server_memory_heap_initial__size
+              value: {{ .Values.neo4j.heap | quote }}
+            - name: NEO4J_server_memory_heap_max__size
+              value: {{ .Values.neo4j.heap | quote }}
+            - name: NEO4J_server_memory_pagecache_size
+              value: {{ .Values.neo4j.pagecache | quote }}
+            # The server ends a transaction that exceeds this memory.
+            - name: NEO4J_db_memory_transaction_total_max
+              value: {{ .Values.neo4j.transactionMemory | quote }}
+            - name: NEO4J_dbms_security_allow__csv__import__from__file__urls
+              value: "false"
+            # Neo4j listens on every address of the pod. The NetworkPolicy limits who
+            # reaches the ports.
+            - name: NEO4J_server_default__listen__address
+              value: "0.0.0.0"
+            {{- if .Values.neo4j.tls.serverSecret }}
+            # The bolt TLS listener (neo4j.tls.serverSecret). The certificate and the key
+            # come from the Secret mounted at /ssl/bolt. The listener asks for no client
+            # certificate, so the policy has no trusted directory.
+            - name: NEO4J_dbms_ssl_policy_bolt_enabled
+              value: "true"
+            - name: NEO4J_dbms_ssl_policy_bolt_base__directory
+              value: /ssl/bolt
+            - name: NEO4J_dbms_ssl_policy_bolt_private__key
+              value: tls.key
+            - name: NEO4J_dbms_ssl_policy_bolt_public__certificate
+              value: tls.crt
+            - name: NEO4J_dbms_ssl_policy_bolt_client__auth
+              value: NONE
+            - name: NEO4J_dbms_ssl_policy_bolt_trust__all
+              value: "true"
+            - name: NEO4J_server_bolt_tls__level
+              value: REQUIRED
+            {{- end }}
+          ports:
+            - name: bolt
+              containerPort: 7687
+            - name: http
+              containerPort: 7474
+          readinessProbe:
+            # The HTTP port answers before bolt accepts a query, so the probe runs a query.
+            #
+            # cypher-shell reads NEO4J_USERNAME and NEO4J_PASSWORD from its environment.
+            # The 2 assignments apply to this command only, so the image entrypoint does
+            # not read them as settings.
+            exec:
+              command: ["sh", "-c", "NEO4J_USERNAME=neo4j NEO4J_PASSWORD=\"$CYPHER_PW\" cypher-shell {{ if .Values.neo4j.tls.serverSecret }}-a bolt+ssc://localhost:7687 {{ end }}'RETURN 1' >/dev/null"]
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            # cypher-shell is a JVM process. Its start takes longer than the default
+            # timeout of 1 s.
+            timeoutSeconds: 10
+            failureThreshold: 30
+          livenessProbe:
+            tcpSocket: { port: bolt }
+            initialDelaySeconds: 120
+            periodSeconds: 20
+          resources: {{- toYaml .Values.neo4j.resources | nindent 12 }}
+          volumeMounts:
+            - name: data
+              mountPath: /data
+            {{- if .Values.neo4j.tls.serverSecret }}
+            - name: bolt-tls
+              mountPath: /ssl/bolt
+              readOnly: true
+      volumes:
+        - name: bolt-tls
+          secret:
+            secretName: {{ .Values.neo4j.tls.serverSecret }}
+            # Mode 0440 lets the neo4j group (fsGroup above) read the files.
+            defaultMode: 0440
+            items:
+              - key: tls.crt
+                path: tls.crt
+              - key: tls.key
+                path: tls.key
+            {{- end }}
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        {{- with .Values.neo4j.persistence.storageClass }}
+        storageClassName: {{ . | quote }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.neo4j.persistence.size }}
+{{- end }}

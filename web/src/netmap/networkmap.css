@@ -1,0 +1,1007 @@
+/* The network map (NetworkMapPage.tsx). It follows the diagram idiom of
+   diagram/netmap.css, which the SD-WAN, Equinix and What changed views share. */
+
+.nm-page {
+  position: relative;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.nm-toolbar {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font: 500 12px var(--ui);
+  color: var(--muted2);
+}
+
+.nm-toolbar select {
+  width: auto;
+  max-width: 260px;
+  font: 500 12px var(--ui);
+  color: var(--text);
+  background: var(--field);
+  border: 1px solid var(--fieldb);
+  border-radius: 6px;
+  padding: 5px 9px;
+  outline: none;
+}
+
+.nm-toolbar select:focus-visible {
+  border-color: var(--accent);
+}
+
+/* the object search (search/UnifiedSearch.tsx) at the head of the toolbar */
+.nm-search .us-input {
+  width: 240px;
+  font-size: 12px;
+  padding: 5px 9px;
+}
+
+.nm-page > .hint,
+.nm-page > .banner {
+  margin: 56px 16px 0;
+}
+
+.nm-body {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+}
+
+.nm-stage {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+
+.nm-canvas {
+  position: absolute;
+  inset: 0;
+  background: var(--panel2);
+}
+
+.nm-overlay {
+  position: absolute;
+  top: 52px;
+  left: 16px;
+  z-index: 2;
+}
+
+.nm-zoom {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  z-index: 2;
+  display: flex;
+  gap: 4px;
+}
+
+.nm-zoom button {
+  min-width: 30px;
+  padding: 4px 8px;
+  font: 500 12px var(--ui);
+  color: var(--text);
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.nm-zoom button:focus-visible {
+  outline: 2px solid var(--accent);
+}
+
+.nm-panel {
+  position: absolute;
+  right: 10px;
+  top: 10px;
+  z-index: 3;
+  width: 260px;
+  max-height: calc(100% - 60px);
+  overflow: auto;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 12px;
+}
+
+.nm-panel header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+  color: var(--muted2);
+  font-weight: 600;
+}
+
+.nm-panel header button {
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.nm-panel dl {
+  margin: 0;
+  padding: 8px 10px;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 10px;
+}
+
+.nm-panel dt {
+  color: var(--muted);
+}
+
+.nm-panel dd {
+  margin: 0;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+/* a device: its interfaces and its configuration need the room */
+.nm-panel-wide {
+  width: 560px;
+  max-width: calc(100% - 20px);
+}
+
+.nm-tabs {
+  display: flex;
+  gap: 2px;
+  padding: 6px 10px 0;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--border);
+}
+
+.nm-tabs button {
+  flex: none;
+  padding: 5px 8px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  cursor: pointer;
+}
+
+.nm-tabs [aria-selected="true"] {
+  border-bottom-color: var(--accent);
+  color: var(--text);
+}
+
+.nm-tab-body {
+  margin: 0;
+  padding: 8px 10px;
+}
+
+.nm-ifaces {
+  margin: 0;
+  padding: 6px 10px;
+  list-style: none;
+}
+
+.nm-ifaces li {
+  padding: 2px 0;
+}
+
+.nm-iface-far {
+  color: var(--muted);
+}
+
+.nm-iface {
+  margin: 4px 0 8px 12px;
+}
+
+.nm-panel .nm-iface dl {
+  padding: 4px 0;
+}
+
+.nm-config-part h5 {
+  margin: 8px 0 2px;
+  color: var(--muted);
+  font: 600 11px var(--mono);
+}
+
+.nm-config {
+  margin: 4px 0 8px;
+  padding: 6px 8px;
+  max-height: 360px;
+  overflow: auto;
+  background: var(--panel2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font: 11.5px/1.45 var(--mono);
+  white-space: pre;
+}
+
+/* ---- estate level (EstateMap.tsx) ---- */
+
+.nm-estate {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--panel2);
+  cursor: grab;
+  touch-action: none; /* a drag pans the map, not the page */
+}
+
+/* the land is one soft fill with no outline, so the network reads in front */
+.nm-land {
+  fill: var(--seg);
+  stroke: none;
+  pointer-events: none;
+}
+
+.nm-bb-line line {
+  stroke: var(--muted);
+  stroke-linecap: round;
+  opacity: 0.75;
+}
+
+.nm-bb-line .nm-hit {
+  stroke: transparent;
+  opacity: 1;
+}
+
+.nm-bb-line.selected line:not(.nm-hit) {
+  stroke: var(--accent);
+  opacity: 1;
+}
+
+.nm-branch-link {
+  stroke: var(--line);
+}
+
+.nm-branch-link.selected {
+  stroke: var(--accent);
+}
+
+.nm-major,
+.nm-branch,
+.nm-badge,
+.nm-nohub {
+  cursor: pointer;
+}
+
+.nm-major circle,
+.nm-major rect,
+.nm-major polygon {
+  fill: var(--panel);
+  stroke: var(--muted2);
+  stroke-width: 1.5px;
+  vector-effect: non-scaling-stroke;
+}
+
+.nm-major-hub circle {
+  stroke: var(--accent);
+  stroke-width: 2px;
+}
+
+.nm-major.selected circle,
+.nm-major.selected rect,
+.nm-major.selected polygon {
+  stroke: var(--accent);
+  stroke-width: 3px;
+}
+
+.nm-branch circle {
+  fill: var(--panel);
+  stroke: var(--muted);
+  stroke-width: 1px;
+  vector-effect: non-scaling-stroke;
+}
+
+.nm-branch.selected circle {
+  stroke: var(--accent);
+  stroke-width: 2.5px;
+}
+
+.nm-badge rect {
+  fill: var(--accent-soft);
+  stroke: var(--accent);
+  stroke-width: 1px;
+  vector-effect: non-scaling-stroke;
+}
+
+.nm-badge.open rect {
+  stroke-width: 2px;
+}
+
+.nm-nohub rect {
+  fill: var(--panel);
+  stroke: var(--muted);
+  stroke-width: 1.2px;
+  stroke-dasharray: 3 2;
+  vector-effect: non-scaling-stroke;
+}
+
+.nm-nohub.open rect {
+  stroke: var(--accent);
+}
+
+.nm-badge text,
+.nm-nohub text {
+  fill: var(--text);
+  font-family: var(--ui);
+  font-weight: 600;
+  pointer-events: none;
+}
+
+.nm-nohub text {
+  fill: var(--muted2);
+}
+
+.nm-label,
+.nm-line-label {
+  fill: var(--text);
+  font-family: var(--ui);
+  font-weight: 500;
+  paint-order: stroke;
+  stroke: var(--panel2);
+  stroke-width: 3px;
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
+}
+
+.nm-line-label {
+  fill: var(--muted2);
+}
+
+.nm-estate .faded {
+  opacity: 0.2;
+}
+
+.nm-offmap {
+  position: absolute;
+  left: 10px;
+  top: 52px;
+  z-index: 2;
+  max-width: 240px;
+  max-height: 40%;
+  overflow: auto;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 12px;
+}
+
+.nm-offmap h3 {
+  margin: 0 0 4px;
+  font: 600 12px var(--ui);
+  color: var(--muted2);
+}
+
+.nm-offmap ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.nm-offmap .linkish {
+  background: none;
+  border: none;
+  padding: 0 6px 0 0;
+  color: var(--text);
+  cursor: pointer;
+  font: 500 12px var(--ui);
+}
+
+.nm-offmap .linkish[aria-pressed="true"] {
+  color: var(--acctext);
+}
+
+.nm-offmap .linkish:focus-visible {
+  outline: 2px solid var(--accent);
+}
+
+.nm-kinds {
+  display: flex;
+  gap: 10px;
+  margin: 0;
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--panel);
+}
+
+.nm-kinds label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font: 500 12px var(--ui);
+  color: var(--text);
+}
+
+.nm-toolbar > button,
+.nm-panel-actions button {
+  font: 500 12px var(--ui);
+  color: var(--text);
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 9px;
+  cursor: pointer;
+}
+
+.nm-panel-row {
+  display: contents;
+}
+
+.nm-panel-actions {
+  margin: 0;
+  padding: 0 10px 10px;
+}
+
+.nm-naming {
+  display: flex;
+  gap: 4px;
+}
+
+.nm-naming input {
+  width: 160px;
+  font: 500 12px var(--ui);
+  color: var(--text);
+  background: var(--field);
+  border: 1px solid var(--fieldb);
+  border-radius: 6px;
+  padding: 4px 8px;
+}
+
+.nm-naming button {
+  font: 500 12px var(--ui);
+  color: var(--text);
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 9px;
+  cursor: pointer;
+}
+
+.nm-page > .nm-notice {
+  position: absolute;
+  top: 48px;
+  left: 10px;
+  right: 10px;
+  margin: 0;
+  z-index: 4;
+}
+
+.nm-layers {
+  position: absolute;
+  top: 52px;
+  left: 10px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.nm-layers select {
+  width: auto;
+  max-width: 240px;
+  font: 500 12px var(--ui);
+  color: var(--text);
+  background: var(--field);
+  border: 1px solid var(--fieldb);
+  border-radius: 6px;
+  padding: 4px 8px;
+}
+
+.nm-layernote {
+  font: 500 11.5px var(--ui);
+  color: var(--muted);
+}
+
+.nm-ages {
+  color: var(--muted);
+}
+
+.nm-clients {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 2px;
+  color: var(--muted2);
+}
+
+.nm-connections {
+  border-top: 1px solid var(--border);
+  padding: 8px 10px;
+}
+
+.nm-connections h4,
+.nm-connections h5 {
+  margin: 6px 0 4px;
+  font: 600 12px var(--ui);
+  color: var(--muted2);
+}
+
+.nm-connections ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.nm-connections .linkish {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  font: 500 12px var(--ui);
+}
+
+.nm-connection {
+  margin: 4px 0 6px 8px;
+}
+
+.nm-pairs li,
+.nm-verdict {
+  color: var(--muted2);
+  font-size: 11.5px;
+}
+
+/* the text alternative of the estate drawing: hidden until it holds the focus */
+.nm-sr:not(:focus-within) {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.nm-sr:focus-within {
+  position: absolute;
+  left: 10px;
+  bottom: 10px;
+  z-index: 3;
+  width: 300px;
+  max-height: 60%;
+  overflow: auto;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 12px;
+  color: var(--text);
+}
+
+.nm-sr h3 {
+  margin: 6px 0 4px;
+  font: 600 12px var(--ui);
+  color: var(--muted2);
+}
+
+.nm-sr ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.nm-sr ul ul {
+  margin: 4px 0 0 12px;
+}
+
+.nm-sr button {
+  font: 500 12px var(--ui);
+  color: var(--text);
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 2px 8px;
+  cursor: pointer;
+}
+
+.nm-sr button:focus-visible {
+  outline: 2px solid var(--accent);
+}
+
+.nm-panel-note {
+  margin: 0;
+  padding: 0 10px 8px;
+  color: var(--muted2);
+}
+
+.nm-branches {
+  list-style: none;
+  margin: 0;
+  padding: 8px 10px;
+  display: grid;
+  gap: 6px;
+}
+
+.nm-branches .linkish {
+  display: block;
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  font: 500 12px var(--ui);
+}
+
+.nm-branches .linkish:focus-visible {
+  outline: 2px solid var(--accent);
+}
+
+.nm-branch-note {
+  color: var(--muted);
+  font-size: 11.5px;
+}
+
+/* The legend row (Legend.tsx): along the bottom, left of the zoom buttons. */
+.nm-legend {
+  position: absolute;
+  left: 10px;
+  right: 140px;
+  bottom: 10px;
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 18px;
+  padding: 6px 12px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font: 500 12px var(--ui);
+  color: var(--text);
+  pointer-events: auto;
+}
+
+.nm-legend-part {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.nm-legend-name {
+  font-weight: 600;
+  color: var(--muted2);
+}
+
+/* The Options popover (Legend.tsx): left, under the layer bar. */
+.nm-options {
+  position: absolute;
+  top: 92px;
+  left: 10px;
+  z-index: 3;
+  width: 400px;
+  max-height: calc(100% - 160px);
+  overflow: auto;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 6px 20px rgb(0 0 0 / 12%);
+  font: 500 12px var(--ui);
+  color: var(--text);
+}
+
+.nm-options header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 7px 10px;
+  border-bottom: 1px solid var(--border);
+  color: var(--muted2);
+  font-weight: 600;
+}
+
+.nm-options header button {
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.nm-options-body {
+  display: grid;
+  grid-template-columns: 78px 1fr;
+  align-items: center;
+  gap: 8px 10px;
+  padding: 10px 12px 12px;
+}
+
+/* the speed scale: the bin limits above the line, the counts under it */
+.nm-scale {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(6, 44px);
+  gap: 2px;
+  padding-top: 13px;
+}
+
+.nm-ticks {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 12px;
+}
+
+.nm-ticks span {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  font-size: 10px;
+  line-height: 12px;
+  color: var(--muted2);
+}
+
+.nm-seg {
+  display: grid;
+  gap: 1px;
+  padding: 0;
+  font: inherit;
+  color: var(--muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.nm-seg-bar {
+  height: 6px;
+  background: var(--seg);
+  border: 1px solid var(--seg);
+}
+
+.nm-scale .nm-seg:nth-child(2) .nm-seg-bar {
+  border-radius: 3px 0 0 3px;
+}
+
+.nm-scale .nm-seg:last-child .nm-seg-bar {
+  border-radius: 0 3px 3px 0;
+}
+
+.nm-seg-unknown {
+  width: 30px;
+  padding-top: 13px;
+}
+
+.nm-seg-unknown .nm-seg-bar {
+  border-radius: 3px;
+}
+
+.nm-seg[aria-pressed="false"] .nm-seg-bar {
+  background: transparent;
+  border-style: dashed;
+}
+
+.nm-seg[aria-pressed="false"] .nm-seg-count {
+  text-decoration: line-through;
+}
+
+.nm-seg:focus-visible {
+  outline: 2px solid var(--accent);
+}
+
+.nm-seg-count {
+  font-size: 10.5px;
+  line-height: 12px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+/* the device groups as chips */
+.nm-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.nm-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px 2px 4px;
+  font: inherit;
+  color: var(--text);
+  background: var(--panel2);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.nm-chip[aria-pressed="false"] {
+  color: var(--muted);
+  background: none;
+  border-style: dashed;
+}
+
+.nm-chip[aria-pressed="false"] .nm-symbol {
+  opacity: 0.35;
+}
+
+.nm-chip:focus-visible {
+  outline: 2px solid var(--accent);
+}
+
+.nm-symbol {
+  flex: none;
+  width: 20px;
+  height: 15px;
+}
+
+.nm-count {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* the rows of the Options popover: a name column and a control at full width */
+.nm-opt-name {
+  font-weight: 600;
+  color: var(--muted2);
+}
+
+.nm-opt-segs button {
+  flex: 1;
+  padding: 4px 8px;
+  white-space: nowrap;
+}
+
+.nm-opt-segs button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.nm-chip:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+
+/* The overview (Overview.tsx): bottom right, above the zoom buttons and the legend row. */
+.nm-overview {
+  position: absolute;
+  right: 10px;
+  bottom: 56px;
+  z-index: 2;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  line-height: 0;
+}
+
+.nm-overview svg {
+  cursor: pointer;
+  touch-action: none;
+}
+
+.nm-overview-dot {
+  fill: var(--muted2);
+}
+
+.nm-overview-view {
+  fill: var(--accent);
+  fill-opacity: 0.08;
+  stroke: var(--accent);
+  stroke-width: 1.5;
+}
+
+@media (max-width: 640px) {
+  .nm-legend {
+    right: 10px;
+    bottom: 48px;
+  }
+
+  .nm-options {
+    width: calc(100% - 20px);
+  }
+
+  .nm-overview {
+    display: none;
+  }
+}
+
+/* the client list of a segment or of a client badge */
+.nm-client-table {
+  width: calc(100% - 20px);
+  margin: 0 10px 10px;
+  border-collapse: collapse;
+  font-size: 11.5px;
+}
+
+.nm-client-table th,
+.nm-client-table td {
+  padding: 2px 6px 2px 0;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid var(--border);
+}
+
+.nm-client-table th {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.nm-client-table td {
+  color: var(--muted2);
+  overflow-wrap: anywhere;
+}
+
+.nm-panel-actions button + button {
+  margin-left: 4px;
+}
+
+/* the Flows panel (FlowPanel.tsx) */
+.nm-flowpanel {
+  width: 320px;
+}
+
+.nm-flowbody {
+  display: grid;
+  gap: 8px;
+  padding: 8px 10px;
+}
+
+.nm-flowbody select {
+  max-width: 100%;
+}
+
+.nm-flow-group {
+  margin: 0;
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.nm-flow-group ul {
+  margin: 0;
+  padding-left: 4px;
+  list-style: none;
+}
+
+.nm-flow-group li + li {
+  margin-top: 4px;
+}
+
+.nm-flow-state {
+  color: var(--muted2);
+}
+
+.nm-flow-fails {
+  color: var(--badtext, var(--bad));
+}
+
+.nm-flow-open {
+  color: var(--warntext);
+}
+
+.nm-flow-notes {
+  margin: 2px 0;
+  color: var(--muted2);
+}
+
+.nm-flow-hops {
+  margin: 4px 0;
+  padding-left: 18px;
+}
+
+.nm-flow-hops ul {
+  padding-left: 12px;
+  color: var(--muted2);
+}

@@ -1,0 +1,26 @@
+{
+  "TABLE_vrf": {
+    "ROW_vrf": {
+      "vrf-name-out": "WAN",
+      "TABLE_neighbor": {
+        "ROW_neighbor": [
+          {
+            "neighbor-id": "10.252.32.10",
+            "remoteas": 65099,
+            "state": "Established"
+          },
+          {
+            "neighbor-id": "10.252.33.20",
+            "remoteas": 65099,
+            "state": "Idle"
+          },
+          {
+            "neighbor-id": "192.0.2.99",
+            "remoteas": 65099,
+            "state": "Established"
+          }
+        ]
+      }
+    }
+  }
+}

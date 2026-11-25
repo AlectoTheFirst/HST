@@ -1,0 +1,53 @@
+{
+  "format_version": 1,
+  "purpose": "Reproducible dd.cudd 0.6.0 / CUDD 3.0.0 wheel inputs. Binary artifacts belong in the approved artifact store and are never committed here.",
+  "source_date_epoch": 1789171200,
+  "sources": {
+    "dd": {
+      "version": "0.6.0",
+      "url": "https://files.pythonhosted.org/packages/18/b2/57a2d7151e7e904092e0411f79e8dadfc3ae143679236a9dec88f4667f8a/dd-0.6.0.tar.gz",
+      "sha256": "4baadadc9b2ebf6136a5b84dc51a43cec5fe91203286cd377e1e093358cdffcd",
+      "license_file": "licenses/dd-0.6.0-BSD-3-Clause.txt"
+    },
+    "cudd": {
+      "version": "3.0.0",
+      "url": "https://downloads.sourceforge.net/project/cudd-mirror/cudd-3.0.0.tar.gz",
+      "sha256": "b8e966b4562c96a03e7fbea239729587d7b395d53cadcc39a7203b49cf7eeb69",
+      "license_file": "licenses/cudd-3.0.0-BSD-3-Clause.txt"
+    }
+  },
+  "build_tools": {
+    "cython": {
+      "version": "3.3.0",
+      "url": "https://files.pythonhosted.org/packages/source/C/Cython/cython-3.3.0.tar.gz",
+      "sha256": "eed0d93fbca7087f143b42c34b05a825849bdf17f101572c2105acfa49aa88b8",
+      "artifacts": {
+        "universal": {"url": "https://files.pythonhosted.org/packages/source/C/Cython/cython-3.3.0.tar.gz", "sha256": "eed0d93fbca7087f143b42c34b05a825849bdf17f101572c2105acfa49aa88b8"},
+        "cp312-macos-arm64": {"url": "https://files.pythonhosted.org/packages/da/0f/95bad838a80ac52c9e982dad00bd9a0b2bad57fb4c688e5f53ac3ef65ff0/cython-3.3.0-cp312-cp312-macosx_11_0_arm64.whl", "sha256": "03bc5333932f5dda3ba9315298ecdd21daa1b58410bb1f8ce04c78ec8337130a"},
+        "cp314-macos-arm64": {"url": "https://files.pythonhosted.org/packages/8a/7f/e409f76bb955ecdcb746b80350b945fbb808846d797346d647a37e1790ca/cython-3.3.0-cp314-cp314-macosx_11_0_arm64.whl", "sha256": "0deedc2e9a5a664e1adfa4c2d310aa7b54903e1a647c274b6c9213f77a02d637"}
+      }
+    },
+    "setuptools": {
+      "version": "84.0.0",
+      "url": "https://files.pythonhosted.org/packages/source/s/setuptools/setuptools-84.0.0.tar.gz",
+      "sha256": "f4695c21257f0d9b537ec2692c941d02ee143b7cc1276941349a546573b2ef73",
+      "artifacts": {
+        "universal": {"url": "https://files.pythonhosted.org/packages/95/9c/c510029fc6ef33a6275cd2c5d3cecd6613dfd6aa401d57c54f1c18852ccf/setuptools-84.0.0-py3-none-any.whl", "sha256": "51a52592b3b99e102b609654876bd65f19f999935166d1352678931132b0c670"}
+      }
+    }
+  },
+  "runtime_closure": {
+    "astutils": {"version": "0.0.6", "artifact_type": "sdist", "filename": "astutils-0.0.6.tar.gz", "url": "https://files.pythonhosted.org/packages/88/d9/86e4053d44baa2b648596a443e2bcf5b8e1d30a9669b14bfacc5307fbc2f/astutils-0.0.6.tar.gz", "sha256": "e9a6f31b243ecfc3c7c84dd2f145cf5de83e475b650d2a6b781cfa713ad15427"},
+    "networkx": {"version": "3.6.1", "artifact_type": "sdist", "filename": "networkx-3.6.1.tar.gz", "url": "https://files.pythonhosted.org/packages/6a/51/63fe664f3908c97be9d2e4f1158eb633317598cfa6e1fc14af5383f17512/networkx-3.6.1.tar.gz", "sha256": "26b7c357accc0c8cde558ad486283728b65b6a95d85ee1cd66bafab4c8168509"},
+    "ply": {"version": "3.10", "artifact_type": "sdist", "filename": "ply-3.10.tar.gz", "url": "https://files.pythonhosted.org/packages/ce/3d/1f9ca69192025046f02a02ffc61bfbac2731aab06325a218370fd93e18df/ply-3.10.tar.gz", "sha256": "96e94af7dd7031d8d6dd6e2a8e0de593b511c211a86e28a9c9621c275ac8bacb"}
+  },
+  "patches": ["patches/0001-dd-cpu-neutral-cudd-link.patch"],
+  "target_status": {
+    "macos-arm64-cp312": {"status": "qualified-private", "artifact_type": "wheel", "wheel": "dd-0.6.0-cp312-cp312-macosx_11_0_arm64.whl", "wheel_sha256": "3138bbc746f8e2980034903069a130fef5d8e4151822c270419e8390e882d292", "evidence": "script-built and fresh offline-runtime smoke tested"},
+    "macos-arm64-cp314": {"status": "qualified-private", "artifact_type": "wheel", "wheel": "dd-0.6.0-cp314-cp314-macosx_26_0_arm64.whl", "wheel_sha256": "3795545866f94c19a4d273e2b66d9b3df85d60dd659942e139e45ae492ad27a0", "evidence": "script-built and fresh offline-runtime smoke tested"},
+    "linux-amd64-cp312": {"status": "unqualified", "reason": "No build of this target is recorded."},
+    "linux-amd64-cp314": {"status": "qualified-private", "artifact_type": "wheel", "wheel": "dd-0.6.0-cp314-cp314-linux_x86_64.whl", "wheel_sha256": "a350c5b2ea82a0161f808c72106efe17b9b00225cbcb4eecf9cd7ff98e1f77d8", "evidence": "reproducibly rebuilt twice at a fixed remapped path on BuildKit v0.32.2 linux/amd64; matching extension SHA-256 fb182e25bed177321bb8e88eeedceac30a13835bfa3eea218c18a29ae1f41b64; production-image native runtime acceptance passed"},
+    "linux-arm64-cp312": {"status": "unqualified", "reason": "No build of this target is recorded."},
+    "linux-arm64-cp314": {"status": "unqualified", "reason": "No build of this target is recorded."}
+  }
+}

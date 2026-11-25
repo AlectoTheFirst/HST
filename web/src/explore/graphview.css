@@ -1,0 +1,263 @@
+.graphview {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: none;
+}
+
+/* Full screen is this class rather than the Fullscreen API: the API drops the
+   app's palette and takes the canvas alone, leaving the legend and the property
+   panel behind. Esc returns, and so does the button. */
+.graphview.gv-full {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  border: 0;
+  border-radius: 0;
+  padding: 12px 16px 16px;
+  flex: 1;
+}
+
+.graphview-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+/* same control set as the ribbon, so the zoom works the same in both views */
+.gv-controls {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.gv-layout {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-right: auto;
+}
+
+/* the global reset leaves selects native, which renders as a pane-wide control
+   next to the zoom buttons; dressed like the map toolbar's scope select */
+.gv-controls select {
+  width: auto;
+  font: 500 12px var(--ui);
+  color: var(--text);
+  background: var(--field);
+  border: 1px solid var(--fieldb);
+  border-radius: 6px;
+  padding: 4px 8px;
+  outline: none;
+}
+
+.gv-controls select:focus-visible {
+  border-color: var(--accent);
+}
+
+.gv-controls button {
+  border: 1px solid var(--border);
+  cursor: pointer;
+  background: var(--panel2);
+  color: var(--muted2);
+  border-radius: 4px;
+  padding: 4px 9px;
+  font: 600 12px var(--ui);
+  line-height: 1.2;
+}
+
+.gv-controls button:hover {
+  background: var(--sel);
+  color: var(--text);
+}
+
+/* The stage carries the height, and the native resize handle carries the
+   user's choice of it; GraphView keeps that height in localStorage and tells
+   Cytoscape its viewport moved. 420px fixed was most of why a 300-node result
+   could not be read at any zoom. */
+.gv-stage {
+  resize: vertical;
+  overflow: hidden;
+  min-height: 240px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--panel2);
+}
+
+.gv-full .gv-stage {
+  flex: 1;
+  resize: none;
+}
+
+.graphview-canvas {
+  width: 100%;
+  height: 100%;
+  cursor: grab;
+  touch-action: none; /* a drag on the canvas pans the graph, not the page */
+}
+
+/* The key. A mark per node label means nothing without one, and guessing what a
+   colour stands for is half of what an unreadable graph is. */
+.gv-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font: 500 11.5px var(--ui);
+  color: var(--muted2);
+}
+
+.gv-legend li {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* The swatch repeats the drawn mark: its colour and its silhouette. The shape is
+   not decoration. A node-link picture puts any two nodes side by side, and no
+   8-colour set clears the all-pairs colour-blind floors, so the shape is the
+   second encoding that carries identity when the colour does not. The clip-paths
+   below trace the Cytoscape shapes in graphStyle.ts, in the same slot order.
+   `.gv-swatch` on its own is the "Other" mark: the dashed circle. */
+.gv-swatch {
+  flex: none;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  border: 1px dashed var(--panel);
+}
+
+/* clip-path cuts the border away as well, so only the two axis-aligned slots
+   keep the surface ring that holds overlapping marks apart. */
+.gv-slot0 {
+  border-style: solid;
+}
+
+.gv-slot1 {
+  border-radius: 2px;
+  border-style: solid;
+}
+
+.gv-slot2,
+.gv-slot3,
+.gv-slot4,
+.gv-slot5,
+.gv-slot6,
+.gv-slot7 {
+  border: 0;
+  border-radius: 0;
+}
+
+.gv-slot2 {
+  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+}
+
+.gv-slot3 {
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+}
+
+.gv-slot4 {
+  clip-path: polygon(
+    50% 0,
+    61% 35%,
+    98% 35%,
+    68% 57%,
+    79% 91%,
+    50% 70%,
+    21% 91%,
+    32% 57%,
+    2% 35%,
+    39% 35%
+  );
+}
+
+.gv-slot5 {
+  clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
+}
+
+.gv-slot6 {
+  clip-path: polygon(22% 0, 100% 0, 78% 100%, 0 100%);
+}
+
+.gv-slot7 {
+  clip-path: polygon(0 0, 50% 55%, 100% 0, 50% 100%);
+}
+
+.gv-count {
+  color: var(--muted);
+  font: 500 10.5px var(--mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* The canvas has no accessibility tree and no keyboard, so GraphView also
+   writes the graph as text. Clipped rather than `display: none`, which would
+   take it out of the accessibility tree as well, and revealed on focus so a
+   keyboard user can see which node they are on. */
+.gv-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  list-style: none;
+}
+
+.gv-sr:focus-within {
+  position: static;
+  width: auto;
+  height: auto;
+  margin: 0;
+  overflow: visible;
+  clip-path: none;
+  white-space: normal;
+  max-height: 140px;
+  overflow-y: auto;
+  font: 500 11.5px var(--ui);
+  color: var(--muted2);
+}
+
+.gv-sr button {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  padding: 1px 2px;
+}
+
+.gv-sr button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.graphview-props {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 2px 10px;
+  margin: 0;
+  font-size: 12px;
+}
+
+.graphview-props .gv-prop {
+  display: contents;
+}
+
+.graphview-props dt {
+  color: var(--muted);
+}
+
+.graphview-props dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}

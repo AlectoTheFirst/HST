@@ -1,0 +1,22 @@
+name: Feature
+description: New behavior, a new collector, or a change to a contract
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What is not possible, and for whom
+    validations: { required: true }
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope
+      description: What is included and what is excluded
+    validations: { required: true }
+  - type: textarea
+    id: done
+    attributes:
+      label: Done when
+      description: The tests, the fixture and the documents that change
+    validations: { required: true }

@@ -1,0 +1,218 @@
+name: release
+
+on:
+  workflow_dispatch:
+    inputs:
+      channel:
+        description: Candidate for dev testing, or validated stable release (main only)
+        type: choice
+        options: [candidate, stable]
+        default: candidate
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ inputs.channel || 'candidate' }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  image:
+    outputs:
+      digest: ${{ steps.build.outputs.digest }}
+      version: ${{ steps.version.outputs.version }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      id-token: write
+      packages: write
+    env:
+      SHA: ${{ github.sha }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+          # The full history has every tag. A depth-1 fetch of one commit can omit a tag on it.
+          fetch-depth: 0
+          fetch-tags: true
+      # `package` is hst.__version__, the version label of the image. A v* tag on HEAD
+      # is the release version. It equals `v` plus hst.__version__.
+      - name: Release version
+        id: version
+        run: |
+          pkg=$(awk -F'"' '/^__version__/ {print $2}' src/hst/__init__.py)
+          [ -n "$pkg" ] || { echo "src/hst/__init__.py has no __version__"; exit 1; }
+          echo "package=$pkg" >> "$GITHUB_OUTPUT"
+          tag=$(git tag --points-at HEAD 'v*')
+          [ -z "$tag" ] && exit 0
+          [ "$(printf '%s\n' "$tag" | wc -l)" -eq 1 ] || { echo "More than one v* tag on HEAD: $tag"; exit 1; }
+          [ "$tag" = "v$pkg" ] || { echo "Tag $tag != v$pkg from hst.__version__"; exit 1; }
+          echo "version=$pkg" >> "$GITHUB_OUTPUT"
+      - name: Check release channel
+        env:
+          CHANNEL: ${{ inputs.channel || 'candidate' }}
+        run: |
+          if [ "$CHANNEL" = stable ] && [ "$GITHUB_REF" != refs/heads/main ]; then
+            echo "Stable releases must be dispatched on main"; exit 1
+          fi
+      # An image reference is lower case.
+      - name: Image name
+        run: echo "IMAGE=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_ENV"
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069
+      - name: Registry auth
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: printf '%s' "$GITHUB_TOKEN" | docker login ghcr.io --username "$GITHUB_ACTOR" --password-stdin
+      - uses: sigstore/cosign-installer@756fe2d284c7292c4e9b62c8a28f1e5629c59532
+      - name: Build for the scan
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc
+        with:
+          context: .
+          file: deploy/Containerfile
+          platforms: linux/amd64
+          outputs: type=docker,dest=${{ runner.temp }}/hst-image.tar
+          build-args: |
+            VERSION=${{ steps.version.outputs.package }}
+            VCS_REF=${{ env.SHA }}
+            APT_REFRESH=${{ github.run_id }}
+          cache-from: type=gha
+          provenance: false
+      - name: Trivy scan
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25
+        with:
+          input: ${{ runner.temp }}/hst-image.tar
+          severity: "HIGH,CRITICAL"
+          exit-code: "1"
+          ignore-unfixed: true
+      - name: Build and push by digest
+        id: build
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc
+        with:
+          context: .
+          file: deploy/Containerfile
+          platforms: linux/amd64
+          outputs: type=image,name=${{ env.IMAGE }},push-by-digest=true,name-canonical=true,push=true
+          build-args: |
+            VERSION=${{ steps.version.outputs.package }}
+            VCS_REF=${{ env.SHA }}
+            APT_REFRESH=${{ github.run_id }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          provenance: mode=max
+      - name: Sign the image
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: cosign sign --yes "$IMAGE@$DIGEST"
+      - name: Generate SBOM
+        uses: anchore/sbom-action@66cbf4bc1f1c0d2edc94016e65bc221b6bb0ad6c
+        with:
+          image: ${{ env.IMAGE }}@${{ steps.build.outputs.digest }}
+          registry-username: ${{ github.actor }}
+          registry-password: ${{ secrets.GITHUB_TOKEN }}
+          format: spdx-json
+          output-file: sbom.spdx.json
+          artifact-name: sbom.spdx.json
+      - name: Attest the SBOM
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: cosign attest --yes --type spdxjson --predicate sbom.spdx.json "$IMAGE@$DIGEST"
+      - name: Tag the image
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          docker buildx imagetools create --prefer-index=false \
+            --tag "$IMAGE:$SHA" "$IMAGE@$DIGEST"
+          actual=$(docker buildx imagetools inspect "$IMAGE:$SHA" --format '{{.Manifest.Digest}}')
+          test "$actual" = "$DIGEST"
+      - name: Report the digest
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          {
+            echo "### Image pushed"
+            echo
+            echo '```'
+            echo "tag:    $IMAGE:$SHA"
+            echo "digest: $DIGEST"
+            echo '```'
+            echo
+            echo "Install pinned by digest:"
+            echo
+            echo '```'
+            echo "make k8s-install REGISTRY=${IMAGE%/*} IMAGE_NAME=${IMAGE##*/} \\"
+            echo "  INGRESS_NS=<namespace of the ingress controller> INGRESS_TLS_SECRET=<TLS secret name> \\"
+            echo "  HELM_EXTRA='--set image.digest=$DIGEST'"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  validate:
+    needs: [image]
+    if: github.event_name == 'workflow_dispatch' && inputs.channel == 'stable'
+    permissions:
+      contents: read
+    # ci.yml runs every job for a workflow_dispatch event.
+    uses: ./.github/workflows/ci.yml
+
+  promote:
+    needs: [image, validate]
+    if: github.event_name == 'workflow_dispatch' && inputs.channel == 'stable'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      id-token: write
+      packages: write
+    env:
+      DIGEST: ${{ needs.image.outputs.digest }}
+      VERSION: ${{ needs.image.outputs.version }}
+    steps:
+      # An image reference is lower case.
+      - name: Image name
+        run: echo "IMAGE=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_ENV"
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069
+      - name: Registry auth
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: printf '%s' "$GITHUB_TOKEN" | docker login ghcr.io --username "$GITHUB_ACTOR" --password-stdin
+      - uses: sigstore/cosign-installer@756fe2d284c7292c4e9b62c8a28f1e5629c59532
+      # The certificate identity of a signature is the workflow file and the git ref
+      # of the run that signed the image.
+      - name: Verify that release.yml on main signed the candidate
+        run: |
+          test -n "$DIGEST"
+          cosign verify \
+            --certificate-identity "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/.github/workflows/release.yml@refs/heads/main" \
+            --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+            "$IMAGE@$DIGEST"
+      # `imagetools inspect` prints "<reference>: not found" for a tag that does not exist.
+      - name: Refuse a version tag that exists
+        if: env.VERSION != ''
+        run: |
+          if found=$(docker buildx imagetools inspect "$IMAGE:$VERSION" --format '{{.Manifest.Digest}}' 2>&1); then
+            echo "The tag $IMAGE:$VERSION exists with the digest $found"; exit 1
+          fi
+          case "$found" in
+            *"$IMAGE:$VERSION: not found"*) ;;
+            *) echo "$found"; exit 1 ;;
+          esac
+      # The image job signs each candidate. Only this job writes a signature with the
+      # annotation `channel=stable`. The job runs after `validate`.
+      - name: Sign the promoted image
+        run: cosign sign --yes -a channel=stable "$IMAGE@$DIGEST"
+      - name: Tag the candidate as stable
+        run: |
+          docker buildx imagetools create --prefer-index=false \
+            --tag "$IMAGE:stable-$GITHUB_SHA" "$IMAGE@$DIGEST"
+          actual=$(docker buildx imagetools inspect "$IMAGE:stable-$GITHUB_SHA" --format '{{.Manifest.Digest}}')
+          test "$actual" = "$DIGEST"
+          if [ -n "$VERSION" ]; then
+            docker buildx imagetools create --prefer-index=false \
+              --tag "$IMAGE:$VERSION" "$IMAGE@$DIGEST"
+            actual=$(docker buildx imagetools inspect "$IMAGE:$VERSION" --format '{{.Manifest.Digest}}')
+            test "$actual" = "$DIGEST"
+            echo "Version: $IMAGE:$VERSION" >> "$GITHUB_STEP_SUMMARY"
+          fi
+          echo "Stable image: $IMAGE@$DIGEST" >> "$GITHUB_STEP_SUMMARY"
+          echo "Commit: $GITHUB_SHA" >> "$GITHUB_STEP_SUMMARY"

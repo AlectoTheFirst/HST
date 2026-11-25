@@ -1,0 +1,33 @@
+# Gitleaks config for the `secrets` job of ci.yml and for a local `gitleaks git`.
+# It extends the default rule set. Each entry below is a reviewed false positive.
+# ci.yml pins the gitleaks version (GITLEAKS_VERSION).
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "a test password that looks like a credential"
+condition = "AND"
+paths = ['''^tests/app/test_auth_api\.py$''']
+regexes = ['''anything-goes-9''']
+
+[[allowlists]]
+description = "the idempotency key of an inventory ApplyRequest in tests; it sits next to a runtime preview token"
+condition = "AND"
+paths = ['''^tests/(app/test_inventory_routing|test_inventory_routing_identity)\.py$''']
+regexTarget = "line"
+regexes = ['''ApplyRequest\(token=preview\.token, idempotency_key=''']
+
+[[allowlists]]
+description = "the Settings secret key of the IPAM tests, a synthetic value that only seals data the test writes"
+condition = "AND"
+paths = ['''^tests/test_ipam(_db)?\.py$''']
+regexTarget = "line"
+regexes = ['''hst_secret_key="''']
+
+[[allowlists]]
+description = "a relationship type argument before a scope constant whose name holds the letters the rule keys on"
+condition = "AND"
+paths = ['''^tests/test_carry_contributions\.py$''']
+regexTarget = "line"
+regexes = ['''store\.rel\(".*_scope=APIC''']

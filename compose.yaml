@@ -1,0 +1,252 @@
+# podman compose up -d --build      (from the repo root; docker compose works too)
+#
+# The whole system: the twin database (neo4j), the app's identity/config store (pg),
+# and the app itself. Postgres is not published at all and Neo4j is bound to the
+# loopback interface only; the LAN reaches nothing but `app` on 8787.
+#
+# .env sits beside this file, so compose finds it for `${...}` substitution with no
+# flags. No service loads it with `env_file:`: a container receives a setting only where
+# a service below names it. No manual step beyond filling it in: the app applies its
+# own Alembic migrations at start-up (with a retry while pg is still initialising),
+# and the one-shot `init` service applies the Neo4j constraints, then exits.
+#
+# The `neo4j` service mounts the volume `hst-neo4j-data`. A Neo4j run by hand
+# against the same volume must be stopped first: Neo4j takes an exclusive store lock
+# on /data, so a second instance will fail to start.
+#
+# `compose down -v` deletes the volumes and everything in them, the raw snapshots
+# among them, which no database dump holds.
+
+x-hardening: &hardening
+  security_opt: ["no-new-privileges:true"]
+  cap_drop: ["ALL"]
+
+# Log retention is stated rather than left to the runtime default. `max-size` is honoured
+# by both podman (which aliases json-file to its k8s-file driver) and docker; `max-file`
+# is NOT a podman option and is absent.
+x-logging: &logging
+  logging:
+    driver: json-file
+    options: { max-size: "10m" }
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: deploy/Containerfile
+      # Stamped into the image as OCI labels and HST_BUILD_REVISION, so
+      # `podman inspect` and /api/health can both name the commit. Export VCS_REF
+      # before `up --build` (e.g. `export VCS_REF=$(git rev-parse --short HEAD)`);
+      # it defaults to "unknown" rather than failing the build.
+      args:
+        VCS_REF: ${VCS_REF:-unknown}
+        VERSION: ${HST_VERSION:-0.1.0}
+    # Named so `init` can reuse the same image rather than building a second one.
+    image: hst:local
+    # NOT `env_file: .env`. A blanket include would put every collector credential in the
+    # root .env into the app container's environment, visible in `podman inspect`, and
+    # the run executor reads sources from the Fernet-sealed Postgres store, never from
+    # env. Everything the app itself needs is named explicitly below (secrets) or left to
+    # config.py's defaults; a few optional knobs an operator might tune are passed
+    # through with those defaults.
+    environment:
+      POSTGRES_DSN: postgresql+asyncpg://hst:${HST_PG_PASSWORD:?set in .env}@pg:5432/hst
+      # Service-name DNS on the compose network. Override with
+      # NEO4J_URI_CONTAINER to point at a twin outside this stack (e.g.
+      # bolt://host.containers.internal:7687 for a container published on the host).
+      NEO4J_URI: ${NEO4J_URI_CONTAINER:-bolt://neo4j:7687}
+      # Forwarded from .env. A shell `export` reaches compose for ${...} substitution
+      # but never enters the container on its own, so a credential the app needs has
+      # to be named here to cross the boundary. This is the operator key that wraps
+      # the data key (see .env.example); the server needs it, not just the CLI.
+      HST_SECRET_KEY: ${HST_SECRET_KEY:?generate one with `hst secret-key`}
+      NEO4J_PASSWORD: ${NEO4J_PASSWORD:?set in .env}
+      # Pinned to the container's own paths, not taken from .env: .env is shared with
+      # the host workflow, and a HST_DATA_DIR set for that workflow names a host path.
+      # The raw snapshots, the side store, the manifests and the wrapped data key have to
+      # land in the volume below, and their writers create a missing directory
+      # (mkdir(parents=True, exist_ok=True)), so a wrong path would not fail.
+      HST_DATA_DIR: /srv/data
+      WEB_DIST: /srv/web/dist
+      # Optional app knobs an operator sets in .env, passed through with config.py's own
+      # defaults.
+      NEO4J_USER: ${NEO4J_USER:-neo4j}
+      NEO4J_DATABASE: ${NEO4J_DATABASE:-neo4j}
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      SESSION_TTL_HOURS: ${SESSION_TTL_HOURS:-168}
+      HST_FORWARDED_ALLOW_IPS: ${HST_FORWARDED_ALLOW_IPS:-}
+      HST_PUBLIC_URL: ${HST_PUBLIC_URL:-}
+      HST_MAX_REQUEST_BODY_MB: ${HST_MAX_REQUEST_BODY_MB:-16}
+      # The analysis engine and its worker limits, config.py's defaults when unset.
+      # symbolic-v2 uses the native backend the image carries; with it, raise
+      # HST_APP_MEM_LIMIT, since the worker runs in this container beside
+      # collection (the Helm enterprise profile: 2048 MiB worker, 6g container).
+      ANALYSIS_ENGINE: ${ANALYSIS_ENGINE:-legacy-v1}
+      ANALYSIS_MEMORY_MB: ${ANALYSIS_MEMORY_MB:-1024}
+      ANALYSIS_TIMEOUT_S: ${ANALYSIS_TIMEOUT_S:-120}
+      ANALYSIS_CACHE_MB: ${ANALYSIS_CACHE_MB:-10240}
+      ANALYSIS_RESULT_MB: ${ANALYSIS_RESULT_MB:-10240}
+    # Loopback-bound: local dev is HTTP-on-loopback by design. LAN or production use
+    # requires a TLS terminator in front.
+    ports: ["127.0.0.1:8787:8787"]
+    # The healthcheck condition makes start-up quiet; it is not load-bearing. The app
+    # retries its first Postgres contact against a deadline, so a provider that
+    # ignores `condition:` still converges.
+    depends_on:
+      pg: { condition: service_healthy }
+      neo4j: { condition: service_started }
+    restart: unless-stopped
+    # A collection run executes in-process as an asyncio task over to_thread, so
+    # compose's 10s default would SIGKILL a live run against thousands of devices.
+    stop_grace_period: 60s
+    # Every collection run executes in this container unless compose.worker.yaml moves
+    # it to `worker`. A load holds about 1.1 GB for an IOS-XE full-table device and
+    # about 3.6 GB for an NX-OS one.
+    mem_limit: ${HST_APP_MEM_LIMIT:-4g}
+    cpus: 2.0
+    # The limit counts processes and threads. 2048 is the default limit of podman.
+    pids_limit: 2048
+    <<: [*hardening, *logging]
+    volumes: ["hst-data:/srv/data"]
+  init:
+    image: hst:local
+    # `init` starts after `app` builds the tag `hst:local`.
+    #
+    # The shell loop makes the healthcheck condition below advisory: a provider that
+    # ignores `condition: service_healthy` still converges while Neo4j finishes booting.
+    command:
+      - sh
+      - -c
+      - 'for i in $(seq 45); do hst init-db && exit 0; sleep 2; done; exit 1'
+    # NOT `env_file: .env`. This one-shot needs two variables, and a blanket include
+    # would put every collector credential in the root .env into its environment,
+    # visible in `podman inspect`.
+    environment:
+      NEO4J_URI: ${NEO4J_URI_CONTAINER:-bolt://neo4j:7687}
+      NEO4J_PASSWORD: ${NEO4J_PASSWORD:?set in .env}
+    depends_on:
+      app: { condition: service_started }
+      neo4j: { condition: service_started }
+    restart: "no"
+    mem_limit: 512m
+    cpus: 0.5
+    <<: [*hardening, *logging]
+  neo4j:
+    # Pinned to the 5.26 LTS line rather than `5-community`, which floats across
+    # minor versions. Bump the pin explicitly.
+    image: docker.io/library/neo4j:5.26.29-community@sha256:d9dd3dc7d1c78fa959191ff02dbdcbefadceaf83eee23428fb92a58cac8ad3fe
+    environment:
+      # Applied ONLY when /data is empty. On a volume that already holds a graph
+      # the image skips it and the old password stays in force, so NEO4J_PASSWORD
+      # in .env has to match what that graph was created with.
+      NEO4J_AUTH: neo4j/${NEO4J_PASSWORD:?set in .env}
+      # Read by the healthcheck below. Not NEO4J_-prefixed: the image
+      # turns NEO4J_* variables into neo4j.conf settings and rejects unknown ones.
+      CYPHER_PW: ${NEO4J_PASSWORD:?set in .env}
+      # Sized against mem_limit below, not against the host. Unset, the JVM reads the
+      # machine's total RAM and helps itself, so at a million-plus interface nodes the
+      # twin can take the app and Postgres down with it.
+      NEO4J_server_memory_heap_initial__size: 1G
+      NEO4J_server_memory_heap_max__size: 1G
+      NEO4J_server_memory_pagecache_size: 1G
+      # Kills a runaway query server-side. app/tables.py bounds the operator Cypher
+      # surface during iteration, but a canned query or the reasoner can still blow up.
+      NEO4J_db_memory_transaction_total_max: 1G
+      # Belt and braces with the check_readonly denylist in app/tables.py: this is the
+      # server-side half, and it is the one an attacker cannot text-match their way past.
+      NEO4J_dbms_security_allow__csv__import__from__file__urls: "false"
+    ports: ["127.0.0.1:7474:7474", "127.0.0.1:7687:7687"]
+    volumes: ["hst-neo4j-data:/data"]
+    # The shell of the container expands `$$CYPHER_PW`.
+    healthcheck:
+      test: ["CMD-SHELL", "NEO4J_USERNAME=neo4j NEO4J_PASSWORD=\"$$CYPHER_PW\" cypher-shell 'RETURN 1' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    restart: unless-stopped
+    # Room for the 1G heap plus the 1G page cache configured above, and the JVM's
+    # off-heap overhead on top.
+    mem_limit: 3g
+    cpus: 2.0
+    pids_limit: 2048
+    stop_grace_period: 60s          # a checkpoint on shutdown is not interruptible
+    # cap_drop is not applied here: the official neo4j image starts as root to chown
+    # /data before dropping to the neo4j user, so ALL would break a first start on an
+    # empty volume. Verify against the image before tightening it.
+    security_opt: ["no-new-privileges:true"]
+    <<: *logging
+  pg:
+    image: docker.io/library/postgres:16.14@sha256:95206741a5b214807675e14165369d05b93a9cf692223b616d07cca227e74b0b
+    environment:
+      POSTGRES_USER: hst
+      POSTGRES_PASSWORD: ${HST_PG_PASSWORD:?set in .env}
+      POSTGRES_DB: hst
+    volumes: ["hst-pg:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hst -d hst"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+    restart: unless-stopped
+    mem_limit: 1g
+    cpus: 1.0
+    pids_limit: 2048
+    stop_grace_period: 30s          # let it finish a checkpoint rather than recover
+    # Same reasoning as neo4j: the postgres image needs root to run initdb and chown
+    # the data directory on a fresh volume.
+    security_opt: ["no-new-privileges:true"]
+    <<: *logging
+  # One-shot Postgres dump, one command a systemd timer or cron can call:
+  #     podman compose --profile backup run --rm backup
+  # `profiles:` keeps it out of a normal `up`. This dumps the identity and config
+  # store only; HST_DATA_DIR and the operator key are separate.
+  #
+  # The `:U` on the bind is podman-only (rootless uid mapping); on docker compose,
+  # drop it.
+  backup:
+    profiles: ["backup"]
+    image: docker.io/library/postgres:16.14@sha256:95206741a5b214807675e14165369d05b93a9cf692223b616d07cca227e74b0b
+    environment:
+      PGPASSWORD: ${HST_PG_PASSWORD:?set in .env}
+    volumes: ["./backups:/backups:U"]
+    # `$$` is an escaped literal `$`: compose must not interpolate this, the container
+    # shell must run it.
+    command:
+      - sh
+      - -c
+      - 'set -eu; out=/backups/hst-pg-$$(date +%Y%m%d-%H%M%S).dump;
+         pg_dump -h pg -U hst -Fc hst > "$$out"; echo "wrote $$out"'
+    depends_on:
+      pg: { condition: service_healthy }
+    restart: "no"
+    <<: [*hardening, *logging]
+  # One-shot Neo4j offline dump. Community has no online backup, so the database
+  # must be stopped around it:
+  #     podman compose stop neo4j
+  #     podman compose --profile backup run --rm backup-neo4j
+  #     podman compose start neo4j
+  # Runs the same image the stack runs, against the volume directly.
+  backup-neo4j:
+    profiles: ["backup"]
+    image: docker.io/library/neo4j:5.26.29-community@sha256:d9dd3dc7d1c78fa959191ff02dbdcbefadceaf83eee23428fb92a58cac8ad3fe
+    volumes:
+      - "hst-neo4j-data:/data"
+      - "./backups:/backups:U"
+    command: ["neo4j-admin", "database", "dump", "neo4j", "--to-path=/backups", "--overwrite-destination=true"]
+    restart: "no"
+    # The entrypoint of the image starts as root.
+    security_opt: ["no-new-privileges:true"]
+    <<: *logging
+
+# Pinned names so the volumes survive a change of project directory (the default
+# prefix is the compose project name). Ordinary compose-managed volumes: `down -v`
+# deletes them. Durability is a backup's job, not the volume declaration's.
+volumes:
+  hst-pg:
+    name: hst-pg
+  hst-data:
+    name: hst-data
+  hst-neo4j-data:
+    name: hst-neo4j-data

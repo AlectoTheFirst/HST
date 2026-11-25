@@ -1,0 +1,194 @@
+# Load: hst load-fixture fixtures/mini-dc.yaml
+source: fixture
+scope: "fixture:mini-dc"
+
+nodes:
+  # --- location / logical domains
+  - {label: Site, uid: "site:dc1", props: {code: dc1, name: DC 1, kind: dc}}
+  - {label: Fabric, uid: "fabric:fab1", props: {name: fab1, kind: aci}}
+  # RoutingDomain: grouping (MEMBER_OF, basis: declared), replacing
+  # L3Domain/REALIZES. The legacy L3Domain label/REALIZES rel stay registered in
+  # core/labels.py for real graphs loaded before this upgrade; this fixture no
+  # longer carries either.
+  - {label: RoutingDomain, uid: "rdom:corp", props: {name: corp}}
+  - {label: BridgeDomain, uid: "l2seg:dc1-web", props: {name: dc1-web}}
+  - {label: BridgeDomain, uid: "l2seg:dc1-db", props: {name: dc1-db}}
+
+  # --- devices & redundancy groups
+  - {label: Device, uid: "dev:leaf101", props: {hostname: leaf101, hostname_fqdn: leaf101.dc1.example, platform: aci-leaf, role: leaf, vendor: cisco, serial: FDO24010101, mgmt_ip: 10.0.0.101}}
+  - {label: Device, uid: "dev:leaf102", props: {hostname: leaf102, hostname_fqdn: leaf102.dc1.example, platform: aci-leaf, role: leaf, vendor: cisco, serial: FDO24010102, mgmt_ip: 10.0.0.102}}
+  - {label: Device, uid: "dev:cpfw01a", props: {hostname: cpfw01a, platform: checkpoint, role: firewall, vendor: checkpoint, serial: CP0001A, mgmt_ip: 10.0.0.111}}
+  - {label: Device, uid: "dev:cpfw01b", props: {hostname: cpfw01b, platform: checkpoint, role: firewall, vendor: checkpoint, serial: CP0001B, mgmt_ip: 10.0.0.112}}
+  - {label: RedundancyGroup, uid: "rgrp:vpc:dc1:leaf101-102", props: {kind: vpc, name: leaf101-102}}
+  - {label: RedundancyGroup, uid: "rgrp:cp-cluster:dc1:cpfw01", props: {kind: cp-cluster, name: cpfw01}}
+  - {label: RedundancyGroup, uid: "rgrp:ns-ha:dc1:ns01", props: {kind: ns-ha, name: ns01}}
+
+  # --- physical ports / interfaces
+  - {label: Port, uid: "dev:leaf101/port/eth1-1", props: {name: ethernet1/1, speed: 10g}}
+  - {label: Port, uid: "dev:leaf101/port/eth1-48", props: {name: ethernet1/48, speed: 10g}}
+  - {label: Port, uid: "dev:leaf102/port/eth1-1", props: {name: ethernet1/1, speed: 10g}}
+  - {label: Port, uid: "dev:cpfw01a/port/eth1", props: {name: eth1}}
+  - {label: Port, uid: "dev:cpfw01b/port/eth1", props: {name: eth1}}
+  - {label: Interface, uid: "dev:leaf101/if/eth1-1", props: {name: ethernet1/1, kind: phys}}
+
+  # --- vSphere
+  - {label: EsxHost, uid: "vc:vc01:host-11", props: {hostname: esx01, serial: VMW20240111}}
+  - {label: Pnic, uid: "vc:vc01:host-11/pnic/vmnic0", props: {name: vmnic0}}
+  - {label: Vm, uid: "vc:vc01:vm-101", props: {name: web01, power: "on"}}
+  - {label: Vm, uid: "vc:vc01:vm-102", props: {name: db01, power: "on"}}
+  - {label: Vnic, uid: "vc:vc01:vm-101/vnic/0", props: {mac: "00:50:56:01:01:01"}}
+  - {label: Vnic, uid: "vc:vc01:vm-102/vnic/0", props: {mac: "00:50:56:02:02:02"}}
+  - {label: DvPortgroup, uid: "vc:vc01:dvpg-web", props: {name: dvpg-web, vlan: 10}}
+  - {label: DvPortgroup, uid: "vc:vc01:dvpg-db", props: {name: dvpg-db, vlan: 20}}
+
+  # --- ACI tenant tree (uids = APIC DNs)
+  - {label: Tenant, uid: "aci:fab1:uni/tn-PROD", props: {name: PROD}}
+  - {label: AppProfile, uid: "aci:fab1:uni/tn-PROD/ap-webshop", props: {name: webshop}}
+  - {label: Epg, uid: "aci:fab1:uni/tn-PROD/ap-webshop/epg-frontend", props: {name: frontend, pctag: 16386}}
+  - {label: Epg, uid: "aci:fab1:uni/tn-PROD/ap-webshop/epg-backend", props: {name: backend, pctag: 16387}}
+  - {label: BridgeDomain, uid: "aci:fab1:uni/tn-PROD/BD-web", props: {name: BD-web, unicast_route: true}}
+  - {label: BridgeDomain, uid: "aci:fab1:uni/tn-PROD/BD-db", props: {name: BD-db, unicast_route: true}}
+  - {label: VrfInstance, uid: "vrf:aci:fab1:tn-PROD:CTX1", props: {name: CTX1}}
+  - {label: Contract, uid: "aci:fab1:uni/tn-PROD/brc-web-to-db", props: {name: web-to-db, scope: context}}
+  - {label: ContractSubject, uid: "aci:fab1:uni/tn-PROD/brc-web-to-db/subj-app", props: {name: app}}
+  - {label: AciFilter, uid: "aci:fab1:uni/tn-PROD/flt-postgres", props: {name: postgres}}
+  - {label: FilterEntry, uid: "aci:fab1:uni/tn-PROD/flt-postgres/e-tcp-5432", props: {proto: tcp, ether_type: ip, s_from_port: unspecified, s_to_port: unspecified, d_from_port: "5432", d_to_port: "5432", tcp_rules: unspecified, apply_to_frag: "no"}}
+  - {label: ServiceGraphTemplate, uid: "aci:fab1:uni/tn-PROD/AbsGraph-fw", props: {name: fw-graph}}
+  - {label: ServiceNode, uid: "aci:fab1:uni/tn-PROD/AbsGraph-fw/AbsNode-FW", props: {name: FW, function: fw, managed: false}}
+  - {label: PbrPolicy, uid: "aci:fab1:uni/tn-PROD/svcCont/svcRedirectPol-fw-pbr", props: {name: fw-pbr, hashing: sip-dip}}
+  - {label: PbrDest, uid: "aci:fab1:uni/tn-PROD/svcCont/svcRedirectPol-fw-pbr/dest-10.0.250.10", props: {ip: 10.0.250.10, mac: "00:1C:7F:AA:BB:01"}}
+  - {label: Endpoint, uid: "ep:corp:001c7faabb01", props: {mac: "00:1c:7f:aa:bb:01", kind: infra, name: cpfw01-inside}}
+
+  # --- addressing
+  - {label: Prefix, uid: "pfx:corp:10.0.0.0/16", props: {cidr: 10.0.0.0/16, af: 4, kind: aggregate, l3dom: corp, anchor: corp}}
+  - {label: Prefix, uid: "pfx:vrf-aci-fab1-tn-prod-ctx1:10.0.10.0/24", props: {cidr: 10.0.10.0/24, af: 4, kind: connected, l3dom: corp, name: web, anchor: "vrf:aci:fab1:tn-PROD:CTX1"}}
+  - {label: Prefix, uid: "pfx:vrf-aci-fab1-tn-prod-ctx1:10.0.20.0/24", props: {cidr: 10.0.20.0/24, af: 4, kind: connected, l3dom: corp, name: db, anchor: "vrf:aci:fab1:tn-PROD:CTX1"}}
+  - {label: Prefix, uid: "pfx:corp:10.0.30.0/24", props: {cidr: 10.0.30.0/24, af: 4, kind: service, l3dom: corp, name: vip, anchor: corp}}
+  - {label: Prefix, uid: "pfx:corp:10.0.250.0/29", props: {cidr: 10.0.250.0/29, af: 4, kind: service, l3dom: corp, name: fw-svc, anchor: corp}}
+  - {label: IpAddress, uid: "ip:corp:10.0.10.5", props: {ip: 10.0.10.5, af: 4, l3dom: corp, anchor: corp}}
+  - {label: IpAddress, uid: "ip:corp:10.0.20.5", props: {ip: 10.0.20.5, af: 4, l3dom: corp, anchor: corp}}
+  - {label: IpAddress, uid: "ip:corp:10.0.30.10", props: {ip: 10.0.30.10, af: 4, l3dom: corp, anchor: corp}}
+  - {label: IpAddress, uid: "ip:corp:10.0.250.10", props: {ip: 10.0.250.10, af: 4, l3dom: corp, anchor: corp}}
+
+  # --- Check Point
+  - {label: FwRulebase, uid: "cp:mgmt01:smc:pkg-dc-access", props: {name: dc-access, kind: access, vendor: checkpoint, default_action: drop}}
+  - {label: FwRule, uid: "cp:mgmt01:smc:rule-web-to-db", props: {name: allow web to db, position: 1, action: accept, enabled: true, rule_uid: a1b2c3d4-0000-4000-8000-000000000001}}
+  - {label: NetObject, uid: "cp:mgmt01:smc:obj-net-web", props: {name: net-web, kind: network}}
+  - {label: NetObject, uid: "cp:mgmt01:smc:obj-net-db", props: {name: net-db, kind: network}}
+  - {label: SvcObject, uid: "cp:mgmt01:smc:svc-postgres", props: {name: postgres, proto: tcp, ports: "5432"}}
+
+  # --- NetScaler
+  - {label: VirtualService, uid: "ns:dc1-ns01:lbvs:web-443", props: {name: web-443, vip: 10.0.30.10, port: 443, proto: tcp, kind: lb, snat_mode: snip}}
+  - {label: Pool, uid: "ns:dc1-ns01:sg:web", props: {name: web, lb_method: leastconnection}}
+  - {label: PoolMember, uid: "ns:dc1-ns01:sg:web/10.0.10.5:8443", props: {port: 8443}}
+
+  # --- app layer (ServiceNow)
+  - {label: BusinessService, uid: "snow:bs-webshop", props: {name: Webshop, criticality: high}}
+  - {label: AppComponent, uid: "snow:appc-webshop-web", props: {name: webshop-web}}
+
+rels:
+  # --- location / membership
+  - {type: LOCATED_IN, start: [Device, "dev:leaf101"], end: [Site, "site:dc1"]}
+  - {type: LOCATED_IN, start: [Device, "dev:leaf102"], end: [Site, "site:dc1"]}
+  - {type: LOCATED_IN, start: [Device, "dev:cpfw01a"], end: [Site, "site:dc1"]}
+  - {type: LOCATED_IN, start: [Device, "dev:cpfw01b"], end: [Site, "site:dc1"]}
+  - {type: MEMBER_OF, start: [Device, "dev:leaf101"], end: [RedundancyGroup, "rgrp:vpc:dc1:leaf101-102"]}
+  - {type: MEMBER_OF, start: [Device, "dev:leaf102"], end: [RedundancyGroup, "rgrp:vpc:dc1:leaf101-102"]}
+  - {type: MEMBER_OF, start: [Device, "dev:cpfw01a"], end: [RedundancyGroup, "rgrp:cp-cluster:dc1:cpfw01"]}
+  - {type: MEMBER_OF, start: [Device, "dev:cpfw01b"], end: [RedundancyGroup, "rgrp:cp-cluster:dc1:cpfw01"]}
+  - {type: MEMBER_OF, start: [Device, "dev:leaf101"], end: [Fabric, "fabric:fab1"]}
+  - {type: MEMBER_OF, start: [Device, "dev:leaf102"], end: [Fabric, "fabric:fab1"]}
+
+  # --- physical
+  - {type: "ON", start: [Port, "dev:leaf101/port/eth1-1"], end: [Device, "dev:leaf101"]}
+  - {type: "ON", start: [Port, "dev:leaf101/port/eth1-48"], end: [Device, "dev:leaf101"]}
+  - {type: "ON", start: [Port, "dev:leaf102/port/eth1-1"], end: [Device, "dev:leaf102"]}
+  - {type: "ON", start: [Port, "dev:cpfw01a/port/eth1"], end: [Device, "dev:cpfw01a"]}
+  - {type: "ON", start: [Port, "dev:cpfw01b/port/eth1"], end: [Device, "dev:cpfw01b"]}
+  - {type: "ON", start: [Interface, "dev:leaf101/if/eth1-1"], end: [Device, "dev:leaf101"]}
+  - {type: REALIZED_BY, start: [Interface, "dev:leaf101/if/eth1-1"], end: [Port, "dev:leaf101/port/eth1-1"]}
+  - {type: CONNECTED_TO, start: [Port, "dev:leaf101/port/eth1-1"], end: [Port, "dev:cpfw01a/port/eth1"], props: {source: fixture}}
+  - {type: CONNECTED_TO, start: [Port, "dev:leaf102/port/eth1-1"], end: [Port, "dev:cpfw01b/port/eth1"], props: {source: fixture}}
+  - {type: CONNECTED_TO, start: [Pnic, "vc:vc01:host-11/pnic/vmnic0"], end: [Port, "dev:leaf101/port/eth1-48"], props: {source: fixture}}
+  - {type: "ON", start: [Pnic, "vc:vc01:host-11/pnic/vmnic0"], end: [EsxHost, "vc:vc01:host-11"]}
+
+  # --- vSphere
+  - {type: "ON", start: [Vm, "vc:vc01:vm-101"], end: [EsxHost, "vc:vc01:host-11"]}
+  - {type: "ON", start: [Vm, "vc:vc01:vm-102"], end: [EsxHost, "vc:vc01:host-11"]}
+  - {type: OF, start: [Vnic, "vc:vc01:vm-101/vnic/0"], end: [Vm, "vc:vc01:vm-101"]}
+  - {type: OF, start: [Vnic, "vc:vc01:vm-102/vnic/0"], end: [Vm, "vc:vc01:vm-102"]}
+  - {type: PLUGGED_INTO, start: [Vnic, "vc:vc01:vm-101/vnic/0"], end: [DvPortgroup, "vc:vc01:dvpg-web"]}
+  - {type: PLUGGED_INTO, start: [Vnic, "vc:vc01:vm-102/vnic/0"], end: [DvPortgroup, "vc:vc01:dvpg-db"]}
+  - {type: HAS_IP, start: [Vnic, "vc:vc01:vm-101/vnic/0"], end: [IpAddress, "ip:corp:10.0.10.5"]}
+  - {type: HAS_IP, start: [Vnic, "vc:vc01:vm-102/vnic/0"], end: [IpAddress, "ip:corp:10.0.20.5"]}
+
+  # --- L2 stitching (the REALIZES layer)
+  - {type: REALIZES, start: [BridgeDomain, "aci:fab1:uni/tn-PROD/BD-web"], end: [BridgeDomain, "l2seg:dc1-web"]}
+  - {type: REALIZES, start: [BridgeDomain, "aci:fab1:uni/tn-PROD/BD-db"], end: [BridgeDomain, "l2seg:dc1-db"]}
+  - {type: REALIZES, start: [DvPortgroup, "vc:vc01:dvpg-web"], end: [BridgeDomain, "l2seg:dc1-web"]}
+  - {type: REALIZES, start: [DvPortgroup, "vc:vc01:dvpg-db"], end: [BridgeDomain, "l2seg:dc1-db"]}
+  - {type: MEMBER_OF, start: [VrfInstance, "vrf:aci:fab1:tn-PROD:CTX1"], end: [RoutingDomain, "rdom:corp"], props: {basis: declared}}
+
+  # --- ACI containment & policy
+  - {type: HAS, start: [Tenant, "aci:fab1:uni/tn-PROD"], end: [AppProfile, "aci:fab1:uni/tn-PROD/ap-webshop"]}
+  - {type: HAS, start: [AppProfile, "aci:fab1:uni/tn-PROD/ap-webshop"], end: [Epg, "aci:fab1:uni/tn-PROD/ap-webshop/epg-frontend"]}
+  - {type: HAS, start: [AppProfile, "aci:fab1:uni/tn-PROD/ap-webshop"], end: [Epg, "aci:fab1:uni/tn-PROD/ap-webshop/epg-backend"]}
+  - {type: HAS, start: [Tenant, "aci:fab1:uni/tn-PROD"], end: [BridgeDomain, "aci:fab1:uni/tn-PROD/BD-web"]}
+  - {type: HAS, start: [Tenant, "aci:fab1:uni/tn-PROD"], end: [BridgeDomain, "aci:fab1:uni/tn-PROD/BD-db"]}
+  - {type: HAS, start: [Tenant, "aci:fab1:uni/tn-PROD"], end: [Contract, "aci:fab1:uni/tn-PROD/brc-web-to-db"]}
+  - {type: HAS, start: [Tenant, "aci:fab1:uni/tn-PROD"], end: [AciFilter, "aci:fab1:uni/tn-PROD/flt-postgres"]}
+  - {type: HAS, start: [Tenant, "aci:fab1:uni/tn-PROD"], end: [ServiceGraphTemplate, "aci:fab1:uni/tn-PROD/AbsGraph-fw"]}
+  - {type: HAS, start: [Contract, "aci:fab1:uni/tn-PROD/brc-web-to-db"], end: [ContractSubject, "aci:fab1:uni/tn-PROD/brc-web-to-db/subj-app"]}
+  - {type: HAS, start: [AciFilter, "aci:fab1:uni/tn-PROD/flt-postgres"], end: [FilterEntry, "aci:fab1:uni/tn-PROD/flt-postgres/e-tcp-5432"]}
+  - {type: IN_BD, start: [Epg, "aci:fab1:uni/tn-PROD/ap-webshop/epg-frontend"], end: [BridgeDomain, "aci:fab1:uni/tn-PROD/BD-web"]}
+  - {type: IN_BD, start: [Epg, "aci:fab1:uni/tn-PROD/ap-webshop/epg-backend"], end: [BridgeDomain, "aci:fab1:uni/tn-PROD/BD-db"]}
+  - {type: IN_VRF, start: [BridgeDomain, "aci:fab1:uni/tn-PROD/BD-web"], end: [VrfInstance, "vrf:aci:fab1:tn-PROD:CTX1"]}
+  - {type: IN_VRF, start: [BridgeDomain, "aci:fab1:uni/tn-PROD/BD-db"], end: [VrfInstance, "vrf:aci:fab1:tn-PROD:CTX1"]}
+  - {type: CONSUMES, start: [Epg, "aci:fab1:uni/tn-PROD/ap-webshop/epg-frontend"], end: [Contract, "aci:fab1:uni/tn-PROD/brc-web-to-db"]}
+  - {type: PROVIDES, start: [Epg, "aci:fab1:uni/tn-PROD/ap-webshop/epg-backend"], end: [Contract, "aci:fab1:uni/tn-PROD/brc-web-to-db"]}
+  - {type: USES_FILTER, start: [ContractSubject, "aci:fab1:uni/tn-PROD/brc-web-to-db/subj-app"], end: [AciFilter, "aci:fab1:uni/tn-PROD/flt-postgres"], props: {action: permit}}
+  - {type: VMM_BINDING, start: [Epg, "aci:fab1:uni/tn-PROD/ap-webshop/epg-frontend"], end: [DvPortgroup, "vc:vc01:dvpg-web"]}
+  - {type: VMM_BINDING, start: [Epg, "aci:fab1:uni/tn-PROD/ap-webshop/epg-backend"], end: [DvPortgroup, "vc:vc01:dvpg-db"]}
+
+  # --- PBR service insertion chain (firewall-on-a-stick)
+  - {type: APPLIES_GRAPH, start: [ContractSubject, "aci:fab1:uni/tn-PROD/brc-web-to-db/subj-app"], end: [ServiceGraphTemplate, "aci:fab1:uni/tn-PROD/AbsGraph-fw"]}
+  - {type: HAS_NODE, start: [ServiceGraphTemplate, "aci:fab1:uni/tn-PROD/AbsGraph-fw"], end: [ServiceNode, "aci:fab1:uni/tn-PROD/AbsGraph-fw/AbsNode-FW"], props: {seq: 1}}
+  - {type: REDIRECTS_VIA, start: [ServiceNode, "aci:fab1:uni/tn-PROD/AbsGraph-fw/AbsNode-FW"], end: [PbrPolicy, "aci:fab1:uni/tn-PROD/svcCont/svcRedirectPol-fw-pbr"]}
+  - {type: HAS_DEST, start: [PbrPolicy, "aci:fab1:uni/tn-PROD/svcCont/svcRedirectPol-fw-pbr"], end: [PbrDest, "aci:fab1:uni/tn-PROD/svcCont/svcRedirectPol-fw-pbr/dest-10.0.250.10"]}
+  - {type: RESOLVES_TO, start: [PbrDest, "aci:fab1:uni/tn-PROD/svcCont/svcRedirectPol-fw-pbr/dest-10.0.250.10"], end: [Endpoint, "ep:corp:001c7faabb01"]}
+  - {type: OWNED_BY, start: [Endpoint, "ep:corp:001c7faabb01"], end: [RedundancyGroup, "rgrp:cp-cluster:dc1:cpfw01"]}
+  - {type: ATTACHED, start: [Endpoint, "ep:corp:001c7faabb01"], end: [Interface, "dev:leaf101/if/eth1-1"], props: {encap: vlan-250}}
+  - {type: HAS_IP, start: [Endpoint, "ep:corp:001c7faabb01"], end: [IpAddress, "ip:corp:10.0.250.10"]}
+
+  # --- addressing tree
+  - {type: IN, start: [IpAddress, "ip:corp:10.0.10.5"], end: [Prefix, "pfx:vrf-aci-fab1-tn-prod-ctx1:10.0.10.0/24"]}
+  - {type: IN, start: [IpAddress, "ip:corp:10.0.20.5"], end: [Prefix, "pfx:vrf-aci-fab1-tn-prod-ctx1:10.0.20.0/24"]}
+  - {type: IN, start: [IpAddress, "ip:corp:10.0.30.10"], end: [Prefix, "pfx:corp:10.0.30.0/24"]}
+  - {type: IN, start: [IpAddress, "ip:corp:10.0.250.10"], end: [Prefix, "pfx:corp:10.0.250.0/29"]}
+  - {type: WITHIN, start: [Prefix, "pfx:vrf-aci-fab1-tn-prod-ctx1:10.0.10.0/24"], end: [Prefix, "pfx:corp:10.0.0.0/16"]}
+  - {type: WITHIN, start: [Prefix, "pfx:vrf-aci-fab1-tn-prod-ctx1:10.0.20.0/24"], end: [Prefix, "pfx:corp:10.0.0.0/16"]}
+  - {type: WITHIN, start: [Prefix, "pfx:corp:10.0.30.0/24"], end: [Prefix, "pfx:corp:10.0.0.0/16"]}
+  - {type: WITHIN, start: [Prefix, "pfx:corp:10.0.250.0/29"], end: [Prefix, "pfx:corp:10.0.0.0/16"]}
+  - {type: ORIGINATES, start: [VrfInstance, "vrf:aci:fab1:tn-PROD:CTX1"], end: [Prefix, "pfx:vrf-aci-fab1-tn-prod-ctx1:10.0.10.0/24"], props: {proto: connected}}
+  - {type: ORIGINATES, start: [VrfInstance, "vrf:aci:fab1:tn-PROD:CTX1"], end: [Prefix, "pfx:vrf-aci-fab1-tn-prod-ctx1:10.0.20.0/24"], props: {proto: connected}}
+
+  # --- Check Point policy (the second gate behind the PBR redirect)
+  - {type: ENFORCES, start: [RedundancyGroup, "rgrp:cp-cluster:dc1:cpfw01"], end: [FwRulebase, "cp:mgmt01:smc:pkg-dc-access"]}
+  - {type: HAS_RULE, start: [FwRulebase, "cp:mgmt01:smc:pkg-dc-access"], end: [FwRule, "cp:mgmt01:smc:rule-web-to-db"]}
+  - {type: SRC, start: [FwRule, "cp:mgmt01:smc:rule-web-to-db"], end: [NetObject, "cp:mgmt01:smc:obj-net-web"]}
+  - {type: DST, start: [FwRule, "cp:mgmt01:smc:rule-web-to-db"], end: [NetObject, "cp:mgmt01:smc:obj-net-db"]}
+  - {type: SVC, start: [FwRule, "cp:mgmt01:smc:rule-web-to-db"], end: [SvcObject, "cp:mgmt01:smc:svc-postgres"]}
+  - {type: RESOLVES_TO, start: [NetObject, "cp:mgmt01:smc:obj-net-web"], end: [Prefix, "pfx:vrf-aci-fab1-tn-prod-ctx1:10.0.10.0/24"]}
+  - {type: RESOLVES_TO, start: [NetObject, "cp:mgmt01:smc:obj-net-db"], end: [Prefix, "pfx:vrf-aci-fab1-tn-prod-ctx1:10.0.20.0/24"]}
+
+  # --- NetScaler service chain
+  - {type: "ON", start: [VirtualService, "ns:dc1-ns01:lbvs:web-443"], end: [RedundancyGroup, "rgrp:ns-ha:dc1:ns01"]}
+  - {type: VIP, start: [VirtualService, "ns:dc1-ns01:lbvs:web-443"], end: [IpAddress, "ip:corp:10.0.30.10"]}
+  - {type: USES, start: [VirtualService, "ns:dc1-ns01:lbvs:web-443"], end: [Pool, "ns:dc1-ns01:sg:web"]}
+  - {type: HAS_MEMBER, start: [Pool, "ns:dc1-ns01:sg:web"], end: [PoolMember, "ns:dc1-ns01:sg:web/10.0.10.5:8443"]}
+  - {type: TARGETS, start: [PoolMember, "ns:dc1-ns01:sg:web/10.0.10.5:8443"], end: [IpAddress, "ip:corp:10.0.10.5"]}
+
+  # --- business service mapping (ServiceNow)
+  - {type: PART_OF, start: [Vm, "vc:vc01:vm-101"], end: [AppComponent, "snow:appc-webshop-web"]}
+  - {type: PART_OF, start: [Vm, "vc:vc01:vm-102"], end: [AppComponent, "snow:appc-webshop-web"]}
+  - {type: PART_OF, start: [AppComponent, "snow:appc-webshop-web"], end: [BusinessService, "snow:bs-webshop"]}

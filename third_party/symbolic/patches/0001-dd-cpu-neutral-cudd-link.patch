@@ -1,0 +1,45 @@
+From: HST symbolic build maintainers
+Subject: [PATCH] Build CUDD bindings without host CPU tuning
+
+Upstream `dd` 0.6.0 adds `-mtune=native` to every CUDD extension
+compile. That embeds the build host's CPU choice in a wheel and is incompatible
+with the reproducible, portable build contract.
+
+The CUDD build enables dddmp, which incorporates dddmp objects into
+`libcudd`. The upstream link list additionally requests a separate `libdddmp`;
+CUDD 3.0.0 does not produce that library in this configuration. Link the one
+static CUDD library that contains both components.
+
+Upstream: https://github.com/tulip-control/dd/tree/v0.6.0
+Applies to: dd-0.6.0.tar.gz sha256
+4baadadc9b2ebf6136a5b84dc51a43cec5fe91203286cd377e1e093358cdffcd
+
+diff --git a/download.py b/download.py
+--- a/download.py
++++ b/download.py
+@@ -44,14 +44,14 @@
+     'cudd', 'dddmp', 'epd', 'mtr', 'st', 'util']
+ CUDD_INCLUDE = ['.', *CUDD_DIRS]
+ CUDD_LINK: _ty.Final = ['cudd/.libs', 'dddmp/.libs']
+-CUDD_LIB: _ty.Final = ['cudd', 'dddmp']
++CUDD_LIB: _ty.Final = ['cudd']
+ CUDD_CFLAGS = [
+     # '-arch x86_64',
+     '-fPIC',
+     '-std=c99',
+     '-DBSD',
+     '-DHAVE_IEEE_754',
+-    '-mtune=native', '-pthread', '-fwrapv',
++    '-pthread', '-fwrapv',
+     '-fno-strict-aliasing',
+     '-Wall', '-W', '-O3']
+ sizeof_long = ctypes.sizeof(ctypes.c_long)
+@@ -61,7 +61,7 @@
+     f'-DSIZEOF_VOID_P={sizeof_void_p}'])
+ # add -fPIC
+ XCFLAGS = (
+-    'XCFLAGS=-fPIC -mtune=native -DHAVE_IEEE_754 -DBSD '
++    'XCFLAGS=-fPIC -DHAVE_IEEE_754 -DBSD '
+     f'-DSIZEOF_VOID_P={sizeof_void_p} '
+     f'-DSIZEOF_LONG={sizeof_long}')
+ # Sylvan

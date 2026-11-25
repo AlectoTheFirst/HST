@@ -1,0 +1,34 @@
+{
+  "cases": {
+    "iosxe/fixture/unicode": {
+      "inter": "9e32739fc859397af18aede2860f7c8a5c6aa41651c13bfaad8268019202f7d9"
+    },
+    "iosxe/medium/unicode": {
+      "inter": "b20cc9327eee33a053f68a10b516d01b20496a862e607eb4224dfe38406da224"
+    },
+    "iosxe/small/unicode": {
+      "inter": "ec4fe56ca33724698a08724e7bcf42c64aa6d9a53478e75c6ad19d5c738ae0e6"
+    },
+    "iosxr/fixture/unicode": {
+      "inter": "b54989f175e5c653713ea9f92babb6c39f6e15bca120eb5755df8faff4a50665"
+    },
+    "iosxr/medium/unicode": {
+      "inter": "2791c51f3951ab9ba4651cdaeb93523e166de795eac3d435235594851d04c69b"
+    },
+    "iosxr/small/unicode": {
+      "inter": "7dadff20c7f05504b507d3aad599086fb1e31064d0eff0f266e0fe4532ed4872"
+    },
+    "nxos/fixture/unicode": {
+      "inter": "be30b6a82aabe4a306676c3d91726c5c9ea802634502cca820d10b4408b9f627"
+    },
+    "nxos/medium/unicode": {
+      "inter": "14614d3186ab9fffd04dde025417dd16b31f3ffcbf37388a063f84fbbb3306a5"
+    },
+    "nxos/small/unicode": {
+      "inter": "ad8a3726ed05b0afe2d1b8197873980c61ea41304748e4d5493bc0cf0e1c57c7"
+    }
+  },
+  "fields": [
+    "inter"
+  ]
+}

@@ -1,0 +1,68 @@
+/* The Equinix pane. Moved from theme.css; this view loads lazily. */
+
+/* ---- the Equinix pane (equinix/EquinixPage.tsx) ----
+   The canvas and panel of the SD-WAN pane. A Fabric port has the transport
+   colour; a far end (another metro, a provider, other parties) is dashed,
+   because it is outside the metro the picture shows. A bundle carries its
+   circuit count at its middle. */
+.equinix-port rect {
+  stroke: var(--kind-FabricPort, var(--accent));
+  stroke-width: 1.5;
+}
+
+.netmap-cable.equinix-bundle path:not(.netmap-cablehit) {
+  stroke: var(--accent);
+}
+
+.netmap-cable.equinix-bundle.on path:not(.netmap-cablehit) {
+  stroke: var(--acctext);
+}
+
+.equinix-count {
+  font: 600 10.5px var(--ui);
+  fill: var(--muted2);
+  text-anchor: middle;
+  paint-order: stroke;
+  stroke: var(--bg);
+  stroke-width: 3px;
+}
+
+.equinix-summary {
+  font: 500 11.5px var(--ui);
+  color: var(--muted);
+}
+
+.equinix-panel {
+  width: 560px;
+  max-width: calc(100% - 20px);
+}
+
+.equinix-circuits {
+  width: 100%;
+  margin-top: 8px;
+  font: 400 11.5px var(--ui);
+  border-collapse: collapse;
+}
+
+.equinix-circuits th,
+.equinix-circuits td {
+  padding: 3px 6px 3px 0;
+  text-align: left;
+  vertical-align: top;
+}
+
+.equinix-queries ul {
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.equinix-queries li {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  font: 400 12px var(--ui);
+}

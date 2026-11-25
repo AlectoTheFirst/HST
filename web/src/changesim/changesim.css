@@ -1,0 +1,261 @@
+/* Change simulation. This view loads lazily. */
+
+/*
+ * ---- change simulation (changesim/ChangeSimPage.tsx) ----
+ * The page is a flex column, as .diff-page is. The comparison area is on top
+ * and the chat is pinned to the foot. The Baseline pane and the Predicted
+ * pane share one row.
+ */
+
+.chgsim-page {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.chgsim-compare {
+  flex: 1;
+  display: flex;
+  gap: 12px;
+  min-height: 0;
+  padding: 12px 16px;
+  overflow: hidden;
+}
+
+.chgsim-pane {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 14px;
+  overflow-y: auto;
+}
+
+.chgsim-panehead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  flex: none;
+}
+
+.chgsim-panehead h2 {
+  margin: 0;
+  font: 600 13px var(--ui);
+}
+
+.chgsim-panets {
+  font: 400 11px var(--ui);
+  color: var(--muted2);
+  text-align: right;
+}
+
+.chgsim-empty {
+  margin: auto;
+  color: var(--muted);
+  font-size: 13px;
+  text-align: center;
+  max-width: 32ch;
+}
+
+.chgsim-strip {
+  flex: none;
+  background: var(--warnbg);
+  border: 1px solid var(--warnb);
+  border-radius: 6px;
+  padding: 8px 10px;
+}
+
+.chgsim-strip p {
+  margin: 0;
+  font: 400 11.5px/1.5 var(--ui);
+  color: var(--warntext);
+}
+
+.chgsim-modelgaps {
+  margin: 6px 0 0;
+  padding-left: 18px;
+  font: 400 11.5px/1.5 var(--ui);
+  color: var(--warntext);
+}
+
+.chgsim-panebody {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.chgsim-device {
+  flex: none;
+}
+
+.chgsim-devicename {
+  font: 600 13px var(--ui);
+}
+
+.chgsim-devicemeta {
+  font: 400 11px var(--ui);
+  color: var(--muted2);
+}
+
+.chgsim-bucket {
+  flex: none;
+  /* a flex item is min-width:auto by default, so wide content inside one
+     widens the pane instead of scrolling in its own box */
+  min-width: 0;
+}
+
+.chgsim-buckethead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.chgsim-buckethead h3 {
+  margin: 0;
+  font: 600 12px var(--ui);
+}
+
+.chgsim-bucketcount {
+  font: 600 11px var(--ui);
+  font-variant-numeric: tabular-nums;
+  color: var(--muted2);
+  background: var(--sel);
+  border-radius: 5px;
+  padding: 1px 7px;
+}
+
+.chgsim-bucketempty {
+  margin: 4px 0 0;
+  font: 400 12px var(--ui);
+  color: var(--muted2);
+}
+
+.chgsim-bucketlist {
+  margin: 4px 0 0;
+  padding-left: 18px;
+  font: 400 12px/1.5 var(--ui);
+}
+
+.chgsim-truncated {
+  margin: 4px 0 0;
+  font: 400 11px var(--ui);
+  color: var(--warntext);
+}
+
+/* The export control, on the Predicted pane beside the counts. Deliberately
+   small: the pane it sits in is one half of a workspace, and the control is a
+   way out of the pane rather than a feature of it. */
+.chgsim-export {
+  margin: 8px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.chgsim-exportfields {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chgsim-exportfield {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font: 400 11px var(--ui);
+  color: var(--muted2);
+}
+
+.chgsim-exportfield input {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 3px 6px;
+  font: 400 11.5px var(--ui);
+  width: 8ch;
+}
+
+.chgsim-exportfield:last-of-type input {
+  width: 18ch;
+}
+
+.chgsim-exportfields button {
+  border: 1px solid var(--border);
+  background: var(--sel);
+  color: var(--text);
+  border-radius: 5px;
+  padding: 4px 10px;
+  font: 600 11.5px var(--ui);
+  cursor: pointer;
+}
+
+.chgsim-exportfields button:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+/* The path table in the Predicted pane. The pane itself never scrolls
+   sideways: the table is wide content, so it scrolls inside its own box. */
+.chgsim-pathscroll {
+  margin: 6px 0 0;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.chgsim-pathtable {
+  border-collapse: collapse;
+  font: 400 11.5px/1.5 var(--ui);
+  white-space: nowrap;
+}
+
+.chgsim-pathtable th {
+  text-align: left;
+  font: 600 11px var(--ui);
+  color: var(--muted2);
+  border-bottom: 1px solid var(--border);
+  padding: 2px 10px 2px 0;
+}
+
+.chgsim-pathtable td {
+  vertical-align: top;
+  border-bottom: 1px solid var(--border);
+  padding: 3px 10px 3px 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.chgsim-pathtable td:last-child,
+.chgsim-pathtable th:last-child {
+  padding-right: 0;
+  white-space: normal;
+}
+
+.chgsim-chat {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 220px;
+  border-top: 1px solid var(--border);
+  padding: 10px 16px;
+}
+
+.chgsim-chatlog {
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+}
+
+.chgsim-field {
+  flex: none;
+}

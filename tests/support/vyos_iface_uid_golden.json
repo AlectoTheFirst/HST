@@ -1,0 +1,25 @@
+{
+  "cases": {
+    "fixture/empty_bgp": {
+      "normalize": "05550079ba277120c72a0c51015da198964a3534e779d37cb329eee05a25affe"
+    },
+    "fixture/malformed_rib": {
+      "normalize": "75c47158a1ed128ec7c0386294e5bfdc4fe0c67de530980c8df255eda6095fbc"
+    },
+    "fixture/malformed_table": {
+      "normalize": "70b800f090e88fe28c0f1b3cc757d7db5351afeb1c290d69cc767a2f9713486a"
+    },
+    "fixture/percent_bgp": {
+      "normalize": "05550079ba277120c72a0c51015da198964a3534e779d37cb329eee05a25affe"
+    },
+    "fixture/plain": {
+      "normalize": "05550079ba277120c72a0c51015da198964a3534e779d37cb329eee05a25affe"
+    },
+    "fixture/refused": {
+      "normalize": "05550079ba277120c72a0c51015da198964a3534e779d37cb329eee05a25affe"
+    }
+  },
+  "fields": [
+    "normalize"
+  ]
+}

@@ -1,0 +1,260 @@
+# Path A: a client on a VyOS-zoned segment reaches a
+# NetScaler VIP through a Check Point cluster gateway. This fixture is the
+# Check Point + NetScaler half; the VyOS half comes from a real
+# collectors/vyos.py normalizer run (tests/test_vyos.py's CONFIG_PATH_A),
+# loaded alongside this file into one run so the two halves share one graph.
+#
+# A new, purpose-built fixture rather than an extension of mini-dc.yaml, for
+# three reasons: mini-dc.yaml's NetScaler RedundancyGroup has no member Device
+# at all, so nothing there owns the interface address a SNIP rewrite resolves
+# from; its Check Point cluster models no routing or transit toward the VIP
+# network, which is the half of this path that has to be traced; and extending
+# it would perturb demo.py's own scenarios and the other tests in
+# tests/test_integration_db.py that already load it under scope
+# 'fixture:mini-dc'. What mini-dc.yaml does already have -- a Check Point
+# rulebase ENFORCES'd from the RedundancyGroup with member Devices under it --
+# is reused here rather than re-invented, and so are its uid conventions
+# (cp:<mgmt>, ns:<scope>), built out further where mini-dc.yaml is a stub.
+#
+# Anchors follow the collector that would write each row. An address a device
+# owns on one of its interfaces, and the connected prefix that address sits
+# in, are anchored on the owning VrfInstance uid: that pair is written by one
+# call, collectors/util.py's connected_address, and it is the shape every
+# collector emitting connected addressing shares. What netscaler.py names,
+# the VIP and the pool members' targets, is anchored on the domain string
+# 'patha', because that collector owns no VRF or segment identity of its own
+# and anchors on its configured l3dom; manual.py anchors a hand-entered
+# inventory address the same way. Where both collectors name one address (the
+# NetScaler's 10.0.10.1, an interface address to inventory and a SNAT_FROM
+# reference to netscaler.py) both rows are written, as the two collectors
+# would write them.
+#
+# Load: hst load-fixture fixtures/path-a.yaml (Check Point + NetScaler
+# half only -- the VyOS half needs a separate collector-normalizer run).
+source: fixture
+scope: "fixture:path-a"
+
+nodes:
+  # --- the two acceptance-test clients, one per VyOS LAN segment. Stand-ins
+  # for real client hosts, the same way mini-dc.yaml's own ip:corp:10.0.10.5
+  # stands in for a VM without a collected Endpoint. No gateway prefix carries
+  # the 'patha' anchor (the VyOS side's are anchored on its own VrfInstance),
+  # so gates._pick_gateway falls back to unscoped longest-prefix containment,
+  # which is unambiguous here: only the VyOS side declares a prefix containing
+  # either address.
+  - {label: IpAddress, uid: "ip:patha:10.20.1.50", props: {ip: 10.20.1.50, af: 4, l3dom: patha, anchor: patha}}
+  - {label: IpAddress, uid: "ip:patha:10.20.2.50", props: {ip: 10.20.2.50, af: 4, l3dom: patha, anchor: patha}}
+
+  # --- Check Point cluster
+  - {label: RedundancyGroup, uid: "rgrp:cp-cluster:patha:cpfw01", props: {kind: cp-cluster, name: cpfw01}}
+  - {label: Device, uid: "dev:patha-cp01", props: {hostname: patha-cp01, platform: checkpoint, role: firewall, vendor: checkpoint, serial: PATHACP01, mgmt_ip: 10.0.9.254}}
+  - {label: VrfInstance, uid: "vrf:cp:patha:cpfw01", props: {name: root}}
+  # one interface per attached network, each holding an address inside the
+  # connected prefix below it: the shape an inventory collector emits, and what
+  # makes both connected routes routes the device really holds. The address
+  # and the prefix carry the same anchor, the owning VrfInstance uid, which is
+  # what collectors/util.py's connected_address stamps on the pair.
+  - {label: Interface, uid: "dev:patha-cp01/if/eth-dc", props: {name: eth-dc, kind: phys}}
+  - {label: IpAddress, uid: "ip:vrf-cp-patha-cpfw01:10.0.9.2", props: {ip: 10.0.9.2, af: 4, l3dom: patha, anchor: "vrf:cp:patha:cpfw01"}}
+  - {label: Interface, uid: "dev:patha-cp01/if/eth-ns", props: {name: eth-ns, kind: phys}}
+  - {label: IpAddress, uid: "ip:vrf-cp-patha-cpfw01:10.0.10.2", props: {ip: 10.0.10.2, af: 4, l3dom: patha, anchor: "vrf:cp:patha:cpfw01"}}
+  # the VyOS-facing and NetScaler-facing networks as connected routes in this
+  # cluster's own table. The NetScaler-facing one is what makes the next hop to
+  # the NetScaler an evidenced adjacency rather than unevidenced transit
+  # (gates.routing._next_hop_adjacent), and the cluster's own address in it is
+  # why the route exists at all.
+  - {label: Prefix, uid: "pfx:cp:patha:dc-transit", props: {cidr: 10.0.9.0/24, af: 4, kind: connected, l3dom: patha, anchor: "vrf:cp:patha:cpfw01"}}
+  - {label: Prefix, uid: "pfx:cp:patha:ns-transit", props: {cidr: 10.0.10.0/24, af: 4, kind: connected, l3dom: patha, anchor: "vrf:cp:patha:cpfw01"}}
+  # a device-local Prefix purely for this cluster's own route lookup (LPM
+  # target for the STATIC_ROUTE below) -- distinct from the NetObjects'
+  # own Prefix nodes below, so the rulebase's address objects and this
+  # cluster's routing table stay independently editable
+  - {label: Prefix, uid: "pfx:cp:patha:vip-route", props: {cidr: 10.0.30.0/24, af: 4, l3dom: patha, anchor: "vrf:cp:patha:cpfw01"}}
+
+  # --- Check Point rulebase (F-163: bound from the RedundancyGroup, the real
+  # cluster shape, with the gateway Device MEMBER_OF that group). Two rules in
+  # position order, both written against a post-NAT source: the branch
+  # segment's static translation is denied, the masqueraded client subnet's
+  # translation is permitted.
+  - {label: FwRulebase, uid: "cp:patha:smc:pkg-dc-access", props: {name: dc-access, kind: access, vendor: checkpoint, default_action: drop}}
+  - {label: FwRule, uid: "cp:patha:smc:rule-deny-branch", props: {name: deny branch to vip, position: 1, action: drop, enabled: true, rule_uid: b2c3d4e5-0000-4000-8000-000000000002}}
+  - {label: FwRule, uid: "cp:patha:smc:rule-permit-dc", props: {name: permit edge to vip, position: 2, action: accept, enabled: true, rule_uid: b2c3d4e5-0000-4000-8000-000000000001}}
+  - {label: NetObject, uid: "cp:patha:smc:obj-net-edge-nat", props: {name: edge-nat, kind: host}}
+  - {label: NetObject, uid: "cp:patha:smc:obj-net-branch-nat", props: {name: branch-nat, kind: host}}
+  - {label: NetObject, uid: "cp:patha:smc:obj-net-vip", props: {name: net-vip, kind: network}}
+  - {label: Prefix, uid: "pfx:cp:patha:edge-nat", props: {cidr: 10.0.9.1/32, af: 4, l3dom: patha, anchor: patha}}
+  - {label: Prefix, uid: "pfx:cp:patha:branch-nat", props: {cidr: 10.0.9.50/32, af: 4, l3dom: patha, anchor: patha}}
+  - {label: Prefix, uid: "pfx:cp:patha:vip-net", props: {cidr: 10.0.30.0/24, af: 4, l3dom: patha, anchor: patha}}
+
+  # --- NetScaler
+  - {label: RedundancyGroup, uid: "rgrp:ns-ha:patha:ns01", props: {kind: ns-ha, name: ns01}}
+  - {label: Device, uid: "dev:patha-ns01", props: {hostname: patha-ns01, platform: netscaler, role: loadbalancer, vendor: citrix, serial: PATHANS01, mgmt_ip: 10.0.10.254}}
+  - {label: VrfInstance, uid: "vrf:ns:patha:ns01", props: {name: default}}
+  - {label: Interface, uid: "dev:patha-ns01/if/eth0", props: {name: eth0, kind: phys}}
+  # 10.0.10.1 twice, once per collector that names it, rather than one
+  # hand-picked node the two would have to agree on. The appliance's own
+  # interface address on the member subnet is inventory's, anchored on the
+  # VrfInstance that owns it the way collectors/util.py's connected_address
+  # writes an interface address and its connected prefix; the SNAT_FROM
+  # reference is netscaler.py's, which owns no VRF identity and anchors on
+  # its configured l3dom. gates.lb._snip_for resolves the SNIP through
+  # HAS_IP/IN, so it reads the inventory node; the SNAT_FROM edge is read
+  # only for snat_mode snat_from and hangs off the netscaler one.
+  - {label: IpAddress, uid: "ip:vrf-ns-patha-ns01:10.0.10.1", props: {ip: 10.0.10.1, af: 4, l3dom: patha, anchor: "vrf:ns:patha:ns01"}}
+  - {label: IpAddress, uid: "ip:patha:10.0.10.1", props: {ip: 10.0.10.1, af: 4, l3dom: patha, anchor: patha}}
+  - {label: Prefix, uid: "pfx:ns:patha:members", props: {cidr: 10.0.10.0/24, af: 4, kind: connected, l3dom: patha, anchor: "vrf:ns:patha:ns01"}}
+  - {label: Prefix, uid: "pfx:ns:patha:vip", props: {cidr: 10.0.30.0/24, af: 4, kind: service, name: vip, l3dom: patha, anchor: "vrf:ns:patha:ns01"}}
+  - {label: IpAddress, uid: "ip:patha:10.0.30.10", props: {ip: 10.0.30.10, af: 4, l3dom: patha, anchor: patha}}
+
+  - {label: VirtualService, uid: "ns:patha:lbvs:web-443", props: {name: web-443, vip: 10.0.30.10, port: 443, proto: tcp, kind: lb, snat_mode: snip}}
+  - {label: Pool, uid: "ns:patha:sg:web", props: {name: web, lb_method: leastconnection}}
+  - {label: PoolMember, uid: "ns:patha:sg:web/10.0.10.5:8443", props: {port: 8443, state: up}}
+  - {label: PoolMember, uid: "ns:patha:sg:web/10.0.10.6:8443", props: {port: 8443, state: down}}
+  - {label: IpAddress, uid: "ip:patha:10.0.10.5", props: {ip: 10.0.10.5, af: 4, l3dom: patha, anchor: patha}}
+  - {label: IpAddress, uid: "ip:patha:10.0.10.6", props: {ip: 10.0.10.6, af: 4, l3dom: patha, anchor: patha}}
+  - {label: Endpoint, uid: "ep:patha:web01", props: {mac: "00:50:56:aa:aa:01", kind: server, name: web01}}
+  - {label: Endpoint, uid: "ep:patha:web02", props: {mac: "00:50:56:aa:aa:02", kind: server, name: web02}}
+
+  # --- the member subnet's broadcast domain. The servers sit in it and the
+  # appliance's interface is bound to the VLAN that realizes it, which is the
+  # pair trace.py's _dst_attachment looks for first: an endpoint address
+  # anchors to a segment while the walk carries a VrfInstance uid, so the
+  # segment of the interface the flow leaves through is what names the
+  # destination's context. unifi.py writes both halves of this shape, the
+  # Endpoint's IN edge to a BridgeDomain and the VlanInstance a router
+  # interface is BOUND_TO.
+  - {label: BridgeDomain, uid: "bd:vlan:patha:110", props: {name: patha-members, vid: 110}}
+  - {label: VlanInstance, uid: "vlan:dev:patha-ns01:110", props: {vid: 110, name: members}}
+
+  # --- Acceptance path B: the ZPA half. A client is
+  # judged at group level by a ZpaAccessRule; on allow, the segment it asked
+  # for resolves to the same VIP address path A already reaches
+  # (ip:patha:10.0.30.10), and the chosen connector's own address enters this
+  # twin and crosses the same Check Point cluster rulebase and NetScaler VIP,
+  # SNIP and pool chain path A's client does. mini-enterprise.yaml's own ZPA
+  # wiring is the uid style this copies; unlike that fixture's connector
+  # (deliberately outside every connected prefix, so its own on-prem walk
+  # stays a stub), this one is placed to resolve the on-prem chain for real.
+  #
+  # Three IdentityGroups: one the allow rule GRANTS, one the deny rule
+  # DENIES, and one no rule names at all (the indeterminate case).
+  - {label: IdentityGroup, uid: "idg:scim:patha-ops", props: {name: patha-ops, source: scim}}
+  - {label: IdentityGroup, uid: "idg:scim:patha-contractors", props: {name: patha-contractors, source: scim}}
+  - {label: IdentityGroup, uid: "idg:scim:patha-guests", props: {name: patha-guests, source: scim}}
+
+  # tcp_port_ranges is the flattened from/to pair collectors/zpa.py writes;
+  # gates/zpa.py's _segment_port_match reads it the same way it does in
+  # mini-enterprise.yaml.
+  - {label: ZpaAppSegment, uid: "zpa:patha:appseg:web", props: {name: patha-web-app, domains: ["web.patha.example"], tcp_port_ranges: ["443", "443"]}}
+  - {label: ZpaServerGroup, uid: "zpa:patha:srvgrp:dc1", props: {name: patha-dc1-servers}}
+  - {label: ZpaAppConnectorGroup, uid: "zpa:patha:acg:dc1", props: {name: patha-dc1-connectors, location: dc1}}
+  - {label: ZpaAppConnector, uid: "zpa:patha:connector:dc1-01", props: {name: patha-conn-01, health: up}}
+  - {label: ZpaAppConnector, uid: "zpa:patha:connector:dc1-02", props: {name: patha-conn-02, health: down}}
+  # position 100/200 rather than mini-enterprise.yaml's 1/2, so the two
+  # fixtures never share a coincidentally-equal integer to reason about.
+  # rule:100's conditions are the one flat shape gates.zpa._unsupported_
+  # condition_shape reads: one SCIM_GROUP block and one APP block, each a
+  # single operand under its own AND -- collectors/zpa.py flattens a real
+  # tenant's policy to exactly this when a rule carries one identity operand
+  # and one application operand. rule:200 carries no conditions prop at all;
+  # its GRANTS/DENIES and FOR edges are enough on their own (an absent
+  # `conditions` is a decided shape, not an unsupported one).
+  - {label: ZpaAccessRule, uid: "zpa:patha:rule:100", props: {position: 100, action: allow, name: patha-ops-to-web, conditions: '[{"operator": "AND", "operands": [{"type": "SCIM_GROUP", "rhs": "patha-ops"}]}, {"operator": "AND", "operands": [{"type": "APP", "rhs": "web"}]}]'}}
+  - {label: ZpaAccessRule, uid: "zpa:patha:rule:200", props: {position: 200, action: deny, name: patha-contractors-deny-web}}
+  - {label: DnsRecord, uid: "dns:web.patha.example:A", props: {fqdn: web.patha.example, type: A}}
+
+  # The connector's own workload: a stub Vm (the same gap mini-enterprise.yaml's
+  # own vm-201 stands in for) with a Vnic holding a
+  # concrete address on the Check Point cluster's client-facing network
+  # (pfx:cp:patha:dc-transit, 10.0.9.0/24) rather than mini-enterprise.yaml's
+  # unanchored stand-in. Anchored on the cluster's own VrfInstance uid, the
+  # same anchor its own eth-dc address carries, rather than on 'patha': that
+  # is what makes gates._pick_gateway's domain filter resolve straight to the
+  # cluster's gateway row instead of tripping the ambiguous-anchor path a
+  # bare 'patha' anchor would (both the cluster and the VyOS edge declare a
+  # connected prefix over this same wire, under two different anchors).
+  - {label: Vm, uid: "vc:patha:vm-conn01", props: {name: patha-zpa-conn01, power: "on"}}
+  - {label: Vnic, uid: "vc:patha:vm-conn01/vnic/0", props: {mac: "00:50:56:aa:aa:c1"}}
+  - {label: IpAddress, uid: "ip:vrf-cp-patha-cpfw01:10.0.9.60", props: {ip: 10.0.9.60, af: 4, l3dom: patha, anchor: "vrf:cp:patha:cpfw01"}}
+
+  # A second SRC object on the existing permit-dc rule (additive: the
+  # existing edge-nat SRC edge is untouched, so path A's own masqueraded
+  # traffic still matches exactly as it did), naming the connector's own
+  # on-prem address the way a real Check Point admin would add a host object
+  # to an existing rule's source. Without this the connector's un-NATed
+  # traffic matches neither existing SRC object and falls to the rulebase's
+  # own default-drop, which is a decided block, not the allow this path is
+  # meant to reach.
+  - {label: NetObject, uid: "cp:patha:smc:obj-net-zpa-connectors", props: {name: zpa-connectors, kind: host}}
+  - {label: Prefix, uid: "pfx:cp:patha:zpa-connectors", props: {cidr: 10.0.9.60/32, af: 4, l3dom: patha, anchor: patha}}
+
+rels:
+  # --- Check Point
+  - {type: MEMBER_OF, start: [Device, "dev:patha-cp01"], end: [RedundancyGroup, "rgrp:cp-cluster:patha:cpfw01"]}
+  - {type: "ON", start: [Interface, "dev:patha-cp01/if/eth-dc"], end: [Device, "dev:patha-cp01"]}
+  - {type: HAS_IP, start: [Interface, "dev:patha-cp01/if/eth-dc"], end: [IpAddress, "ip:vrf-cp-patha-cpfw01:10.0.9.2"]}
+  - {type: IN_VRF, start: [Interface, "dev:patha-cp01/if/eth-dc"], end: [VrfInstance, "vrf:cp:patha:cpfw01"]}
+  - {type: IN, start: [IpAddress, "ip:vrf-cp-patha-cpfw01:10.0.9.2"], end: [Prefix, "pfx:cp:patha:dc-transit"]}
+  - {type: "ON", start: [Interface, "dev:patha-cp01/if/eth-ns"], end: [Device, "dev:patha-cp01"]}
+  - {type: HAS_IP, start: [Interface, "dev:patha-cp01/if/eth-ns"], end: [IpAddress, "ip:vrf-cp-patha-cpfw01:10.0.10.2"]}
+  - {type: IN_VRF, start: [Interface, "dev:patha-cp01/if/eth-ns"], end: [VrfInstance, "vrf:cp:patha:cpfw01"]}
+  - {type: IN, start: [IpAddress, "ip:vrf-cp-patha-cpfw01:10.0.10.2"], end: [Prefix, "pfx:cp:patha:ns-transit"]}
+  - {type: STATIC_ROUTE, start: [VrfInstance, "vrf:cp:patha:cpfw01"], end: [Prefix, "pfx:cp:patha:vip-route"], props: {next_hop: "10.0.10.1"}}
+  - {type: ORIGINATES, start: [VrfInstance, "vrf:cp:patha:cpfw01"], end: [Prefix, "pfx:cp:patha:dc-transit"], props: {proto: connected}}
+  - {type: ORIGINATES, start: [VrfInstance, "vrf:cp:patha:cpfw01"], end: [Prefix, "pfx:cp:patha:ns-transit"], props: {proto: connected}}
+
+  - {type: ENFORCES, start: [RedundancyGroup, "rgrp:cp-cluster:patha:cpfw01"], end: [FwRulebase, "cp:patha:smc:pkg-dc-access"]}
+  - {type: HAS_RULE, start: [FwRulebase, "cp:patha:smc:pkg-dc-access"], end: [FwRule, "cp:patha:smc:rule-deny-branch"]}
+  - {type: HAS_RULE, start: [FwRulebase, "cp:patha:smc:pkg-dc-access"], end: [FwRule, "cp:patha:smc:rule-permit-dc"]}
+  - {type: SRC, start: [FwRule, "cp:patha:smc:rule-deny-branch"], end: [NetObject, "cp:patha:smc:obj-net-branch-nat"]}
+  - {type: DST, start: [FwRule, "cp:patha:smc:rule-deny-branch"], end: [NetObject, "cp:patha:smc:obj-net-vip"]}
+  - {type: SRC, start: [FwRule, "cp:patha:smc:rule-permit-dc"], end: [NetObject, "cp:patha:smc:obj-net-edge-nat"]}
+  - {type: DST, start: [FwRule, "cp:patha:smc:rule-permit-dc"], end: [NetObject, "cp:patha:smc:obj-net-vip"]}
+  - {type: RESOLVES_TO, start: [NetObject, "cp:patha:smc:obj-net-edge-nat"], end: [Prefix, "pfx:cp:patha:edge-nat"]}
+  - {type: RESOLVES_TO, start: [NetObject, "cp:patha:smc:obj-net-branch-nat"], end: [Prefix, "pfx:cp:patha:branch-nat"]}
+  - {type: RESOLVES_TO, start: [NetObject, "cp:patha:smc:obj-net-vip"], end: [Prefix, "pfx:cp:patha:vip-net"]}
+
+  # --- NetScaler
+  - {type: MEMBER_OF, start: [Device, "dev:patha-ns01"], end: [RedundancyGroup, "rgrp:ns-ha:patha:ns01"]}
+  - {type: "ON", start: [Interface, "dev:patha-ns01/if/eth0"], end: [Device, "dev:patha-ns01"]}
+  - {type: HAS_IP, start: [Interface, "dev:patha-ns01/if/eth0"], end: [IpAddress, "ip:vrf-ns-patha-ns01:10.0.10.1"]}
+  - {type: IN_VRF, start: [Interface, "dev:patha-ns01/if/eth0"], end: [VrfInstance, "vrf:ns:patha:ns01"]}
+  - {type: IN, start: [IpAddress, "ip:vrf-ns-patha-ns01:10.0.10.1"], end: [Prefix, "pfx:ns:patha:members"]}
+  - {type: ORIGINATES, start: [VrfInstance, "vrf:ns:patha:ns01"], end: [Prefix, "pfx:ns:patha:members"], props: {proto: connected}}
+  - {type: ORIGINATES, start: [VrfInstance, "vrf:ns:patha:ns01"], end: [Prefix, "pfx:ns:patha:vip"], props: {proto: connected}}
+  - {type: IN, start: [IpAddress, "ip:patha:10.0.30.10"], end: [Prefix, "pfx:ns:patha:vip"]}
+
+  - {type: "ON", start: [VirtualService, "ns:patha:lbvs:web-443"], end: [RedundancyGroup, "rgrp:ns-ha:patha:ns01"]}
+  - {type: VIP, start: [VirtualService, "ns:patha:lbvs:web-443"], end: [IpAddress, "ip:patha:10.0.30.10"]}
+  - {type: SNAT_FROM, start: [VirtualService, "ns:patha:lbvs:web-443"], end: [IpAddress, "ip:patha:10.0.10.1"]}
+  - {type: USES, start: [VirtualService, "ns:patha:lbvs:web-443"], end: [Pool, "ns:patha:sg:web"]}
+  - {type: HAS_MEMBER, start: [Pool, "ns:patha:sg:web"], end: [PoolMember, "ns:patha:sg:web/10.0.10.5:8443"]}
+  - {type: HAS_MEMBER, start: [Pool, "ns:patha:sg:web"], end: [PoolMember, "ns:patha:sg:web/10.0.10.6:8443"]}
+  - {type: TARGETS, start: [PoolMember, "ns:patha:sg:web/10.0.10.5:8443"], end: [IpAddress, "ip:patha:10.0.10.5"]}
+  - {type: TARGETS, start: [PoolMember, "ns:patha:sg:web/10.0.10.6:8443"], end: [IpAddress, "ip:patha:10.0.10.6"]}
+  - {type: IN, start: [IpAddress, "ip:patha:10.0.10.5"], end: [Prefix, "pfx:ns:patha:members"]}
+  - {type: IN, start: [IpAddress, "ip:patha:10.0.10.6"], end: [Prefix, "pfx:ns:patha:members"]}
+  - {type: HAS_IP, start: [Endpoint, "ep:patha:web01"], end: [IpAddress, "ip:patha:10.0.10.5"]}
+  - {type: HAS_IP, start: [Endpoint, "ep:patha:web02"], end: [IpAddress, "ip:patha:10.0.10.6"]}
+  - {type: BOUND_TO, start: [Interface, "dev:patha-ns01/if/eth0"], end: [VlanInstance, "vlan:dev:patha-ns01:110"]}
+  - {type: REALIZES, start: [VlanInstance, "vlan:dev:patha-ns01:110"], end: [BridgeDomain, "bd:vlan:patha:110"]}
+  - {type: IN, start: [Endpoint, "ep:patha:web01"], end: [BridgeDomain, "bd:vlan:patha:110"]}
+  - {type: IN, start: [Endpoint, "ep:patha:web02"], end: [BridgeDomain, "bd:vlan:patha:110"]}
+
+  # --- ZPA (acceptance path B)
+  - {type: GRANTS, start: [ZpaAccessRule, "zpa:patha:rule:100"], end: [IdentityGroup, "idg:scim:patha-ops"]}
+  - {type: DENIES, start: [ZpaAccessRule, "zpa:patha:rule:200"], end: [IdentityGroup, "idg:scim:patha-contractors"]}
+  - {type: FOR, start: [ZpaAccessRule, "zpa:patha:rule:100"], end: [ZpaAppSegment, "zpa:patha:appseg:web"]}
+  - {type: FOR, start: [ZpaAccessRule, "zpa:patha:rule:200"], end: [ZpaAppSegment, "zpa:patha:appseg:web"]}
+  - {type: SERVED_BY, start: [ZpaAppSegment, "zpa:patha:appseg:web"], end: [ZpaServerGroup, "zpa:patha:srvgrp:dc1"]}
+  - {type: USES, start: [ZpaServerGroup, "zpa:patha:srvgrp:dc1"], end: [ZpaAppConnectorGroup, "zpa:patha:acg:dc1"]}
+  - {type: HAS, start: [ZpaAppConnectorGroup, "zpa:patha:acg:dc1"], end: [ZpaAppConnector, "zpa:patha:connector:dc1-01"]}
+  - {type: HAS, start: [ZpaAppConnectorGroup, "zpa:patha:acg:dc1"], end: [ZpaAppConnector, "zpa:patha:connector:dc1-02"]}
+  - {type: RUNS_ON, start: [ZpaAppConnector, "zpa:patha:connector:dc1-01"], end: [Vm, "vc:patha:vm-conn01"]}
+  - {type: OF, start: [Vnic, "vc:patha:vm-conn01/vnic/0"], end: [Vm, "vc:patha:vm-conn01"]}
+  - {type: HAS_IP, start: [Vnic, "vc:patha:vm-conn01/vnic/0"], end: [IpAddress, "ip:vrf-cp-patha-cpfw01:10.0.9.60"]}
+  - {type: IN, start: [IpAddress, "ip:vrf-cp-patha-cpfw01:10.0.9.60"], end: [Prefix, "pfx:cp:patha:dc-transit"]}
+  - {type: RESOLVES_TO, start: [ZpaAppSegment, "zpa:patha:appseg:web"], end: [DnsRecord, "dns:web.patha.example:A"]}
+  - {type: RESOLVES_TO, start: [DnsRecord, "dns:web.patha.example:A"], end: [IpAddress, "ip:patha:10.0.30.10"]}
+  - {type: SRC, start: [FwRule, "cp:patha:smc:rule-permit-dc"], end: [NetObject, "cp:patha:smc:obj-net-zpa-connectors"]}
+  - {type: RESOLVES_TO, start: [NetObject, "cp:patha:smc:obj-net-zpa-connectors"], end: [Prefix, "pfx:cp:patha:zpa-connectors"]}

@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "hst": {
+      "type": "http",
+      "url": "${HST_MCP_URL}",
+      "headers": {
+        "Authorization": "Bearer ${HST_MCP_TOKEN}"
+      }
+    }
+  }
+}

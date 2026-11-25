@@ -1,0 +1,104 @@
+{{- if .Values.initDb.enabled }}
+{{- /*
+`hst init-db` applies the Neo4j constraints and the fulltext index of the Explore page.
+Every statement is IF NOT EXISTS, and the Job runs on every release. The app pods do not
+wait for this Job.
+*/}}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "hst.fullname" . }}-initdb-{{ .Release.Revision }}
+  labels: {{- include "hst.labels" . | nindent 4 }}
+    app.kubernetes.io/component: initdb
+  annotations:
+    # Argo CD renders with `helm template`, which sets .Release.Revision to 1, so
+    # the Job name is constant there. A Job spec is immutable. With Replace=true
+    # and Force=true Argo CD deletes and recreates the Job on each sync. Helm
+    # ignores the annotation.
+    argocd.argoproj.io/sync-options: Replace=true,Force=true
+spec:
+  backoffLimit: {{ .Values.initDb.backoffLimit }}
+  ttlSecondsAfterFinished: {{ .Values.initDb.ttlSecondsAfterFinished }}
+  template:
+    metadata:
+      labels: {{- include "hst.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: initdb
+    spec:
+      # With Never, backoffLimit starts a new pod for each attempt, and the failed pod
+      # keeps its logs.
+      restartPolicy: Never
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets: {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "hst.serviceAccountName" . }}
+      automountServiceAccountToken: false
+      securityContext:
+        seccompProfile: { type: RuntimeDefault }
+      {{- if .Values.neo4j.enabled }}
+      initContainers:
+        # The Neo4j Service is headless and has DNS records only for ready pods, so the
+        # name resolves after Neo4j passes its readiness probe. The HTTP port and the
+        # TCP socket answer before bolt accepts a query, so the wait runs a query.
+        #
+        # cypher-shell reads NEO4J_USERNAME and NEO4J_PASSWORD from its environment.
+        # The 2 assignments apply to the cypher-shell command only.
+        - name: wait-for-neo4j
+          image: {{ .Values.neo4j.image | quote }}
+          imagePullPolicy: IfNotPresent
+          command:
+            - sh
+            - -c
+            - |
+              n=0
+              until NEO4J_USERNAME=neo4j NEO4J_PASSWORD="$CYPHER_PW" cypher-shell -a "$NEO4J_WAIT_URI" 'RETURN 1' >/dev/null 2>&1; do
+                n=$((n + 1))
+                if [ "$n" -ge {{ .Values.initDb.waitAttempts }} ]; then
+                  echo "neo4j has not accepted a query after $n attempts; giving up"
+                  exit 1
+                fi
+                echo "waiting for neo4j"; sleep 3
+              done
+          env:
+            - name: NEO4J_WAIT_URI
+              {{- if .Values.neo4j.tls.serverSecret }}
+              # The listener requires TLS. cypher-shell takes no CA file, so the wait
+              # uses bolt+ssc and does not verify the server. `hst init-db` verifies it.
+              value: {{ printf "bolt+ssc://%s:7687" (include "hst.neo4jHost" .) | quote }}
+              {{- else }}
+              value: {{ include "hst.neo4jUri" . | quote }}
+              {{- end }}
+            - name: CYPHER_PW
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "hst.secretName" . }}
+                  key: neo4j-password
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 7474
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: ["ALL"] }
+          resources: {{- toYaml .Values.initDb.resources | nindent 12 }}
+      {{- end }}
+      containers:
+        - name: initdb
+          image: {{ include "hst.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["hst", "init-db"]
+          env: {{- include "hst.env" . | nindent 12 }}
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: {{ .Values.podSecurityContext.runAsUser }}
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: ["ALL"] }
+          resources: {{- toYaml .Values.initDb.resources | nindent 12 }}
+          {{- if .Values.neo4j.tls.enabled }}
+          volumeMounts:
+            {{- include "hst.neo4jCaVolumeMount" . | nindent 12 }}
+      {{- end }}
+      {{- if .Values.neo4j.tls.enabled }}
+      volumes:
+        {{- include "hst.neo4jCaVolume" . | nindent 8 }}
+      {{- end }}
+{{- end }}

@@ -1,0 +1,18 @@
+schema_version: 1
+kind: BusinessApplication
+id: checkout-production
+owner: network-platform
+connections:
+  - id: clients-to-frontend
+    name: Branch clients to frontend
+    source: branch-clients
+    destination: frontend
+    protocol: tcp
+    destination_ports: [443, 8443]
+    source_ports: [1024-65535]
+    success: session
+    source_context:
+      vrf: vrf:branch
+    destination_condition:
+      kind: member
+      member: web-primary

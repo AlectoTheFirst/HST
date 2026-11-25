@@ -1,0 +1,476 @@
+# Load AFTER fixtures/mini-dc.yaml (shares rdom:corp, the webshop VIP, ESX host):
+#   hst load-fixture fixtures/mini-dc.yaml
+#   hst load-fixture fixtures/mini-enterprise.yaml
+#   hst validate-demo
+source: fixture
+scope: "fixture:mini-enterprise"
+
+nodes:
+  # --- sites & providers (DORA register)
+  - {label: Site, uid: "site:fra01", props: {code: fra01, name: Frankfurt Office 1, kind: office, criticality: high}}
+  - {label: Site, uid: "site:eqx-fr5", props: {code: eqx-fr5, name: Equinix FR5, kind: colo}}
+  - {label: Site, uid: "site:aws-eu-central-1", props: {code: aws-eu-central-1, kind: cloud-region}}
+  - {label: Site, uid: "site:az-gwc", props: {code: az-gwc, name: Azure Germany West Central, kind: cloud-region}}
+  - {label: Provider, uid: "provider:carrier-x", props: {name: Carrier-X, kind: carrier, contract_ref: C-1001, criticality: high}}
+  - {label: Provider, uid: "provider:isp-y", props: {name: ISP-Y, kind: carrier, contract_ref: C-1002}}
+  - {label: Provider, uid: "provider:zscaler", props: {name: Zscaler, kind: security-cloud, contract_ref: C-2001, criticality: high}}
+  - {label: Provider, uid: "provider:equinix", props: {name: Equinix, kind: colo, contract_ref: C-3001, criticality: high}}
+  - {label: Provider, uid: "provider:aws", props: {name: AWS, kind: cloud, contract_ref: C-4001, criticality: high}}
+  - {label: Provider, uid: "provider:azure", props: {name: Microsoft Azure, kind: cloud, contract_ref: C-4002}}
+  - {label: ProviderNetwork, uid: "pnet:mpls-carrier-x", props: {name: Carrier-X MPLS VPN, kind: mpls}}
+  - {label: ProviderNetwork, uid: "pnet:internet-isp-y", props: {name: ISP-Y DIA, kind: internet}}
+
+  # --- logical domains (corp is shared with mini-dc; guest/cloud are new)
+  # RoutingDomain: grouping (MEMBER_OF, basis: declared), replacing
+  # L3Domain/REALIZES everywhere in this fixture -- VrfInstance realizations,
+  # EvpnInstance/SdwanSegment/Vpc/VNet REALIZES, and the INTERCONNECTED_BY
+  # domain-crossing points below. The legacy L3Domain label/REALIZES rel stay
+  # registered in core/labels.py for real graphs loaded before this upgrade; this
+  # fixture no longer carries either.
+  - {label: RoutingDomain, uid: "rdom:corp", props: {name: corp}}
+  - {label: RoutingDomain, uid: "rdom:guest", props: {name: guest}}
+  - {label: RoutingDomain, uid: "rdom:aws-prod", props: {name: aws-prod}}
+  - {label: RoutingDomain, uid: "rdom:az-prod", props: {name: az-prod}}
+  - {label: BridgeDomain, uid: "l2seg:fra01-users", props: {name: fra01-users}}
+  - {label: BridgeDomain, uid: "l2seg:fra01-guest", props: {name: fra01-guest}}
+
+  # --- campus devices
+  - {label: Device, uid: "dev:fra01-core-01", props: {hostname: fra01-core-01, platform: nxos, role: router, vendor: cisco, serial: FDO22220001, mgmt_ip: 10.20.99.1, identities: ["FRA01-CORE-01", "core1.fra01.example", "fra-core1"]}}
+  - {label: Device, uid: "dev:fra01-core-02", props: {hostname: fra01-core-02, platform: nxos, role: router, vendor: cisco, serial: FDO22220002, mgmt_ip: 10.20.99.2, identities: ["FRA01-CORE-02"]}}
+  - {label: Device, uid: "dev:dc1-border-01", props: {hostname: dc1-border-01, platform: nxos, role: border, vendor: cisco, serial: FDO33330001, mgmt_ip: 10.0.0.201}}
+  - {label: Device, uid: "dev:fra01-fgt-01", props: {hostname: fra01-fgt-01, platform: fortigate, role: firewall, vendor: fortinet, serial: FGT60F0000000001, mgmt_ip: 10.20.99.11}}
+  - {label: Device, uid: "dev:fra01-ips-01", props: {hostname: fra01-ips-01, platform: tippingpoint, role: ips, vendor: trendmicro, serial: TPNX55550001, mgmt_ip: 10.20.99.12}}
+  - {label: Device, uid: "dev:fra01-vce-01", props: {hostname: fra01-vce-01, platform: velocloud-edge, role: sdwan-edge, vendor: vmware, serial: VCE-FRA01-4711, mgmt_ip: 10.20.99.13}}
+  - {label: Device, uid: "dev:fra01-wlc-01", props: {hostname: fra01-wlc-01, platform: wlc, role: controller, serial: WLC00009999, mgmt_ip: 10.20.99.14}}
+
+  # --- campus L2/L3: VLANs, SVIs, HSRP, VRFs
+  - {label: VlanInstance, uid: "vlan:dev:fra01-core-01:100", props: {vid: 100, name: users}}
+  - {label: VlanInstance, uid: "vlan:dev:fra01-core-02:100", props: {vid: 100, name: users}}
+  - {label: VlanInstance, uid: "vlan:dev:fra01-core-01:900", props: {vid: 900, name: guest}}
+  - {label: Ssid, uid: "ssid:fra01:guest", props: {name: GuestWiFi, security: wpa2-psk}}
+  - {label: Interface, uid: "dev:fra01-core-01/if/vlan100", props: {name: vlan100, kind: svi}}
+  - {label: Interface, uid: "dev:fra01-core-02/if/vlan100", props: {name: vlan100, kind: svi}}
+  - {label: Interface, uid: "dev:fra01-core-01/if/vlan900", props: {name: vlan900, kind: svi}}
+  - {label: Interface, uid: "dev:fra01-core-01/if/eth1-2", props: {name: ethernet1/2, kind: phys}}
+  - {label: Interface, uid: "dev:fra01-core-02/if/eth1-2", props: {name: ethernet1/2, kind: phys}}
+  - {label: Interface, uid: "dev:fra01-core-01/if/lo0", props: {name: loopback0, kind: loopback}}
+  - {label: Interface, uid: "dev:dc1-border-01/if/lo0", props: {name: loopback0, kind: loopback}}
+  - {label: Interface, uid: "dev:dc1-border-01/if/bgp-dx", props: {name: ethernet1/1.100, kind: subif}}
+  - {label: Interface, uid: "dev:fra01-fgt-01/if/port1", props: {name: port1, kind: phys}}
+  - {label: Interface, uid: "dev:fra01-fgt-01/if/port2", props: {name: port2, kind: phys}}
+  - {label: Interface, uid: "dev:fra01-vce-01/if/ge3", props: {name: ge3, kind: phys}}
+  - {label: FhrpGroup, uid: "fhrp:fra01-users:1", props: {kind: hsrp, group_id: 1, vip: 10.20.0.1}}
+  - {label: VrfInstance, uid: "vrf:dev:fra01-core-01:corp", props: {name: corp}}
+  - {label: VrfInstance, uid: "vrf:dev:fra01-core-01:guest", props: {name: guest}}
+  - {label: VrfInstance, uid: "vrf:dev:dc1-border-01:corp", props: {name: corp}}
+  - {label: VrfInstance, uid: "vrf:dev:fra01-fgt-01:root", props: {name: root, kind: vdom}}
+
+  # --- routing: OSPF underlay, EVPN overlay via shared RT, eBGP to AWS
+  - {label: OspfArea, uid: "ospf:fra01:area-0", props: {area_id: 0.0.0.0}}
+  - {label: OspfAdjacency, uid: "ospf:adj:fdo22220001~fdo22220002", props: {state: full, area: 0.0.0.0}}
+  - {label: RouteTarget, uid: "rt:65001:50001", props: {value: "65001:50001"}}
+  - {label: EvpnInstance, uid: "evpn:corp:l3vni-50001", props: {l3vni: 50001, kind: l3}}
+  - {label: BgpSession, uid: "bgp:dev:fra01-core-01~10.99.0.1:corp", props: {local_asn: 65001, peer_asn: 65001, afi_safi: ["l2vpn-evpn"], kind: overlay, state: established}}
+  - {label: BgpSession, uid: "bgp:dev:dc1-border-01~169.254.100.2:corp", props: {local_asn: 65001, peer_asn: 64512, afi_safi: ["ipv4-unicast"], kind: cloud, state: established}}
+
+  # --- addressing (corp /8 super-aggregate; guest + cloud trees)
+  - {label: Prefix, uid: "pfx:corp:10.0.0.0/8", props: {cidr: 10.0.0.0/8, af: 4, kind: aggregate, l3dom: corp, name: corp-super, anchor: corp}}
+  - {label: Prefix, uid: "pfx:corp:10.0.0.0/16", props: {cidr: 10.0.0.0/16, af: 4, kind: aggregate, l3dom: corp, name: dc1, anchor: corp}}
+  - {label: Prefix, uid: "pfx:vrf-dev-fra01-core-01-corp:10.20.0.0/24", props: {cidr: 10.20.0.0/24, af: 4, kind: connected, l3dom: corp, name: fra01-users, anchor: "vrf:dev:fra01-core-01:corp"}}
+  - {label: Prefix, uid: "pfx:corp:10.99.0.0/24", props: {cidr: 10.99.0.0/24, af: 4, kind: connected, l3dom: corp, name: loopbacks, anchor: corp}}
+  - {label: Prefix, uid: "pfx:corp:169.254.100.0/30", props: {cidr: 169.254.100.0/30, af: 4, kind: service, l3dom: corp, name: dx-peering, anchor: corp}}
+  - {label: Prefix, uid: "pfx:corp:10.250.0.0/16", props: {cidr: 10.250.0.0/16, af: 4, kind: aggregate, l3dom: corp, name: voice, anchor: corp}}
+  - {label: Prefix, uid: "pfx:corp:0.0.0.0/0", props: {cidr: 0.0.0.0/0, af: 4, kind: default, l3dom: corp, name: default, anchor: corp}}
+  - {label: Prefix, uid: "pfx:guest:172.31.0.0/16", props: {cidr: 172.31.0.0/16, af: 4, kind: aggregate, l3dom: guest, name: guest-super, anchor: guest}}
+  - {label: Prefix, uid: "pfx:guest:172.31.10.0/24", props: {cidr: 172.31.10.0/24, af: 4, kind: connected, l3dom: guest, name: fra01-guest, anchor: guest}}
+  - {label: Prefix, uid: "pfx:aws-prod:10.64.0.0/16", props: {cidr: 10.64.0.0/16, af: 4, kind: aggregate, l3dom: aws-prod, anchor: aws-prod}}
+  - {label: Prefix, uid: "pfx:aws-prod:10.64.1.0/24", props: {cidr: 10.64.1.0/24, af: 4, kind: cloud-subnet, l3dom: aws-prod, anchor: aws-prod}}
+  - {label: Prefix, uid: "pfx:aws-prod:169.254.100.0/30", props: {cidr: 169.254.100.0/30, af: 4, kind: service, l3dom: aws-prod, anchor: aws-prod}}
+  - {label: Prefix, uid: "pfx:az-prod:10.80.1.0/24", props: {cidr: 10.80.1.0/24, af: 4, kind: cloud-subnet, l3dom: az-prod, anchor: az-prod}}
+  - {label: IpAddress, uid: "ip:corp:10.20.0.1", props: {ip: 10.20.0.1, af: 4, l3dom: corp, anchor: corp}}
+  - {label: IpAddress, uid: "ip:vrf-dev-fra01-core-01-corp:10.20.0.2", props: {ip: 10.20.0.2, af: 4, l3dom: corp, anchor: "vrf:dev:fra01-core-01:corp"}}
+  - {label: IpAddress, uid: "ip:corp:10.20.0.3", props: {ip: 10.20.0.3, af: 4, l3dom: corp, anchor: corp}}
+  - {label: IpAddress, uid: "ip:corp:10.20.0.53", props: {ip: 10.20.0.53, af: 4, l3dom: corp, name: fra01-dns, anchor: corp}}
+  - {label: IpAddress, uid: "ip:vrf-dev-fra01-fgt-01-root:10.20.0.254", props: {ip: 10.20.0.254, af: 4, l3dom: corp, anchor: "vrf:dev:fra01-fgt-01:root"}}
+  - {label: IpAddress, uid: "ip:corp:10.99.0.1", props: {ip: 10.99.0.1, af: 4, l3dom: corp, anchor: corp}}
+  - {label: IpAddress, uid: "ip:corp:10.99.0.2", props: {ip: 10.99.0.2, af: 4, l3dom: corp, anchor: corp}}
+  - {label: IpAddress, uid: "ip:vrf-dev-dc1-border-01-corp:169.254.100.1", props: {ip: 169.254.100.1, af: 4, l3dom: corp, anchor: "vrf:dev:dc1-border-01:corp"}}
+  - {label: IpAddress, uid: "ip:corp:10.0.30.10", props: {ip: 10.0.30.10, af: 4, l3dom: corp, anchor: corp}}
+  - {label: IpAddress, uid: "ip:vrf-dev-fra01-fgt-01-root:172.31.10.1", props: {ip: 172.31.10.1, af: 4, l3dom: guest, anchor: "vrf:dev:fra01-fgt-01:root"}}
+  - {label: IpAddress, uid: "ip:guest:172.31.255.1", props: {ip: 172.31.255.1, af: 4, l3dom: guest, name: gre-source, anchor: guest}}
+  - {label: IpAddress, uid: "ip:aws-prod:169.254.100.2", props: {ip: 169.254.100.2, af: 4, l3dom: aws-prod, anchor: aws-prod}}
+  - {label: IpAddress, uid: "ip:aws-prod:10.64.1.10", props: {ip: 10.64.1.10, af: 4, l3dom: aws-prod, anchor: aws-prod}}
+  - {label: IpAddress, uid: "ip:az-prod:10.80.1.10", props: {ip: 10.80.1.10, af: 4, l3dom: az-prod, anchor: az-prod}}
+
+  # --- physical ports incl. IPS inline pair
+  - {label: Port, uid: "dev:fra01-core-01/port/eth1-1", props: {name: ethernet1/1}}
+  - {label: Port, uid: "dev:fra01-core-01/port/eth1-2", props: {name: ethernet1/2}}
+  - {label: Port, uid: "dev:fra01-core-02/port/eth1-2", props: {name: ethernet1/2}}
+  - {label: Port, uid: "dev:fra01-core-01/port/eth1-3", props: {name: ethernet1/3}}
+  - {label: Port, uid: "dev:fra01-ips-01/port/1a", props: {name: 1A}}
+  - {label: Port, uid: "dev:fra01-ips-01/port/1b", props: {name: 1B}}
+  - {label: Port, uid: "dev:fra01-fgt-01/port/port1", props: {name: port1}}
+  - {label: Port, uid: "dev:fra01-fgt-01/port/port2", props: {name: port2}}
+
+  # --- FortiGate policy: guest→corp gate + SNAT
+  - {label: Zone, uid: "fgt:FGT60F0000000001:root:zone:guest", props: {name: guest}}
+  - {label: Zone, uid: "fgt:FGT60F0000000001:root:zone:corp", props: {name: corp}}
+  - {label: FwRulebase, uid: "fgt:FGT60F0000000001:root:policy:access", props: {name: fra01-access, kind: access, vendor: fortinet, default_action: drop}}
+  - {label: FwRulebase, uid: "fgt:FGT60F0000000001:root:policy:nat", props: {name: fra01-nat, kind: nat, vendor: fortinet}}
+  - {label: FwRule, uid: "fgt:FGT60F0000000001:root:policy:1", props: {name: guest-to-dns, position: 1, action: accept, enabled: true, rule_uid: "1"}}
+  - {label: FwRulebase, uid: "fgt:FGT60F0000000001:root:policy:corp-guest", props: {name: fra01-corp-to-guest, kind: zone, vendor: fortinet, default_action: drop}}
+  - {label: FwRule, uid: "fgt:FGT60F0000000001:root:policy:2", props: {name: corp-to-guest-mgmt, position: 1, action: accept, enabled: true, rule_uid: "2"}}
+  - {label: NatRule, uid: "fgt:FGT60F0000000001:root:ippool:guest-snat", props: {name: guest-snat, kind: snat, position: 1}}
+  - {label: NetObject, uid: "fgt:FGT60F0000000001:root:addr:guest-net", props: {name: guest-net, kind: network}}
+  - {label: NetObject, uid: "fgt:FGT60F0000000001:root:addr:corp-dns", props: {name: corp-dns, kind: host}}
+  - {label: SvcObject, uid: "fgt:FGT60F0000000001:root:svc:dns", props: {name: DNS, proto: udp, ports: "53"}}
+  - {label: FwRulebase, uid: "tp:sms01:profile:fra01-inline", props: {name: fra01-inline, kind: ips-profile, vendor: trendmicro}}
+
+  # --- SD-WAN (VeloCloud)
+  - {label: SdwanSegment, uid: "vco:acme:segment:1", props: {segment_id: 1, name: corp}}
+  - {label: WanLink, uid: "vco:acme:link:fra01-mpls", props: {kind: mpls, bandwidth_mbps: 100, carrier: Carrier-X}}
+  - {label: WanLink, uid: "vco:acme:link:fra01-dia", props: {kind: dia, bandwidth_mbps: 300, carrier: ISP-Y}}
+  - {label: SdwanGateway, uid: "vco:acme:gw:fra-gw1", props: {name: fra-gw1, pop: FRA}}
+  - {label: Tunnel, uid: "tun:velocloud-vcmp:dev:fra01-vce-01~vco:acme:gw:fra-gw1", props: {encap: velocloud-vcmp, state: up}}
+  - {label: SdwanBusinessPolicy, uid: "vco:acme:bizpol:web-to-zscaler", props: {name: web-to-zscaler, match: "default web traffic", action: cloud-security}}
+  - {label: SdwanBusinessPolicy, uid: "vco:acme:bizpol:voice-mpls", props: {name: voice-mpls, match: "voice 10.250.0.0/16", action: steer-mpls}}
+
+  # --- Zscaler ZIA (guest GRE egress) and ZPA (user→app), in the collector shape
+  - {label: ZscalerDc, uid: "zia:acme:dc:fra4", props: {name: FRA4}}
+  - {label: ZiaLocation, uid: "zia:acme:loc:9001", props: {name: fra01-guest, zia_id: "9001", egress_ips: ["172.31.255.1"]}}
+  - {label: Tunnel, uid: "zia:acme:gre:9301", props: {encap: gre, source_ip: "172.31.255.1"}}
+  - {label: ZiaLocationGroup, uid: "zia:acme:locgrp:9101", props: {name: frankfurt-offices, dynamic: false}}
+  - {label: ZiaForwardingRule, uid: "zia:acme:fwdrule:9201", props: {name: webshop-to-zpa, order: 1, forward_method: zpa, enabled: true, zpa_app_segment_ids: ["2001"]}}
+  - {label: IdentityGroup, uid: "zpa:acme:idp:7001-77101", props: {name: sales, source: scim}}
+  - {label: IdentityGroup, uid: "zpa:acme:idp:7001-77102", props: {name: contractors, source: scim}}
+  # tcp_port_ranges is the property collectors/zpa.py writes (the ZPA API's
+  # flattened from/to string pairs); the brokered stage compares the requested
+  # port against it. The free-text tcp_ports it replaces was read by nothing.
+  - {label: ZpaAppSegment, uid: "zpa:acme:seg:2001", props: {name: webshop-internal, zpa_id: "2001", enabled: true, domains: ["webshop.corp.example"], tcp_port_ranges: ["443", "443"]}}
+  - {label: ZpaSegmentGroup, uid: "zpa:acme:seggrp:100", props: {name: corp-apps}}
+  - {label: ZpaServerGroup, uid: "zpa:acme:srvgrp:300", props: {name: dc1-servers}}
+  - {label: ZpaAppConnectorGroup, uid: "zpa:acme:cgrp:500", props: {name: dc1-connectors, location: dc1}}
+  - {label: ZpaAppConnector, uid: "zpa:acme:conn:600", props: {name: dc1-conn-01, enabled: true, health: up, control_channel_status: ZPN_STATUS_AUTHENTICATED, private_ip: "10.0.12.6"}}
+  - {label: ZpaAccessRule, uid: "zpa:acme:rule:100", props: {position: 1, priority: 1, name: sales-to-webshop, action: allow, action_raw: ALLOW, conditions: '[{"operator": "OR", "operands": [{"type": "APP", "rhs": "2001"}]}, {"operator": "OR", "operands": [{"type": "SCIM_GROUP", "rhs": "77101"}]}]', conditions_summary: "APP=2001; SCIM_GROUP=77101", identity_scope: listed, app_scope: listed}}
+  - {label: ZpaAccessRule, uid: "zpa:acme:rule:200", props: {position: 2, priority: 2, name: contractors-deny-corp, action: deny, action_raw: DENY, conditions: '[{"operator": "OR", "operands": [{"type": "APP_GROUP", "rhs": "100"}]}, {"operator": "OR", "operands": [{"type": "SCIM_GROUP", "rhs": "77102"}]}]', conditions_summary: "APP_GROUP=100; SCIM_GROUP=77102", identity_scope: listed, app_scope: listed}}
+  - {label: DnsRecord, uid: "dns:webshop.corp.example:A", props: {fqdn: webshop.corp.example, type: A}}
+  - {label: Vm, uid: "vc:vc01:vm-201", props: {name: zpa-conn-01, power: "on"}}
+  - {label: EsxHost, uid: "vc:vc01:host-11", props: {hostname: esx01, serial: VMW20240111}}
+  # The connector's own Vm gets a Vnic + HAS_IP, mirroring mini-dc.yaml's
+  # vm-101/vm-102 pattern, on an address in the corp routing domain
+  # (deliberately outside any declared "connected" prefix, so it derives no
+  # new GATEWAY_FOR containment pair). No collector writes the Vm today.
+  - {label: Vnic, uid: "vc:vc01:vm-201/vnic/0", props: {mac: "00:50:56:03:03:03"}}
+  - {label: IpAddress, uid: "ip:corp:10.0.12.6", props: {ip: 10.0.12.6, af: 4, l3dom: corp, anchor: corp}}
+
+  # --- AWS: account → VPC → TGW → DX, SG as rulebase
+  - {label: Organization, uid: "aws:org:o-abc123", props: {name: acme}}
+  - {label: Account, uid: "aws:acct:111111111111", props: {name: prod-network}}
+  - {label: Region, uid: "aws:region:eu-central-1", props: {name: eu-central-1}}
+  - {label: Vpc, uid: "aws:arn:aws:ec2:eu-central-1:111111111111:vpc/vpc-0prod", props: {name: prod, cidr: 10.64.0.0/16}}
+  - {label: Subnet, uid: "aws:arn:aws:ec2:eu-central-1:111111111111:subnet/subnet-0web", props: {name: web-a, az: eu-central-1a}}
+  - {label: RouteTable, uid: "aws:arn:aws:ec2:eu-central-1:111111111111:route-table/rtb-0main", props: {name: prod-main}}
+  - {label: CloudRoute, uid: "aws:arn:aws:ec2:eu-central-1:111111111111:route-table/rtb-0main/route/10.0.0.0-8", props: {dest: 10.0.0.0/8, state: active}}
+  - {label: Tgw, uid: "aws:arn:aws:ec2:eu-central-1:111111111111:transit-gateway/tgw-0hub", props: {name: eu-hub, asn: 64512}}
+  - {label: TgwAttachment, uid: "aws:arn:aws:ec2:eu-central-1:111111111111:transit-gateway-attachment/tgw-attach-0vpc", props: {kind: vpc}}
+  - {label: TgwRouteTable, uid: "aws:arn:aws:ec2:eu-central-1:111111111111:transit-gateway-route-table/tgw-rtb-0main", props: {name: main}}
+  - {label: FwRulebase, uid: "aws:arn:aws:ec2:eu-central-1:111111111111:security-group/sg-0web", props: {name: web-sg, kind: sg, vendor: aws}}
+  - {label: FwRule, uid: "aws:sg:sg-0web:ingress:443", props: {position: 1, action: accept, name: https-from-corp, rule_uid: sgr-0abc}}
+  - {label: NetObject, uid: "aws:obj:corp-super", props: {name: corp-supernet, kind: network}}
+  - {label: SvcObject, uid: "aws:svc:tcp-443", props: {name: https, proto: tcp, ports: "443"}}
+  - {label: Eni, uid: "aws:arn:aws:ec2:eu-central-1:111111111111:network-interface/eni-0web", props: {}}
+  - {label: Instance, uid: "aws:arn:aws:ec2:eu-central-1:111111111111:instance/i-0web", props: {name: cloud-web-01, type: m6i.large}}
+  - {label: DxConnection, uid: "aws:arn:aws:directconnect:eu-central-1:111111111111:dxcon/dxcon-0fr5", props: {name: fr5-primary, bandwidth: 1Gbps}}
+  - {label: DxVif, uid: "aws:arn:aws:directconnect:eu-central-1:111111111111:dxvif/dxvif-0corp", props: {vlan: 100, kind: transit}}
+  - {label: DxGw, uid: "aws:arn:aws:directconnect::111111111111:dx-gateway/dxgw-0corp", props: {name: corp-dxgw, asn: 64512}}
+
+  # --- Azure: subscription → VNet → ER, NSG + UDR
+  - {label: Subscription, uid: "az:/subscriptions/00000000-0000-0000-0000-000000000001", props: {name: prod-network}}
+  - {label: VNet, uid: "az:/subscriptions/00000000-0000-0000-0000-000000000001/resourcegroups/rg-prod/providers/microsoft.network/virtualnetworks/vnet-prod", props: {name: vnet-prod, cidr: 10.80.0.0/16}}
+  - {label: Subnet, uid: "az:/subscriptions/00000000-0000-0000-0000-000000000001/resourcegroups/rg-prod/providers/microsoft.network/virtualnetworks/vnet-prod/subnets/snet-web", props: {name: snet-web}}
+  - {label: FwRulebase, uid: "az:/subscriptions/00000000-0000-0000-0000-000000000001/resourcegroups/rg-prod/providers/microsoft.network/networksecuritygroups/nsg-web", props: {name: nsg-web, kind: nsg, vendor: azure}}
+  - {label: FwRule, uid: "az:nsg:nsg-web:rule:allow-corp-443", props: {position: 100, action: accept, name: allow-corp-443, rule_uid: allow-corp-443}}
+  - {label: NetObject, uid: "az:obj:corp-super", props: {name: corp-supernet, kind: network}}
+  - {label: SvcObject, uid: "az:svc:tcp-443", props: {name: https, proto: tcp, ports: "443"}}
+  - {label: RouteTable, uid: "az:/subscriptions/00000000-0000-0000-0000-000000000001/resourcegroups/rg-prod/providers/microsoft.network/routetables/rt-web", props: {name: rt-web}}
+  - {label: CloudRoute, uid: "az:rt:rt-web/route/to-onprem", props: {dest: 10.0.0.0/8, next_hop_type: VirtualNetworkGateway}}
+  - {label: ErCircuit, uid: "az:/subscriptions/00000000-0000-0000-0000-000000000001/resourcegroups/rg-net/providers/microsoft.network/expressroutecircuits/er-fra", props: {name: er-fra, bandwidth_mbps: 1000}}
+  - {label: VNetGw, uid: "az:/subscriptions/00000000-0000-0000-0000-000000000001/resourcegroups/rg-net/providers/microsoft.network/virtualnetworkgateways/vgw-er", props: {name: vgw-er, kind: expressroute}}
+  - {label: Nic, uid: "az:/subscriptions/00000000-0000-0000-0000-000000000001/resourcegroups/rg-prod/providers/microsoft.network/networkinterfaces/nic-web1", props: {}}
+  - {label: Vm, uid: "az:/subscriptions/00000000-0000-0000-0000-000000000001/resourcegroups/rg-prod/providers/microsoft.compute/virtualmachines/vm-web1", props: {name: az-web-01}}
+
+  # --- Equinix Fabric stitching both clouds
+  - {label: FabricPort, uid: "eqx:port:11111111-aaaa", props: {name: fr5-primary-10g, speed: 10g, bound_port_uid: "dev:fra01-core-01/port/eth1-3"}}
+  - {label: VirtualCircuit, uid: "eqx:vc:22222222-bbbb", props: {name: fr5-to-aws, bandwidth_mbps: 1000, state: active}}
+  - {label: VirtualCircuit, uid: "eqx:vc:33333333-cccc", props: {name: fr5-to-azure, bandwidth_mbps: 1000, state: active}}
+
+  # --- ACI north side: L3Out classifying campus users (second contract, ungated by PBR)
+  - {label: Tenant, uid: "aci:fab1:uni/tn-PROD", props: {name: PROD}}
+  - {label: VrfInstance, uid: "vrf:aci:fab1:tn-PROD:CTX1", props: {name: CTX1}}
+  - {label: Epg, uid: "aci:fab1:uni/tn-PROD/ap-webshop/epg-frontend", props: {name: frontend}}
+  - {label: L3Out, uid: "aci:fab1:uni/tn-PROD/out-campus", props: {name: campus}}
+  - {label: ExtEpg, uid: "aci:fab1:uni/tn-PROD/out-campus/instP-campus", props: {name: campus-users}}
+  - {label: Contract, uid: "aci:fab1:uni/tn-PROD/brc-users-to-web", props: {name: users-to-web, scope: context}}
+  - {label: ContractSubject, uid: "aci:fab1:uni/tn-PROD/brc-users-to-web/subj-https", props: {name: https}}
+  - {label: AciFilter, uid: "aci:fab1:uni/tn-PROD/flt-https", props: {name: https}}
+  - {label: FilterEntry, uid: "aci:fab1:uni/tn-PROD/flt-https/e-tcp-443", props: {proto: tcp, ether_type: ip, s_from_port: unspecified, s_to_port: unspecified, d_from_port: "443", d_to_port: "443", tcp_rules: unspecified, apply_to_frag: "no"}}
+
+  # --- app layer tie-in (cloud web tier belongs to the same business service)
+  - {label: AppComponent, uid: "snow:appc-webshop-web", props: {name: webshop-web}}
+
+rels:
+  # --- sites, providers, DORA
+  - {type: LOCATED_IN, start: [Device, "dev:fra01-core-01"], end: [Site, "site:fra01"]}
+  - {type: LOCATED_IN, start: [Device, "dev:fra01-core-02"], end: [Site, "site:fra01"]}
+  - {type: LOCATED_IN, start: [Device, "dev:fra01-fgt-01"], end: [Site, "site:fra01"]}
+  - {type: LOCATED_IN, start: [Device, "dev:fra01-ips-01"], end: [Site, "site:fra01"]}
+  - {type: LOCATED_IN, start: [Device, "dev:fra01-vce-01"], end: [Site, "site:fra01"]}
+  - {type: LOCATED_IN, start: [Device, "dev:fra01-wlc-01"], end: [Site, "site:fra01"]}
+  - {type: LOCATED_IN, start: [FabricPort, "eqx:port:11111111-aaaa"], end: [Site, "site:eqx-fr5"]}
+  - {type: SERVED_BY, start: [Site, "site:fra01"], end: [ProviderNetwork, "pnet:mpls-carrier-x"]}
+  - {type: SERVED_BY, start: [Site, "site:fra01"], end: [ProviderNetwork, "pnet:internet-isp-y"]}
+  - {type: PROVIDED_BY, start: [ProviderNetwork, "pnet:mpls-carrier-x"], end: [Provider, "provider:carrier-x"]}
+  - {type: PROVIDED_BY, start: [ProviderNetwork, "pnet:internet-isp-y"], end: [Provider, "provider:isp-y"]}
+  - {type: PROVIDED_BY, start: [ZscalerDc, "zia:acme:dc:fra4"], end: [Provider, "provider:zscaler"]}
+  - {type: PROVIDED_BY, start: [VirtualCircuit, "eqx:vc:22222222-bbbb"], end: [Provider, "provider:equinix"]}
+  - {type: PROVIDED_BY, start: [VirtualCircuit, "eqx:vc:33333333-cccc"], end: [Provider, "provider:equinix"]}
+  - {type: PROVIDED_BY, start: [Account, "aws:acct:111111111111"], end: [Provider, "provider:aws"]}
+  - {type: PROVIDED_BY, start: [Subscription, "az:/subscriptions/00000000-0000-0000-0000-000000000001"], end: [Provider, "provider:azure"]}
+
+  # --- campus L2: SSID → guest VLAN, VLANs → segments, SVIs, HSRP gateway
+  - {type: BRIDGED_TO, start: [Ssid, "ssid:fra01:guest"], end: [VlanInstance, "vlan:dev:fra01-core-01:900"]}
+  - {type: REALIZES, start: [VlanInstance, "vlan:dev:fra01-core-01:100"], end: [BridgeDomain, "l2seg:fra01-users"]}
+  - {type: REALIZES, start: [VlanInstance, "vlan:dev:fra01-core-02:100"], end: [BridgeDomain, "l2seg:fra01-users"]}
+  - {type: REALIZES, start: [VlanInstance, "vlan:dev:fra01-core-01:900"], end: [BridgeDomain, "l2seg:fra01-guest"]}
+  - {type: "ON", start: [Interface, "dev:fra01-core-01/if/vlan100"], end: [Device, "dev:fra01-core-01"]}
+  - {type: "ON", start: [Interface, "dev:fra01-core-02/if/vlan100"], end: [Device, "dev:fra01-core-02"]}
+  - {type: "ON", start: [Interface, "dev:fra01-core-01/if/vlan900"], end: [Device, "dev:fra01-core-01"]}
+  - {type: "ON", start: [Interface, "dev:fra01-core-01/if/eth1-2"], end: [Device, "dev:fra01-core-01"]}
+  - {type: "ON", start: [Interface, "dev:fra01-core-02/if/eth1-2"], end: [Device, "dev:fra01-core-02"]}
+  - {type: "ON", start: [Interface, "dev:fra01-core-01/if/lo0"], end: [Device, "dev:fra01-core-01"]}
+  - {type: "ON", start: [Interface, "dev:dc1-border-01/if/lo0"], end: [Device, "dev:dc1-border-01"]}
+  - {type: "ON", start: [Interface, "dev:dc1-border-01/if/bgp-dx"], end: [Device, "dev:dc1-border-01"]}
+  - {type: "ON", start: [Interface, "dev:fra01-fgt-01/if/port1"], end: [Device, "dev:fra01-fgt-01"]}
+  - {type: "ON", start: [Interface, "dev:fra01-fgt-01/if/port2"], end: [Device, "dev:fra01-fgt-01"]}
+  - {type: "ON", start: [Interface, "dev:fra01-vce-01/if/ge3"], end: [Device, "dev:fra01-vce-01"]}
+  - {type: BOUND_TO, start: [Interface, "dev:fra01-core-01/if/vlan100"], end: [VlanInstance, "vlan:dev:fra01-core-01:100"]}
+  - {type: BOUND_TO, start: [Interface, "dev:fra01-core-02/if/vlan100"], end: [VlanInstance, "vlan:dev:fra01-core-02:100"]}
+  - {type: BOUND_TO, start: [Interface, "dev:fra01-core-01/if/vlan900"], end: [VlanInstance, "vlan:dev:fra01-core-01:900"]}
+  - {type: MEMBER_OF, start: [Interface, "dev:fra01-core-01/if/vlan100"], end: [FhrpGroup, "fhrp:fra01-users:1"], props: {priority: 110, state: active}}
+  - {type: MEMBER_OF, start: [Interface, "dev:fra01-core-02/if/vlan100"], end: [FhrpGroup, "fhrp:fra01-users:1"], props: {priority: 90, state: standby}}
+  - {type: GATEWAY_FOR, start: [FhrpGroup, "fhrp:fra01-users:1"], end: [Prefix, "pfx:vrf-dev-fra01-core-01-corp:10.20.0.0/24"]}
+  - {type: HAS_IP, start: [FhrpGroup, "fhrp:fra01-users:1"], end: [IpAddress, "ip:corp:10.20.0.1"]}
+
+  # --- campus L3: VRFs, addressing
+  - {type: IN_VRF, start: [Interface, "dev:fra01-core-01/if/vlan100"], end: [VrfInstance, "vrf:dev:fra01-core-01:corp"]}
+  - {type: IN_VRF, start: [Interface, "dev:fra01-core-01/if/vlan900"], end: [VrfInstance, "vrf:dev:fra01-core-01:guest"]}
+  - {type: IN_VRF, start: [Interface, "dev:fra01-core-01/if/eth1-2"], end: [VrfInstance, "vrf:dev:fra01-core-01:corp"]}
+  - {type: IN_VRF, start: [Interface, "dev:dc1-border-01/if/bgp-dx"], end: [VrfInstance, "vrf:dev:dc1-border-01:corp"]}
+  - {type: IN_VRF, start: [Interface, "dev:fra01-fgt-01/if/port1"], end: [VrfInstance, "vrf:dev:fra01-fgt-01:root"]}
+  - {type: IN_VRF, start: [Interface, "dev:fra01-fgt-01/if/port2"], end: [VrfInstance, "vrf:dev:fra01-fgt-01:root"]}
+  - {type: MEMBER_OF, start: [VrfInstance, "vrf:dev:fra01-core-01:corp"], end: [RoutingDomain, "rdom:corp"], props: {basis: declared}}
+  - {type: MEMBER_OF, start: [VrfInstance, "vrf:dev:fra01-core-01:guest"], end: [RoutingDomain, "rdom:guest"], props: {basis: declared}}
+  - {type: MEMBER_OF, start: [VrfInstance, "vrf:dev:dc1-border-01:corp"], end: [RoutingDomain, "rdom:corp"], props: {basis: declared}}
+  - {type: HAS_IP, start: [Interface, "dev:fra01-core-01/if/vlan100"], end: [IpAddress, "ip:vrf-dev-fra01-core-01-corp:10.20.0.2"]}
+  - {type: HAS_IP, start: [Interface, "dev:fra01-core-02/if/vlan100"], end: [IpAddress, "ip:corp:10.20.0.3"]}
+  - {type: HAS_IP, start: [Interface, "dev:fra01-core-01/if/lo0"], end: [IpAddress, "ip:corp:10.99.0.2"]}
+  - {type: HAS_IP, start: [Interface, "dev:dc1-border-01/if/lo0"], end: [IpAddress, "ip:corp:10.99.0.1"]}
+  - {type: HAS_IP, start: [Interface, "dev:dc1-border-01/if/bgp-dx"], end: [IpAddress, "ip:vrf-dev-dc1-border-01-corp:169.254.100.1"]}
+  - {type: HAS_IP, start: [Interface, "dev:fra01-fgt-01/if/port1"], end: [IpAddress, "ip:vrf-dev-fra01-fgt-01-root:10.20.0.254"]}
+  - {type: HAS_IP, start: [Interface, "dev:fra01-fgt-01/if/port2"], end: [IpAddress, "ip:vrf-dev-fra01-fgt-01-root:172.31.10.1"]}
+  - {type: IN, start: [IpAddress, "ip:corp:10.20.0.1"], end: [Prefix, "pfx:vrf-dev-fra01-core-01-corp:10.20.0.0/24"]}
+  - {type: IN, start: [IpAddress, "ip:vrf-dev-fra01-core-01-corp:10.20.0.2"], end: [Prefix, "pfx:vrf-dev-fra01-core-01-corp:10.20.0.0/24"]}
+  - {type: IN, start: [IpAddress, "ip:corp:10.20.0.3"], end: [Prefix, "pfx:vrf-dev-fra01-core-01-corp:10.20.0.0/24"]}
+  - {type: IN, start: [IpAddress, "ip:corp:10.20.0.53"], end: [Prefix, "pfx:vrf-dev-fra01-core-01-corp:10.20.0.0/24"]}
+  - {type: IN, start: [IpAddress, "ip:vrf-dev-fra01-fgt-01-root:10.20.0.254"], end: [Prefix, "pfx:vrf-dev-fra01-core-01-corp:10.20.0.0/24"]}
+  - {type: IN, start: [IpAddress, "ip:corp:10.99.0.1"], end: [Prefix, "pfx:corp:10.99.0.0/24"]}
+  - {type: IN, start: [IpAddress, "ip:corp:10.99.0.2"], end: [Prefix, "pfx:corp:10.99.0.0/24"]}
+  - {type: IN, start: [IpAddress, "ip:vrf-dev-dc1-border-01-corp:169.254.100.1"], end: [Prefix, "pfx:corp:169.254.100.0/30"]}
+  - {type: IN, start: [IpAddress, "ip:vrf-dev-fra01-fgt-01-root:172.31.10.1"], end: [Prefix, "pfx:guest:172.31.10.0/24"]}
+  - {type: IN, start: [IpAddress, "ip:guest:172.31.255.1"], end: [Prefix, "pfx:guest:172.31.0.0/16"]}
+  - {type: IN, start: [IpAddress, "ip:aws-prod:169.254.100.2"], end: [Prefix, "pfx:aws-prod:169.254.100.0/30"]}
+  - {type: IN, start: [IpAddress, "ip:aws-prod:10.64.1.10"], end: [Prefix, "pfx:aws-prod:10.64.1.0/24"]}
+  - {type: IN, start: [IpAddress, "ip:az-prod:10.80.1.10"], end: [Prefix, "pfx:az-prod:10.80.1.0/24"]}
+  - {type: WITHIN, start: [Prefix, "pfx:corp:10.0.0.0/16"], end: [Prefix, "pfx:corp:10.0.0.0/8"]}
+  - {type: WITHIN, start: [Prefix, "pfx:vrf-dev-fra01-core-01-corp:10.20.0.0/24"], end: [Prefix, "pfx:corp:10.0.0.0/8"]}
+  - {type: WITHIN, start: [Prefix, "pfx:corp:10.99.0.0/24"], end: [Prefix, "pfx:corp:10.0.0.0/8"]}
+  - {type: WITHIN, start: [Prefix, "pfx:corp:10.250.0.0/16"], end: [Prefix, "pfx:corp:10.0.0.0/8"]}
+  - {type: WITHIN, start: [Prefix, "pfx:guest:172.31.10.0/24"], end: [Prefix, "pfx:guest:172.31.0.0/16"]}
+  - {type: WITHIN, start: [Prefix, "pfx:aws-prod:10.64.1.0/24"], end: [Prefix, "pfx:aws-prod:10.64.0.0/16"]}
+  - {type: ORIGINATES, start: [VrfInstance, "vrf:dev:fra01-core-01:corp"], end: [Prefix, "pfx:vrf-dev-fra01-core-01-corp:10.20.0.0/24"], props: {proto: connected}}
+  - {type: ORIGINATES, start: [VrfInstance, "vrf:dev:dc1-border-01:corp"], end: [Prefix, "pfx:corp:10.0.0.0/16"], props: {proto: aggregate}}
+
+  # --- routing sessions: OSPF underlay, EVPN overlay (shared RT), eBGP to AWS
+  - {type: IN_AREA, start: [Interface, "dev:fra01-core-01/if/eth1-2"], end: [OspfArea, "ospf:fra01:area-0"]}
+  - {type: IN_AREA, start: [Interface, "dev:fra01-core-02/if/eth1-2"], end: [OspfArea, "ospf:fra01:area-0"]}
+  - {type: ENDPOINT, start: [OspfAdjacency, "ospf:adj:fdo22220001~fdo22220002"], end: [Interface, "dev:fra01-core-01/if/eth1-2"]}
+  - {type: ENDPOINT, start: [OspfAdjacency, "ospf:adj:fdo22220001~fdo22220002"], end: [Interface, "dev:fra01-core-02/if/eth1-2"]}
+  - {type: USES_RT, start: [EvpnInstance, "evpn:corp:l3vni-50001"], end: [RouteTarget, "rt:65001:50001"]}
+  - {type: MEMBER_OF, start: [EvpnInstance, "evpn:corp:l3vni-50001"], end: [RoutingDomain, "rdom:corp"], props: {basis: declared}}
+  - {type: IMPORTS, start: [VrfInstance, "vrf:dev:fra01-core-01:corp"], end: [RouteTarget, "rt:65001:50001"]}
+  - {type: EXPORTS, start: [VrfInstance, "vrf:dev:fra01-core-01:corp"], end: [RouteTarget, "rt:65001:50001"]}
+  - {type: IMPORTS, start: [VrfInstance, "vrf:dev:dc1-border-01:corp"], end: [RouteTarget, "rt:65001:50001"]}
+  - {type: EXPORTS, start: [VrfInstance, "vrf:dev:dc1-border-01:corp"], end: [RouteTarget, "rt:65001:50001"]}
+  - {type: ENDPOINT, start: [BgpSession, "bgp:dev:fra01-core-01~10.99.0.1:corp"], end: [IpAddress, "ip:corp:10.99.0.2"]}
+  - {type: ENDPOINT, start: [BgpSession, "bgp:dev:fra01-core-01~10.99.0.1:corp"], end: [IpAddress, "ip:corp:10.99.0.1"]}
+  - {type: ENDPOINT, start: [BgpSession, "bgp:dev:dc1-border-01~169.254.100.2:corp"], end: [IpAddress, "ip:vrf-dev-dc1-border-01-corp:169.254.100.1"]}
+  - {type: ENDPOINT, start: [BgpSession, "bgp:dev:dc1-border-01~169.254.100.2:corp"], end: [IpAddress, "ip:aws-prod:169.254.100.2"]}
+
+  # --- inline chain + deliberate drift
+  # consistent (both lldp and documented): core1 eth1/1 <-> IPS 1A
+  - {type: CONNECTED_TO, start: [Port, "dev:fra01-core-01/port/eth1-1"], end: [Port, "dev:fra01-ips-01/port/1a"], key: {source: lldp}}
+  - {type: CONNECTED_TO, start: [Port, "dev:fra01-core-01/port/eth1-1"], end: [Port, "dev:fra01-ips-01/port/1a"], key: {source: nautobot-cable}}
+  # seen-but-not-documented: IPS 1B <-> FGT port1
+  - {type: CONNECTED_TO, start: [Port, "dev:fra01-ips-01/port/1b"], end: [Port, "dev:fra01-fgt-01/port/port1"], key: {source: lldp}}
+  # documented-but-not-seen: core1 eth1/2 <-> core2 eth1/2
+  - {type: CONNECTED_TO, start: [Port, "dev:fra01-core-01/port/eth1-2"], end: [Port, "dev:fra01-core-02/port/eth1-2"], key: {source: nautobot-cable}}
+  - {type: "ON", start: [Port, "dev:fra01-core-01/port/eth1-1"], end: [Device, "dev:fra01-core-01"]}
+  - {type: "ON", start: [Port, "dev:fra01-core-01/port/eth1-2"], end: [Device, "dev:fra01-core-01"]}
+  - {type: "ON", start: [Port, "dev:fra01-core-02/port/eth1-2"], end: [Device, "dev:fra01-core-02"]}
+  - {type: "ON", start: [Port, "dev:fra01-ips-01/port/1a"], end: [Device, "dev:fra01-ips-01"]}
+  - {type: "ON", start: [Port, "dev:fra01-ips-01/port/1b"], end: [Device, "dev:fra01-ips-01"]}
+  - {type: "ON", start: [Port, "dev:fra01-fgt-01/port/port1"], end: [Device, "dev:fra01-fgt-01"]}
+  - {type: "ON", start: [Port, "dev:fra01-fgt-01/port/port2"], end: [Device, "dev:fra01-fgt-01"]}
+  - {type: REALIZED_BY, start: [Interface, "dev:fra01-fgt-01/if/port1"], end: [Port, "dev:fra01-fgt-01/port/port1"]}
+  - {type: REALIZED_BY, start: [Interface, "dev:fra01-fgt-01/if/port2"], end: [Port, "dev:fra01-fgt-01/port/port2"]}
+  # the Fabric port is patched to core1's eth1/3 (the operator's port_bindings row),
+  # and the inter-core trunk carries the users VLAN at both ends (schema v0.7.0)
+  - {type: "ON", start: [Port, "dev:fra01-core-01/port/eth1-3"], end: [Device, "dev:fra01-core-01"]}
+  - {type: REALIZED_BY, start: [FabricPort, "eqx:port:11111111-aaaa"], end: [Port, "dev:fra01-core-01/port/eth1-3"]}
+  - {type: CARRIES, start: [Port, "dev:fra01-core-01/port/eth1-2"], end: [VlanInstance, "vlan:dev:fra01-core-01:100"]}
+  - {type: CARRIES, start: [Port, "dev:fra01-core-02/port/eth1-2"], end: [VlanInstance, "vlan:dev:fra01-core-02:100"]}
+
+  # --- FortiGate as the guest→corp gate (+ SNAT), IPS profile inline
+  - {type: ENFORCES, start: [Device, "dev:fra01-fgt-01"], end: [FwRulebase, "fgt:FGT60F0000000001:root:policy:access"]}
+  - {type: ENFORCES, start: [VrfInstance, "vrf:dev:fra01-fgt-01:root"], end: [FwRulebase, "fgt:FGT60F0000000001:root:policy:nat"]}
+  - {type: ENFORCES, start: [Device, "dev:fra01-ips-01"], end: [FwRulebase, "tp:sms01:profile:fra01-inline"]}
+  - {type: CONTAINS, start: [Zone, "fgt:FGT60F0000000001:root:zone:corp"], end: [Interface, "dev:fra01-fgt-01/if/port1"]}
+  - {type: CONTAINS, start: [Zone, "fgt:FGT60F0000000001:root:zone:guest"], end: [Interface, "dev:fra01-fgt-01/if/port2"]}
+  - {type: HAS_RULE, start: [FwRulebase, "fgt:FGT60F0000000001:root:policy:access"], end: [FwRule, "fgt:FGT60F0000000001:root:policy:1"]}
+  - {type: HAS_RULE, start: [FwRulebase, "fgt:FGT60F0000000001:root:policy:nat"], end: [NatRule, "fgt:FGT60F0000000001:root:ippool:guest-snat"]}
+  - {type: SRC, start: [FwRule, "fgt:FGT60F0000000001:root:policy:1"], end: [NetObject, "fgt:FGT60F0000000001:root:addr:guest-net"]}
+  - {type: DST, start: [FwRule, "fgt:FGT60F0000000001:root:policy:1"], end: [NetObject, "fgt:FGT60F0000000001:root:addr:corp-dns"]}
+  - {type: SVC, start: [FwRule, "fgt:FGT60F0000000001:root:policy:1"], end: [SvcObject, "fgt:FGT60F0000000001:root:svc:dns"]}
+  # The zone query of the engine matches (rb:FwRulebase)-[:FROM_ZONE]->(:Zone).
+  - {type: FROM_ZONE, start: [FwRulebase, "fgt:FGT60F0000000001:root:policy:access"], end: [Zone, "fgt:FGT60F0000000001:root:zone:guest"]}
+  - {type: TO_ZONE, start: [FwRulebase, "fgt:FGT60F0000000001:root:policy:access"], end: [Zone, "fgt:FGT60F0000000001:root:zone:corp"]}
+  - {type: HAS_RULE, start: [FwRulebase, "fgt:FGT60F0000000001:root:policy:corp-guest"], end: [FwRule, "fgt:FGT60F0000000001:root:policy:2"]}
+  - {type: FROM_ZONE, start: [FwRulebase, "fgt:FGT60F0000000001:root:policy:corp-guest"], end: [Zone, "fgt:FGT60F0000000001:root:zone:corp"]}
+  - {type: TO_ZONE, start: [FwRulebase, "fgt:FGT60F0000000001:root:policy:corp-guest"], end: [Zone, "fgt:FGT60F0000000001:root:zone:guest"]}
+  - {type: SRC, start: [FwRule, "fgt:FGT60F0000000001:root:policy:2"], end: [NetObject, "fgt:FGT60F0000000001:root:addr:corp-dns"]}
+  - {type: DST, start: [FwRule, "fgt:FGT60F0000000001:root:policy:2"], end: [NetObject, "fgt:FGT60F0000000001:root:addr:guest-net"]}
+  - {type: RESOLVES_TO, start: [NetObject, "fgt:FGT60F0000000001:root:addr:guest-net"], end: [Prefix, "pfx:guest:172.31.0.0/16"]}
+  - {type: RESOLVES_TO, start: [NetObject, "fgt:FGT60F0000000001:root:addr:corp-dns"], end: [IpAddress, "ip:corp:10.20.0.53"]}
+  - {type: ORIG_SRC, start: [NatRule, "fgt:FGT60F0000000001:root:ippool:guest-snat"], end: [NetObject, "fgt:FGT60F0000000001:root:addr:guest-net"]}
+  - {type: XLATE_SRC, start: [NatRule, "fgt:FGT60F0000000001:root:ippool:guest-snat"], end: [IpAddress, "ip:vrf-dev-fra01-fgt-01-root:10.20.0.254"]}
+  # derived (reasoner-shaped, marked derived:true): the segmentation-audit surface
+  - {type: INTERCONNECTED_BY, start: [RoutingDomain, "rdom:guest"], end: [Device, "dev:fra01-fgt-01"], props: {derived: true, rule: fixture-demo, kind: firewall}}
+  - {type: INTERCONNECTED_BY, start: [RoutingDomain, "rdom:corp"], end: [Device, "dev:fra01-fgt-01"], props: {derived: true, rule: fixture-demo, kind: firewall}}
+  - {type: L3_ADJACENT, start: [Device, "dev:fra01-core-01"], end: [Device, "dev:fra01-core-02"], props: {derived: true, l3dom: corp}}
+  - {type: L3_ADJACENT, start: [Device, "dev:fra01-core-01"], end: [Device, "dev:dc1-border-01"], props: {derived: true, l3dom: corp}}
+
+  # --- SD-WAN
+  - {type: HAS_LINK, start: [Device, "dev:fra01-vce-01"], end: [WanLink, "vco:acme:link:fra01-mpls"]}
+  - {type: HAS_LINK, start: [Device, "dev:fra01-vce-01"], end: [WanLink, "vco:acme:link:fra01-dia"]}
+  - {type: PROVIDED_BY, start: [WanLink, "vco:acme:link:fra01-mpls"], end: [ProviderNetwork, "pnet:mpls-carrier-x"]}
+  - {type: PROVIDED_BY, start: [WanLink, "vco:acme:link:fra01-dia"], end: [ProviderNetwork, "pnet:internet-isp-y"]}
+  - {type: ENDPOINT, start: [Tunnel, "tun:velocloud-vcmp:dev:fra01-vce-01~vco:acme:gw:fra-gw1"], end: [Interface, "dev:fra01-vce-01/if/ge3"]}
+  - {type: TERMINATES_ON, start: [Tunnel, "tun:velocloud-vcmp:dev:fra01-vce-01~vco:acme:gw:fra-gw1"], end: [SdwanGateway, "vco:acme:gw:fra-gw1"]}
+  - {type: CARRIES, start: [Tunnel, "tun:velocloud-vcmp:dev:fra01-vce-01~vco:acme:gw:fra-gw1"], end: [SdwanSegment, "vco:acme:segment:1"]}
+  - {type: MEMBER_OF, start: [SdwanSegment, "vco:acme:segment:1"], end: [RoutingDomain, "rdom:corp"], props: {basis: declared}}
+  - {type: MATCHES, start: [SdwanBusinessPolicy, "vco:acme:bizpol:web-to-zscaler"], end: [Prefix, "pfx:corp:0.0.0.0/0"]}
+  # hand-built: no collector writes an SD-WAN policy edge to a Zscaler DC; the demo shows the steer
+  - {type: STEERS_VIA, start: [SdwanBusinessPolicy, "vco:acme:bizpol:web-to-zscaler"], end: [ZscalerDc, "zia:acme:dc:fra4"]}
+  - {type: MATCHES, start: [SdwanBusinessPolicy, "vco:acme:bizpol:voice-mpls"], end: [Prefix, "pfx:corp:10.250.0.0/16"]}
+  - {type: STEERS_VIA, start: [SdwanBusinessPolicy, "vco:acme:bizpol:voice-mpls"], end: [WanLink, "vco:acme:link:fra01-mpls"]}
+
+  # --- Zscaler ZIA: guest GRE egress
+  - {type: REPRESENTS, start: [ZiaLocation, "zia:acme:loc:9001"], end: [Site, "site:fra01"]}
+  - {type: USES, start: [ZiaLocation, "zia:acme:loc:9001"], end: [Tunnel, "zia:acme:gre:9301"]}
+  - {type: TERMINATES_ON, start: [Tunnel, "zia:acme:gre:9301"], end: [ZscalerDc, "zia:acme:dc:fra4"], key: {role: primary}, props: {vip: "185.46.212.88"}}
+  - {type: MEMBER_OF, start: [ZiaLocation, "zia:acme:loc:9001"], end: [ZiaLocationGroup, "zia:acme:locgrp:9101"]}
+
+  # --- ZPA: user → app policy → connector → real workload (VIP from the DC fixture)
+  - {type: GRANTS, start: [ZpaAccessRule, "zpa:acme:rule:100"], end: [IdentityGroup, "zpa:acme:idp:7001-77101"]}
+  - {type: DENIES, start: [ZpaAccessRule, "zpa:acme:rule:200"], end: [IdentityGroup, "zpa:acme:idp:7001-77102"]}
+  - {type: FOR, start: [ZpaAccessRule, "zpa:acme:rule:100"], end: [ZpaAppSegment, "zpa:acme:seg:2001"]}
+  - {type: FOR, start: [ZpaAccessRule, "zpa:acme:rule:200"], end: [ZpaSegmentGroup, "zpa:acme:seggrp:100"]}
+  - {type: MEMBER_OF, start: [ZpaAppSegment, "zpa:acme:seg:2001"], end: [ZpaSegmentGroup, "zpa:acme:seggrp:100"]}
+  - {type: SERVED_BY, start: [ZpaAppSegment, "zpa:acme:seg:2001"], end: [ZpaServerGroup, "zpa:acme:srvgrp:300"]}
+  - {type: USES, start: [ZpaServerGroup, "zpa:acme:srvgrp:300"], end: [ZpaAppConnectorGroup, "zpa:acme:cgrp:500"]}
+  - {type: HAS, start: [ZpaAppConnectorGroup, "zpa:acme:cgrp:500"], end: [ZpaAppConnector, "zpa:acme:conn:600"]}
+  # hand-built: no collector writes the connector's Vm; the demo walks the host
+  - {type: RUNS_ON, start: [ZpaAppConnector, "zpa:acme:conn:600"], end: [Vm, "vc:vc01:vm-201"]}
+  - {type: "ON", start: [Vm, "vc:vc01:vm-201"], end: [EsxHost, "vc:vc01:host-11"]}
+  - {type: OF, start: [Vnic, "vc:vc01:vm-201/vnic/0"], end: [Vm, "vc:vc01:vm-201"]}
+  - {type: HAS_IP, start: [Vnic, "vc:vc01:vm-201/vnic/0"], end: [IpAddress, "ip:corp:10.0.12.6"]}
+  # hand-built here; zpa-segment-domain-to-dns draws the same edge on a run
+  - {type: RESOLVES_TO, start: [ZpaAppSegment, "zpa:acme:seg:2001"], end: [DnsRecord, "dns:webshop.corp.example:A"]}
+  - {type: RESOLVES_TO, start: [DnsRecord, "dns:webshop.corp.example:A"], end: [IpAddress, "ip:corp:10.0.30.10"]}
+
+  # --- AWS
+  - {type: IN_ORG, start: [Account, "aws:acct:111111111111"], end: [Organization, "aws:org:o-abc123"]}
+  - {type: REALIZES, start: [Region, "aws:region:eu-central-1"], end: [Site, "site:aws-eu-central-1"]}
+  - {type: IN_ACCOUNT, start: [Vpc, "aws:arn:aws:ec2:eu-central-1:111111111111:vpc/vpc-0prod"], end: [Account, "aws:acct:111111111111"]}
+  - {type: IN_REGION, start: [Vpc, "aws:arn:aws:ec2:eu-central-1:111111111111:vpc/vpc-0prod"], end: [Region, "aws:region:eu-central-1"]}
+  - {type: MEMBER_OF, start: [Vpc, "aws:arn:aws:ec2:eu-central-1:111111111111:vpc/vpc-0prod"], end: [RoutingDomain, "rdom:aws-prod"], props: {basis: declared}}
+  - {type: PART_OF, start: [Subnet, "aws:arn:aws:ec2:eu-central-1:111111111111:subnet/subnet-0web"], end: [Vpc, "aws:arn:aws:ec2:eu-central-1:111111111111:vpc/vpc-0prod"]}
+  - {type: REALIZES, start: [Subnet, "aws:arn:aws:ec2:eu-central-1:111111111111:subnet/subnet-0web"], end: [Prefix, "pfx:aws-prod:10.64.1.0/24"]}
+  - {type: ASSOCIATED, start: [RouteTable, "aws:arn:aws:ec2:eu-central-1:111111111111:route-table/rtb-0main"], end: [Subnet, "aws:arn:aws:ec2:eu-central-1:111111111111:subnet/subnet-0web"]}
+  - {type: HAS_ROUTE, start: [RouteTable, "aws:arn:aws:ec2:eu-central-1:111111111111:route-table/rtb-0main"], end: [CloudRoute, "aws:arn:aws:ec2:eu-central-1:111111111111:route-table/rtb-0main/route/10.0.0.0-8"]}
+  - {type: FOR, start: [CloudRoute, "aws:arn:aws:ec2:eu-central-1:111111111111:route-table/rtb-0main/route/10.0.0.0-8"], end: [Prefix, "pfx:corp:10.0.0.0/8"]}
+  - {type: VIA, start: [CloudRoute, "aws:arn:aws:ec2:eu-central-1:111111111111:route-table/rtb-0main/route/10.0.0.0-8"], end: [Tgw, "aws:arn:aws:ec2:eu-central-1:111111111111:transit-gateway/tgw-0hub"]}
+  - {type: PART_OF, start: [TgwAttachment, "aws:arn:aws:ec2:eu-central-1:111111111111:transit-gateway-attachment/tgw-attach-0vpc"], end: [Tgw, "aws:arn:aws:ec2:eu-central-1:111111111111:transit-gateway/tgw-0hub"]}
+  - {type: OF, start: [TgwAttachment, "aws:arn:aws:ec2:eu-central-1:111111111111:transit-gateway-attachment/tgw-attach-0vpc"], end: [Vpc, "aws:arn:aws:ec2:eu-central-1:111111111111:vpc/vpc-0prod"]}
+  - {type: ASSOCIATED, start: [TgwAttachment, "aws:arn:aws:ec2:eu-central-1:111111111111:transit-gateway-attachment/tgw-attach-0vpc"], end: [TgwRouteTable, "aws:arn:aws:ec2:eu-central-1:111111111111:transit-gateway-route-table/tgw-rtb-0main"]}
+  - {type: PROPAGATES, start: [TgwAttachment, "aws:arn:aws:ec2:eu-central-1:111111111111:transit-gateway-attachment/tgw-attach-0vpc"], end: [TgwRouteTable, "aws:arn:aws:ec2:eu-central-1:111111111111:transit-gateway-route-table/tgw-rtb-0main"]}
+  - {type: PROTECTED_BY, start: [Eni, "aws:arn:aws:ec2:eu-central-1:111111111111:network-interface/eni-0web"], end: [FwRulebase, "aws:arn:aws:ec2:eu-central-1:111111111111:security-group/sg-0web"]}
+  - {type: HAS_RULE, start: [FwRulebase, "aws:arn:aws:ec2:eu-central-1:111111111111:security-group/sg-0web"], end: [FwRule, "aws:sg:sg-0web:ingress:443"]}
+  - {type: SRC, start: [FwRule, "aws:sg:sg-0web:ingress:443"], end: [NetObject, "aws:obj:corp-super"]}
+  - {type: SVC, start: [FwRule, "aws:sg:sg-0web:ingress:443"], end: [SvcObject, "aws:svc:tcp-443"]}
+  - {type: RESOLVES_TO, start: [NetObject, "aws:obj:corp-super"], end: [Prefix, "pfx:corp:10.0.0.0/8"]}
+  - {type: OF, start: [Eni, "aws:arn:aws:ec2:eu-central-1:111111111111:network-interface/eni-0web"], end: [Instance, "aws:arn:aws:ec2:eu-central-1:111111111111:instance/i-0web"]}
+  - {type: HAS_IP, start: [Eni, "aws:arn:aws:ec2:eu-central-1:111111111111:network-interface/eni-0web"], end: [IpAddress, "ip:aws-prod:10.64.1.10"]}
+  - {type: PART_OF, start: [DxVif, "aws:arn:aws:directconnect:eu-central-1:111111111111:dxvif/dxvif-0corp"], end: [DxConnection, "aws:arn:aws:directconnect:eu-central-1:111111111111:dxcon/dxcon-0fr5"]}
+  - {type: TERMINATES_ON, start: [DxVif, "aws:arn:aws:directconnect:eu-central-1:111111111111:dxvif/dxvif-0corp"], end: [DxGw, "aws:arn:aws:directconnect::111111111111:dx-gateway/dxgw-0corp"]}
+  - {type: ASSOCIATED, start: [DxGw, "aws:arn:aws:directconnect::111111111111:dx-gateway/dxgw-0corp"], end: [Tgw, "aws:arn:aws:ec2:eu-central-1:111111111111:transit-gateway/tgw-0hub"]}
+  - {type: PART_OF, start: [Instance, "aws:arn:aws:ec2:eu-central-1:111111111111:instance/i-0web"], end: [AppComponent, "snow:appc-webshop-web"]}
+
+  # --- Azure
+  - {type: PART_OF, start: [VNet, "az:/subscriptions/00000000-0000-0000-0000-000000000001/resourcegroups/rg-prod/providers/microsoft.network/virtualnetworks/vnet-prod"], end: [Subscription, "az:/subscriptions/00000000-0000-0000-0000-000000000001"]}
+  - {type: LOCATED_IN, start: [VNet, "az:/subscriptions/00000000-0000-0000-0000-000000000001/resourcegroups/rg-prod/providers/microsoft.network/virtualnetworks/vnet-prod"], end: [Site, "site:az-gwc"]}
+  - {type: MEMBER_OF, start: [VNet, "az:/subscriptions/00000000-0000-0000-0000-000000000001/resourcegroups/rg-prod/providers/microsoft.network/virtualnetworks/vnet-prod"], end: [RoutingDomain, "rdom:az-prod"], props: {basis: declared}}
+  - {type: PART_OF, start: [Subnet, "az:/subscriptions/00000000-0000-0000-0000-000000000001/resourcegroups/rg-prod/providers/microsoft.network/virtualnetworks/vnet-prod/subnets/snet-web"], end: [VNet, "az:/subscriptions/00000000-0000-0000-0000-000000000001/resourcegroups/rg-prod/providers/microsoft.network/virtualnetworks/vnet-prod"]}
+  - {type: REALIZES, start: [Subnet, "az:/subscriptions/00000000-0000-0000-0000-000000000001/resourcegroups/rg-prod/providers/microsoft.network/virtualnetworks/vnet-prod/subnets/snet-web"], end: [Prefix, "pfx:az-prod:10.80.1.0/24"]}
+  - {type: PROTECTED_BY, start: [Subnet, "az:/subscriptions/00000000-0000-0000-0000-000000000001/resourcegroups/rg-prod/providers/microsoft.network/virtualnetworks/vnet-prod/subnets/snet-web"], end: [FwRulebase, "az:/subscriptions/00000000-0000-0000-0000-000000000001/resourcegroups/rg-prod/providers/microsoft.network/networksecuritygroups/nsg-web"]}
+  - {type: HAS_RULE, start: [FwRulebase, "az:/subscriptions/00000000-0000-0000-0000-000000000001/resourcegroups/rg-prod/providers/microsoft.network/networksecuritygroups/nsg-web"], end: [FwRule, "az:nsg:nsg-web:rule:allow-corp-443"]}
+  - {type: SRC, start: [FwRule, "az:nsg:nsg-web:rule:allow-corp-443"], end: [NetObject, "az:obj:corp-super"]}
+  - {type: SVC, start: [FwRule, "az:nsg:nsg-web:rule:allow-corp-443"], end: [SvcObject, "az:svc:tcp-443"]}
+  - {type: RESOLVES_TO, start: [NetObject, "az:obj:corp-super"], end: [Prefix, "pfx:corp:10.0.0.0/8"]}
+  - {type: ASSOCIATED, start: [RouteTable, "az:/subscriptions/00000000-0000-0000-0000-000000000001/resourcegroups/rg-prod/providers/microsoft.network/routetables/rt-web"], end: [Subnet, "az:/subscriptions/00000000-0000-0000-0000-000000000001/resourcegroups/rg-prod/providers/microsoft.network/virtualnetworks/vnet-prod/subnets/snet-web"]}
+  - {type: HAS_ROUTE, start: [RouteTable, "az:/subscriptions/00000000-0000-0000-0000-000000000001/resourcegroups/rg-prod/providers/microsoft.network/routetables/rt-web"], end: [CloudRoute, "az:rt:rt-web/route/to-onprem"]}
+  - {type: FOR, start: [CloudRoute, "az:rt:rt-web/route/to-onprem"], end: [Prefix, "pfx:corp:10.0.0.0/8"]}
+  - {type: VIA, start: [CloudRoute, "az:rt:rt-web/route/to-onprem"], end: [VNetGw, "az:/subscriptions/00000000-0000-0000-0000-000000000001/resourcegroups/rg-net/providers/microsoft.network/virtualnetworkgateways/vgw-er"]}
+  - {type: TERMINATES_ON, start: [ErCircuit, "az:/subscriptions/00000000-0000-0000-0000-000000000001/resourcegroups/rg-net/providers/microsoft.network/expressroutecircuits/er-fra"], end: [VNetGw, "az:/subscriptions/00000000-0000-0000-0000-000000000001/resourcegroups/rg-net/providers/microsoft.network/virtualnetworkgateways/vgw-er"]}
+  - {type: PART_OF, start: [VNetGw, "az:/subscriptions/00000000-0000-0000-0000-000000000001/resourcegroups/rg-net/providers/microsoft.network/virtualnetworkgateways/vgw-er"], end: [VNet, "az:/subscriptions/00000000-0000-0000-0000-000000000001/resourcegroups/rg-prod/providers/microsoft.network/virtualnetworks/vnet-prod"]}
+  - {type: OF, start: [Nic, "az:/subscriptions/00000000-0000-0000-0000-000000000001/resourcegroups/rg-prod/providers/microsoft.network/networkinterfaces/nic-web1"], end: [Vm, "az:/subscriptions/00000000-0000-0000-0000-000000000001/resourcegroups/rg-prod/providers/microsoft.compute/virtualmachines/vm-web1"]}
+  - {type: HAS_IP, start: [Nic, "az:/subscriptions/00000000-0000-0000-0000-000000000001/resourcegroups/rg-prod/providers/microsoft.network/networkinterfaces/nic-web1"], end: [IpAddress, "ip:az-prod:10.80.1.10"]}
+
+  # --- Equinix stitching: FabricPort → VCs → DX / ER
+  - {type: A_END, start: [VirtualCircuit, "eqx:vc:22222222-bbbb"], end: [FabricPort, "eqx:port:11111111-aaaa"]}
+  - {type: Z_END, start: [VirtualCircuit, "eqx:vc:22222222-bbbb"], end: [DxConnection, "aws:arn:aws:directconnect:eu-central-1:111111111111:dxcon/dxcon-0fr5"]}
+  - {type: A_END, start: [VirtualCircuit, "eqx:vc:33333333-cccc"], end: [FabricPort, "eqx:port:11111111-aaaa"]}
+  - {type: Z_END, start: [VirtualCircuit, "eqx:vc:33333333-cccc"], end: [ErCircuit, "az:/subscriptions/00000000-0000-0000-0000-000000000001/resourcegroups/rg-net/providers/microsoft.network/expressroutecircuits/er-fra"]}
+
+  # --- ACI L3Out: campus users consume the frontend (no PBR on this contract)
+  - {type: HAS, start: [Tenant, "aci:fab1:uni/tn-PROD"], end: [L3Out, "aci:fab1:uni/tn-PROD/out-campus"]}
+  - {type: HAS, start: [Tenant, "aci:fab1:uni/tn-PROD"], end: [Contract, "aci:fab1:uni/tn-PROD/brc-users-to-web"]}
+  - {type: HAS, start: [Tenant, "aci:fab1:uni/tn-PROD"], end: [AciFilter, "aci:fab1:uni/tn-PROD/flt-https"]}
+  - {type: HAS, start: [Contract, "aci:fab1:uni/tn-PROD/brc-users-to-web"], end: [ContractSubject, "aci:fab1:uni/tn-PROD/brc-users-to-web/subj-https"]}
+  - {type: HAS, start: [AciFilter, "aci:fab1:uni/tn-PROD/flt-https"], end: [FilterEntry, "aci:fab1:uni/tn-PROD/flt-https/e-tcp-443"]}
+  - {type: HAS, start: [L3Out, "aci:fab1:uni/tn-PROD/out-campus"], end: [ExtEpg, "aci:fab1:uni/tn-PROD/out-campus/instP-campus"]}
+  - {type: IN_VRF, start: [L3Out, "aci:fab1:uni/tn-PROD/out-campus"], end: [VrfInstance, "vrf:aci:fab1:tn-PROD:CTX1"]}
+  - {type: MATCHES, start: [ExtEpg, "aci:fab1:uni/tn-PROD/out-campus/instP-campus"], end: [Prefix, "pfx:vrf-dev-fra01-core-01-corp:10.20.0.0/24"]}
+  - {type: CONSUMES, start: [ExtEpg, "aci:fab1:uni/tn-PROD/out-campus/instP-campus"], end: [Contract, "aci:fab1:uni/tn-PROD/brc-users-to-web"]}
+  - {type: PROVIDES, start: [Epg, "aci:fab1:uni/tn-PROD/ap-webshop/epg-frontend"], end: [Contract, "aci:fab1:uni/tn-PROD/brc-users-to-web"]}
+  - {type: USES_FILTER, start: [ContractSubject, "aci:fab1:uni/tn-PROD/brc-users-to-web/subj-https"], end: [AciFilter, "aci:fab1:uni/tn-PROD/flt-https"], props: {action: permit}}

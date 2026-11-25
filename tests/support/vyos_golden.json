@@ -1,0 +1,4119 @@
+{
+ "cases": {
+  "fixture/empty_bgp": {
+   "answers_sha": "82b94d81980deda2b6c80a1275ed04e4422131dbfb33f2e06e54ab24b405ec6e",
+   "base_payload_sha": "cbb5028b1cea3c03ae9327afc32741962dcf37dd2b464c11b3a40b4b91d68db3",
+   "base_peak_bytes": null,
+   "normalize": "0348a455b7e950fb2d345a93d22cd00300ee082d3981b07c1f56c957b83a4e51",
+   "obs_sha": "3a4c50edce3bd269b6b98438c549438c57a8883ac3cbd366bc42141e4d4c0918",
+   "parquet": {
+    "bgp_session_routes": [
+     5,
+     "7abc6916c36050e328ff46e2ede82d60aedc46af18dfa786b619082cf0f222d7"
+    ],
+    "bgp_sessions": [
+     3,
+     "fd3c30f6f0b2e3157532e0de7f3ccffa54da9fc26c1d6f420d8ef94448d3a8d0"
+    ],
+    "rib": [
+     11,
+     "d1441c2754e3e19d84457b00a5bdf6755038c2d53019182a60ece51089a88666"
+    ]
+   },
+   "parquet_layout": {
+    "bgp_session_routes": {
+     "row_groups": [
+      5
+     ],
+     "rows_sha": "abf07886821425ab85838fc01abe1b7cb0279b38e8595c1f084a7be92a7aeda8",
+     "schema_sha": "64f29b4c8bb67cc2f3dc9b865c075a8e911ef2d53a3eb6f3110a485985960389"
+    },
+    "bgp_sessions": {
+     "row_groups": [
+      3
+     ],
+     "rows_sha": "ccf5b72a13004c470927dd9de8b0243970040c3cfd1f6b9cf98a1ff4aec79932",
+     "schema_sha": "c1aa6a93bfc40d58d1e400fdbefa1675d043f5556f28ecfdf560aa07f87a38ac"
+    },
+    "rib": {
+     "row_groups": [
+      11
+     ],
+     "rows_sha": "9271536b333e366c6072fb9e410f0cc43d5f77d9e5d6914f763097d9f88a8232",
+     "schema_sha": "32d5496e4995c6c7d62973865f82e738fa9c45f549517a5e7d7078208a0f8a76"
+    }
+   },
+   "raw_sha": "78706ea400dbeac5255ea29ece13aa7fb57a08d38d0158266357772945b5b475",
+   "sections": {
+    "PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp neighbors 10.0.0.2 advertised-routes json\"": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp neighbors 10.0.0.2 received-routes json\"": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp neighbors 10.0.0.2 routes json\"": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp neighbors 203.0.113.2 advertised-routes json\"": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp neighbors 203.0.113.2 received-routes json\"": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp neighbors 203.0.113.2 routes json\"": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp vrf all summary json\"": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "addrs": {
+     "detail": "",
+     "row_count": 3,
+     "status": "ok"
+    },
+    "config": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "link_speeds": {
+     "detail": "",
+     "row_count": 4,
+     "status": "ok"
+    },
+    "links": {
+     "detail": "",
+     "row_count": 3,
+     "status": "ok"
+    },
+    "routes": {
+     "detail": "",
+     "row_count": 7,
+     "status": "ok"
+    },
+    "routes6": {
+     "detail": "",
+     "row_count": 3,
+     "status": "ok"
+    },
+    "routes6_table_100": {
+     "detail": "",
+     "row_count": 0,
+     "status": "empty"
+    },
+    "routes_table_100": {
+     "detail": "",
+     "row_count": 0,
+     "status": "empty"
+    },
+    "version": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    }
+   },
+   "side_tables": {
+    "bgp_session_routes": [
+     5,
+     "ea78d80a587aeb65bd7fb4aedaa4f22d28832c5968b67e790761dac5c814e299"
+    ],
+    "bgp_sessions": [
+     3,
+     "8c135106caa3de40ea6e9a6d27e39fd5774bbd32cc7c2beb551e4cd575cc533a"
+    ],
+    "rib": [
+     11,
+     "d477266c031aafff0f70fd7acd55a05dadf65f58e21e3c88b7f642c641d406d2"
+    ]
+   },
+   "table_outcomes": {
+    "bgp_session_routes/bgp:rproc:dev:qemu1234:default:bgp~10.0.0.2:default/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 1,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:qemu1234:default:bgp~10.0.0.2:default/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 0,
+     "status": "complete-empty"
+    },
+    "bgp_session_routes/bgp:rproc:dev:qemu1234:default:bgp~10.0.0.2:default/received": {
+     "detail": "% Inbound soft-reconfiguration is not configured for this neighbor",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": null,
+     "status": "not-captured"
+    },
+    "bgp_session_routes/bgp:rproc:dev:qemu1234:default:bgp~203.0.113.2:default/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 1,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:qemu1234:default:bgp~203.0.113.2:default/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 1,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:qemu1234:default:bgp~203.0.113.2:default/received": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2,
+     "status": "complete"
+    },
+    "ospf_lsdb": {
+     "detail": "the device does not have the feature this table reads",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": null,
+     "status": "unsupported"
+    }
+   },
+   "tables": {
+    "bgp_session_routes": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "sidestore/bgp_session_routes/edge/edge1.example.net/1700000000000-aaaaaaaa.parquet",
+     "row_count": 5,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:qemu1234:default:bgp~10.0.0.2:default/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 1,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:qemu1234:default:bgp~10.0.0.2:default/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 0,
+     "status": "complete-empty"
+    },
+    "bgp_session_routes/bgp:rproc:dev:qemu1234:default:bgp~10.0.0.2:default/received": {
+     "detail": "% Inbound soft-reconfiguration is not configured for this neighbor",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": null,
+     "status": "not-captured"
+    },
+    "bgp_session_routes/bgp:rproc:dev:qemu1234:default:bgp~203.0.113.2:default/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 1,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:qemu1234:default:bgp~203.0.113.2:default/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 1,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:qemu1234:default:bgp~203.0.113.2:default/received": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2,
+     "status": "complete"
+    },
+    "bgp_sessions": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "sidestore/bgp_sessions/edge/edge1.example.net/1700000000000-aaaaaaaa.parquet",
+     "row_count": 3,
+     "status": "complete"
+    },
+    "ospf_lsdb": {
+     "detail": "the device does not have the feature this table reads",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": null,
+     "status": "unsupported"
+    },
+    "rib": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "sidestore/rib/edge/edge1.example.net/1700000000000-aaaaaaaa.parquet",
+     "row_count": 11,
+     "status": "complete"
+    }
+   }
+  },
+  "fixture/malformed_rib": {
+   "answers_sha": "d30ab854cee6ad3319b21a283e36de28ff335868e7d5f76d19aeb913dba918cf",
+   "base_payload_sha": "73663a33de8475af96f316f9d0602f73702efd150c56054713e5b48833ddb7cf",
+   "base_peak_bytes": null,
+   "normalize": "ed06d1c707944950f5959cdc749dbafd3c74d8e2b6a39b930f86774c3586ed71",
+   "obs_sha": "218dd00d545ca72c527be77640894820071ea376f31dce9fa5d2f51dfd961ac7",
+   "parquet": {
+    "bgp_session_routes": [
+     6,
+     "8d2241f8d71e9c7ea0cabc8e0166a0a92ca17f3064c0d9919d5d5e7833a64302"
+    ],
+    "bgp_sessions": [
+     3,
+     "fd3c30f6f0b2e3157532e0de7f3ccffa54da9fc26c1d6f420d8ef94448d3a8d0"
+    ],
+    "rib": [
+     8,
+     "744ed7ac885561356f1bcb47e7d5d31b4b1216d6086c9cb94b874b4cdd9d0d59"
+    ]
+   },
+   "parquet_layout": {
+    "bgp_session_routes": {
+     "row_groups": [
+      6
+     ],
+     "rows_sha": "4d8ea1646b5108db91a44c0b45b256d0ce4a98d5783bd548bd5f536a70803ac9",
+     "schema_sha": "64f29b4c8bb67cc2f3dc9b865c075a8e911ef2d53a3eb6f3110a485985960389"
+    },
+    "bgp_sessions": {
+     "row_groups": [
+      3
+     ],
+     "rows_sha": "ccf5b72a13004c470927dd9de8b0243970040c3cfd1f6b9cf98a1ff4aec79932",
+     "schema_sha": "c1aa6a93bfc40d58d1e400fdbefa1675d043f5556f28ecfdf560aa07f87a38ac"
+    },
+    "rib": {
+     "row_groups": [
+      8
+     ],
+     "rows_sha": "73e9a80abc9528f980461ad82f5530239e876fc4b5ca09ebe87677a099c5adc4",
+     "schema_sha": "32d5496e4995c6c7d62973865f82e738fa9c45f549517a5e7d7078208a0f8a76"
+    }
+   },
+   "raw_sha": "9d57883a4ce4e728721e0a6273c011466a43eca17de514c42410d5988cb3c2f6",
+   "sections": {
+    "PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp neighbors 10.0.0.2 advertised-routes json\"": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp neighbors 10.0.0.2 received-routes json\"": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp neighbors 10.0.0.2 routes json\"": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp neighbors 203.0.113.2 advertised-routes json\"": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp neighbors 203.0.113.2 received-routes json\"": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp neighbors 203.0.113.2 routes json\"": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp vrf all summary json\"": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "addrs": {
+     "detail": "",
+     "row_count": 3,
+     "status": "ok"
+    },
+    "config": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "link_speeds": {
+     "detail": "",
+     "row_count": 4,
+     "status": "ok"
+    },
+    "links": {
+     "detail": "",
+     "row_count": 3,
+     "status": "ok"
+    },
+    "routes": {
+     "detail": "",
+     "row_count": 7,
+     "status": "ok"
+    },
+    "routes6": {
+     "detail": "Expecting value: line 1 column 328 (char 327)",
+     "row_count": null,
+     "status": "malformed"
+    },
+    "routes6_table_100": {
+     "detail": "",
+     "row_count": 0,
+     "status": "empty"
+    },
+    "routes_table_100": {
+     "detail": "",
+     "row_count": 0,
+     "status": "empty"
+    },
+    "version": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    }
+   },
+   "side_tables": {
+    "bgp_session_routes": [
+     6,
+     "a2df4922e403664e3f9c40d4ae818e2ab2c36815ef661cd0f60f40d39cf593d4"
+    ],
+    "bgp_sessions": [
+     3,
+     "8c135106caa3de40ea6e9a6d27e39fd5774bbd32cc7c2beb551e4cd575cc533a"
+    ],
+    "rib": [
+     8,
+     "6253fea1ecd7aa4f095768c5a304c6d2c7556b86ac3ee67d92881e042679b123"
+    ]
+   },
+   "table_outcomes": {
+    "bgp_session_routes/bgp:rproc:dev:qemu1234:default:bgp~10.0.0.2:default/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 1,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:qemu1234:default:bgp~10.0.0.2:default/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 1,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:qemu1234:default:bgp~10.0.0.2:default/received": {
+     "detail": "% Inbound soft-reconfiguration is not configured for this neighbor",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": null,
+     "status": "not-captured"
+    },
+    "bgp_session_routes/bgp:rproc:dev:qemu1234:default:bgp~203.0.113.2:default/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 1,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:qemu1234:default:bgp~203.0.113.2:default/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 1,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:qemu1234:default:bgp~203.0.113.2:default/received": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2,
+     "status": "complete"
+    },
+    "ospf_lsdb": {
+     "detail": "the device does not have the feature this table reads",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": null,
+     "status": "unsupported"
+    }
+   },
+   "tables": {
+    "bgp_session_routes": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "sidestore/bgp_session_routes/edge/edge1.example.net/1700000000000-aaaaaaaa.parquet",
+     "row_count": 6,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:qemu1234:default:bgp~10.0.0.2:default/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 1,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:qemu1234:default:bgp~10.0.0.2:default/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 1,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:qemu1234:default:bgp~10.0.0.2:default/received": {
+     "detail": "% Inbound soft-reconfiguration is not configured for this neighbor",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": null,
+     "status": "not-captured"
+    },
+    "bgp_session_routes/bgp:rproc:dev:qemu1234:default:bgp~203.0.113.2:default/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 1,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:qemu1234:default:bgp~203.0.113.2:default/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 1,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:qemu1234:default:bgp~203.0.113.2:default/received": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2,
+     "status": "complete"
+    },
+    "bgp_sessions": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "sidestore/bgp_sessions/edge/edge1.example.net/1700000000000-aaaaaaaa.parquet",
+     "row_count": 3,
+     "status": "complete"
+    },
+    "ospf_lsdb": {
+     "detail": "the device does not have the feature this table reads",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": null,
+     "status": "unsupported"
+    },
+    "rib": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "sidestore/rib/edge/edge1.example.net/1700000000000-aaaaaaaa.parquet",
+     "row_count": 8,
+     "status": "complete"
+    }
+   }
+  },
+  "fixture/malformed_table": {
+   "answers_sha": "7e8607ca79517c3c39e763ede856207276de5dedcfbe29611425511783294027",
+   "base_payload_sha": "96dc3f25e1502120fd1f5975964587741878b00a1d296729da0e3aff152a9ea1",
+   "base_peak_bytes": null,
+   "normalize": "8a90278d8fdc4a7a19bfad109a044681930d9a874539505d927695f9373cd9a0",
+   "obs_sha": "8004cf39e41eba5d431493594b409ab42e948da4ea5e1945f603387f24fa7d5b",
+   "parquet": {
+    "bgp_session_routes": [
+     6,
+     "8d2241f8d71e9c7ea0cabc8e0166a0a92ca17f3064c0d9919d5d5e7833a64302"
+    ],
+    "bgp_sessions": [
+     3,
+     "fd3c30f6f0b2e3157532e0de7f3ccffa54da9fc26c1d6f420d8ef94448d3a8d0"
+    ],
+    "rib": [
+     9,
+     "77da2004c62ce0298c23bcca0fa96bdc7cbce1192b6fbd93893f299b01f98fdb"
+    ]
+   },
+   "parquet_layout": {
+    "bgp_session_routes": {
+     "row_groups": [
+      6
+     ],
+     "rows_sha": "4d8ea1646b5108db91a44c0b45b256d0ce4a98d5783bd548bd5f536a70803ac9",
+     "schema_sha": "64f29b4c8bb67cc2f3dc9b865c075a8e911ef2d53a3eb6f3110a485985960389"
+    },
+    "bgp_sessions": {
+     "row_groups": [
+      3
+     ],
+     "rows_sha": "ccf5b72a13004c470927dd9de8b0243970040c3cfd1f6b9cf98a1ff4aec79932",
+     "schema_sha": "c1aa6a93bfc40d58d1e400fdbefa1675d043f5556f28ecfdf560aa07f87a38ac"
+    },
+    "rib": {
+     "row_groups": [
+      9
+     ],
+     "rows_sha": "4f336c3081da0a59b9d5fdf35625e5b98fee19d2d94db51403b7e74319912b7e",
+     "schema_sha": "32d5496e4995c6c7d62973865f82e738fa9c45f549517a5e7d7078208a0f8a76"
+    }
+   },
+   "raw_sha": "493568232ba858bbfab059888b44d28bd12328cec5832ba4dc5b5441e9c66b11",
+   "sections": {
+    "PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp neighbors 10.0.0.2 advertised-routes json\"": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp neighbors 10.0.0.2 received-routes json\"": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp neighbors 10.0.0.2 routes json\"": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp neighbors 203.0.113.2 advertised-routes json\"": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp neighbors 203.0.113.2 received-routes json\"": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp neighbors 203.0.113.2 routes json\"": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp vrf all summary json\"": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "addrs": {
+     "detail": "",
+     "row_count": 3,
+     "status": "ok"
+    },
+    "config": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "link_speeds": {
+     "detail": "",
+     "row_count": 4,
+     "status": "ok"
+    },
+    "links": {
+     "detail": "",
+     "row_count": 3,
+     "status": "ok"
+    },
+    "routes": {
+     "detail": "",
+     "row_count": 7,
+     "status": "ok"
+    },
+    "routes6": {
+     "detail": "",
+     "row_count": 3,
+     "status": "ok"
+    },
+    "routes6_table_100": {
+     "detail": "",
+     "row_count": 0,
+     "status": "empty"
+    },
+    "routes_table_100": {
+     "detail": "Expecting property name enclosed in double quotes: line 1 column 119 (char 118)",
+     "row_count": null,
+     "status": "malformed"
+    },
+    "version": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    }
+   },
+   "side_tables": {
+    "bgp_session_routes": [
+     6,
+     "a2df4922e403664e3f9c40d4ae818e2ab2c36815ef661cd0f60f40d39cf593d4"
+    ],
+    "bgp_sessions": [
+     3,
+     "8c135106caa3de40ea6e9a6d27e39fd5774bbd32cc7c2beb551e4cd575cc533a"
+    ],
+    "rib": [
+     9,
+     "2ad793ce56fc645a915c46709206bd307b1e33003eea32b85be46326bc73d27c"
+    ]
+   },
+   "table_outcomes": {
+    "bgp_session_routes/bgp:rproc:dev:qemu1234:default:bgp~10.0.0.2:default/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 1,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:qemu1234:default:bgp~10.0.0.2:default/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 1,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:qemu1234:default:bgp~10.0.0.2:default/received": {
+     "detail": "% Inbound soft-reconfiguration is not configured for this neighbor",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": null,
+     "status": "not-captured"
+    },
+    "bgp_session_routes/bgp:rproc:dev:qemu1234:default:bgp~203.0.113.2:default/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 1,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:qemu1234:default:bgp~203.0.113.2:default/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 1,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:qemu1234:default:bgp~203.0.113.2:default/received": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2,
+     "status": "complete"
+    },
+    "ospf_lsdb": {
+     "detail": "the device does not have the feature this table reads",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": null,
+     "status": "unsupported"
+    }
+   },
+   "tables": {
+    "bgp_session_routes": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "sidestore/bgp_session_routes/edge/edge1.example.net/1700000000000-aaaaaaaa.parquet",
+     "row_count": 6,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:qemu1234:default:bgp~10.0.0.2:default/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 1,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:qemu1234:default:bgp~10.0.0.2:default/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 1,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:qemu1234:default:bgp~10.0.0.2:default/received": {
+     "detail": "% Inbound soft-reconfiguration is not configured for this neighbor",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": null,
+     "status": "not-captured"
+    },
+    "bgp_session_routes/bgp:rproc:dev:qemu1234:default:bgp~203.0.113.2:default/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 1,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:qemu1234:default:bgp~203.0.113.2:default/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 1,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:qemu1234:default:bgp~203.0.113.2:default/received": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2,
+     "status": "complete"
+    },
+    "bgp_sessions": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "sidestore/bgp_sessions/edge/edge1.example.net/1700000000000-aaaaaaaa.parquet",
+     "row_count": 3,
+     "status": "complete"
+    },
+    "ospf_lsdb": {
+     "detail": "the device does not have the feature this table reads",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": null,
+     "status": "unsupported"
+    },
+    "rib": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "sidestore/rib/edge/edge1.example.net/1700000000000-aaaaaaaa.parquet",
+     "row_count": 9,
+     "status": "complete"
+    }
+   }
+  },
+  "fixture/percent_bgp": {
+   "answers_sha": "5b328fa5f3f6388dfb6dc0d545fe5b6608ee12ad263c558d56f8708b40b4c502",
+   "base_payload_sha": "e8c5f33b87abaea2336a9429fc34eb7bb6b9e23c7c22bc50b2793291a6141f25",
+   "base_peak_bytes": null,
+   "normalize": "0348a455b7e950fb2d345a93d22cd00300ee082d3981b07c1f56c957b83a4e51",
+   "obs_sha": "3a4c50edce3bd269b6b98438c549438c57a8883ac3cbd366bc42141e4d4c0918",
+   "parquet": {
+    "bgp_session_routes": [
+     4,
+     "ca3d59588842fe8cd49e7caff0edf3b9913796b4942022fa149a815cd05706a1"
+    ],
+    "bgp_sessions": [
+     3,
+     "fd3c30f6f0b2e3157532e0de7f3ccffa54da9fc26c1d6f420d8ef94448d3a8d0"
+    ],
+    "rib": [
+     11,
+     "d1441c2754e3e19d84457b00a5bdf6755038c2d53019182a60ece51089a88666"
+    ]
+   },
+   "parquet_layout": {
+    "bgp_session_routes": {
+     "row_groups": [
+      4
+     ],
+     "rows_sha": "6c2062f717ddaf6470190255679e61d7a83a23e39f4c06bac66ba8627103c402",
+     "schema_sha": "64f29b4c8bb67cc2f3dc9b865c075a8e911ef2d53a3eb6f3110a485985960389"
+    },
+    "bgp_sessions": {
+     "row_groups": [
+      3
+     ],
+     "rows_sha": "ccf5b72a13004c470927dd9de8b0243970040c3cfd1f6b9cf98a1ff4aec79932",
+     "schema_sha": "c1aa6a93bfc40d58d1e400fdbefa1675d043f5556f28ecfdf560aa07f87a38ac"
+    },
+    "rib": {
+     "row_groups": [
+      11
+     ],
+     "rows_sha": "9271536b333e366c6072fb9e410f0cc43d5f77d9e5d6914f763097d9f88a8232",
+     "schema_sha": "32d5496e4995c6c7d62973865f82e738fa9c45f549517a5e7d7078208a0f8a76"
+    }
+   },
+   "raw_sha": "f11b631fe386ac56a7df999e564233a9a130d0d97bf044734fe7d3d314d210c3",
+   "sections": {
+    "PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp neighbors 10.0.0.2 advertised-routes json\"": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp neighbors 10.0.0.2 received-routes json\"": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp neighbors 10.0.0.2 routes json\"": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp neighbors 203.0.113.2 advertised-routes json\"": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp neighbors 203.0.113.2 received-routes json\"": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp neighbors 203.0.113.2 routes json\"": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp vrf all summary json\"": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "addrs": {
+     "detail": "",
+     "row_count": 3,
+     "status": "ok"
+    },
+    "config": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "link_speeds": {
+     "detail": "",
+     "row_count": 4,
+     "status": "ok"
+    },
+    "links": {
+     "detail": "",
+     "row_count": 3,
+     "status": "ok"
+    },
+    "routes": {
+     "detail": "",
+     "row_count": 7,
+     "status": "ok"
+    },
+    "routes6": {
+     "detail": "",
+     "row_count": 3,
+     "status": "ok"
+    },
+    "routes6_table_100": {
+     "detail": "",
+     "row_count": 0,
+     "status": "empty"
+    },
+    "routes_table_100": {
+     "detail": "",
+     "row_count": 0,
+     "status": "empty"
+    },
+    "version": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    }
+   },
+   "side_tables": {
+    "bgp_session_routes": [
+     4,
+     "fa3e1fa3d48a0f0de6ed4838adc2a51eb3f10c3e74e4334ddb48f29b4e63c40a"
+    ],
+    "bgp_sessions": [
+     3,
+     "8c135106caa3de40ea6e9a6d27e39fd5774bbd32cc7c2beb551e4cd575cc533a"
+    ],
+    "rib": [
+     11,
+     "d477266c031aafff0f70fd7acd55a05dadf65f58e21e3c88b7f642c641d406d2"
+    ]
+   },
+   "table_outcomes": {
+    "bgp_session_routes/bgp:rproc:dev:qemu1234:default:bgp~10.0.0.2:default/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 1,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:qemu1234:default:bgp~10.0.0.2:default/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 1,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:qemu1234:default:bgp~10.0.0.2:default/received": {
+     "detail": "% Inbound soft-reconfiguration is not configured for this neighbor",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": null,
+     "status": "not-captured"
+    },
+    "bgp_session_routes/bgp:rproc:dev:qemu1234:default:bgp~203.0.113.2:default/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 1,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:qemu1234:default:bgp~203.0.113.2:default/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 1,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:qemu1234:default:bgp~203.0.113.2:default/received": {
+     "detail": "% Inbound soft-reconfiguration is not configured for this neighbor",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": null,
+     "status": "not-captured"
+    },
+    "ospf_lsdb": {
+     "detail": "the device does not have the feature this table reads",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": null,
+     "status": "unsupported"
+    }
+   },
+   "tables": {
+    "bgp_session_routes": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "sidestore/bgp_session_routes/edge/edge1.example.net/1700000000000-aaaaaaaa.parquet",
+     "row_count": 4,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:qemu1234:default:bgp~10.0.0.2:default/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 1,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:qemu1234:default:bgp~10.0.0.2:default/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 1,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:qemu1234:default:bgp~10.0.0.2:default/received": {
+     "detail": "% Inbound soft-reconfiguration is not configured for this neighbor",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": null,
+     "status": "not-captured"
+    },
+    "bgp_session_routes/bgp:rproc:dev:qemu1234:default:bgp~203.0.113.2:default/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 1,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:qemu1234:default:bgp~203.0.113.2:default/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 1,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:qemu1234:default:bgp~203.0.113.2:default/received": {
+     "detail": "% Inbound soft-reconfiguration is not configured for this neighbor",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": null,
+     "status": "not-captured"
+    },
+    "bgp_sessions": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "sidestore/bgp_sessions/edge/edge1.example.net/1700000000000-aaaaaaaa.parquet",
+     "row_count": 3,
+     "status": "complete"
+    },
+    "ospf_lsdb": {
+     "detail": "the device does not have the feature this table reads",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": null,
+     "status": "unsupported"
+    },
+    "rib": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "sidestore/rib/edge/edge1.example.net/1700000000000-aaaaaaaa.parquet",
+     "row_count": 11,
+     "status": "complete"
+    }
+   }
+  },
+  "fixture/plain": {
+   "answers_sha": "2eac812c24b5713cef01c4334ff4d152e8bc389ae2760a4230be1e18dd480dcf",
+   "base_payload_sha": "7534f5f6efcd1a81e2b5107b02a288f5a9a5a25583d17df6d1cb21c6954ddc74",
+   "base_peak_bytes": null,
+   "normalize": "0348a455b7e950fb2d345a93d22cd00300ee082d3981b07c1f56c957b83a4e51",
+   "obs_sha": "3a4c50edce3bd269b6b98438c549438c57a8883ac3cbd366bc42141e4d4c0918",
+   "parquet": {
+    "bgp_session_routes": [
+     6,
+     "8d2241f8d71e9c7ea0cabc8e0166a0a92ca17f3064c0d9919d5d5e7833a64302"
+    ],
+    "bgp_sessions": [
+     3,
+     "fd3c30f6f0b2e3157532e0de7f3ccffa54da9fc26c1d6f420d8ef94448d3a8d0"
+    ],
+    "rib": [
+     11,
+     "d1441c2754e3e19d84457b00a5bdf6755038c2d53019182a60ece51089a88666"
+    ]
+   },
+   "parquet_layout": {
+    "bgp_session_routes": {
+     "row_groups": [
+      6
+     ],
+     "rows_sha": "4d8ea1646b5108db91a44c0b45b256d0ce4a98d5783bd548bd5f536a70803ac9",
+     "schema_sha": "64f29b4c8bb67cc2f3dc9b865c075a8e911ef2d53a3eb6f3110a485985960389"
+    },
+    "bgp_sessions": {
+     "row_groups": [
+      3
+     ],
+     "rows_sha": "ccf5b72a13004c470927dd9de8b0243970040c3cfd1f6b9cf98a1ff4aec79932",
+     "schema_sha": "c1aa6a93bfc40d58d1e400fdbefa1675d043f5556f28ecfdf560aa07f87a38ac"
+    },
+    "rib": {
+     "row_groups": [
+      11
+     ],
+     "rows_sha": "9271536b333e366c6072fb9e410f0cc43d5f77d9e5d6914f763097d9f88a8232",
+     "schema_sha": "32d5496e4995c6c7d62973865f82e738fa9c45f549517a5e7d7078208a0f8a76"
+    }
+   },
+   "raw_sha": "d47f3fe6134784d7134766a9f6c3bb8bfae205bfde873849e2000a30a5b1dc8b",
+   "sections": {
+    "PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp neighbors 10.0.0.2 advertised-routes json\"": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp neighbors 10.0.0.2 received-routes json\"": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp neighbors 10.0.0.2 routes json\"": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp neighbors 203.0.113.2 advertised-routes json\"": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp neighbors 203.0.113.2 received-routes json\"": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp neighbors 203.0.113.2 routes json\"": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp vrf all summary json\"": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "addrs": {
+     "detail": "",
+     "row_count": 3,
+     "status": "ok"
+    },
+    "config": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "link_speeds": {
+     "detail": "",
+     "row_count": 4,
+     "status": "ok"
+    },
+    "links": {
+     "detail": "",
+     "row_count": 3,
+     "status": "ok"
+    },
+    "routes": {
+     "detail": "",
+     "row_count": 7,
+     "status": "ok"
+    },
+    "routes6": {
+     "detail": "",
+     "row_count": 3,
+     "status": "ok"
+    },
+    "routes6_table_100": {
+     "detail": "",
+     "row_count": 0,
+     "status": "empty"
+    },
+    "routes_table_100": {
+     "detail": "",
+     "row_count": 0,
+     "status": "empty"
+    },
+    "version": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    }
+   },
+   "side_tables": {
+    "bgp_session_routes": [
+     6,
+     "a2df4922e403664e3f9c40d4ae818e2ab2c36815ef661cd0f60f40d39cf593d4"
+    ],
+    "bgp_sessions": [
+     3,
+     "8c135106caa3de40ea6e9a6d27e39fd5774bbd32cc7c2beb551e4cd575cc533a"
+    ],
+    "rib": [
+     11,
+     "d477266c031aafff0f70fd7acd55a05dadf65f58e21e3c88b7f642c641d406d2"
+    ]
+   },
+   "table_outcomes": {
+    "bgp_session_routes/bgp:rproc:dev:qemu1234:default:bgp~10.0.0.2:default/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 1,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:qemu1234:default:bgp~10.0.0.2:default/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 1,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:qemu1234:default:bgp~10.0.0.2:default/received": {
+     "detail": "% Inbound soft-reconfiguration is not configured for this neighbor",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": null,
+     "status": "not-captured"
+    },
+    "bgp_session_routes/bgp:rproc:dev:qemu1234:default:bgp~203.0.113.2:default/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 1,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:qemu1234:default:bgp~203.0.113.2:default/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 1,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:qemu1234:default:bgp~203.0.113.2:default/received": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2,
+     "status": "complete"
+    },
+    "ospf_lsdb": {
+     "detail": "the device does not have the feature this table reads",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": null,
+     "status": "unsupported"
+    }
+   },
+   "tables": {
+    "bgp_session_routes": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "sidestore/bgp_session_routes/edge/edge1.example.net/1700000000000-aaaaaaaa.parquet",
+     "row_count": 6,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:qemu1234:default:bgp~10.0.0.2:default/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 1,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:qemu1234:default:bgp~10.0.0.2:default/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 1,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:qemu1234:default:bgp~10.0.0.2:default/received": {
+     "detail": "% Inbound soft-reconfiguration is not configured for this neighbor",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": null,
+     "status": "not-captured"
+    },
+    "bgp_session_routes/bgp:rproc:dev:qemu1234:default:bgp~203.0.113.2:default/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 1,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:qemu1234:default:bgp~203.0.113.2:default/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 1,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:qemu1234:default:bgp~203.0.113.2:default/received": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2,
+     "status": "complete"
+    },
+    "bgp_sessions": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "sidestore/bgp_sessions/edge/edge1.example.net/1700000000000-aaaaaaaa.parquet",
+     "row_count": 3,
+     "status": "complete"
+    },
+    "ospf_lsdb": {
+     "detail": "the device does not have the feature this table reads",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": null,
+     "status": "unsupported"
+    },
+    "rib": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "sidestore/rib/edge/edge1.example.net/1700000000000-aaaaaaaa.parquet",
+     "row_count": 11,
+     "status": "complete"
+    }
+   }
+  },
+  "fixture/refused": {
+   "answers_sha": "f8364a0d53e4b417990ba4c32f2e57e7264cf04649ad98bd4b7f25cdc6c26753",
+   "base_payload_sha": "440e29fc00da7d0b0cef0814491387c2c12a20990562c6cbaf54fe6cc0e4fe38",
+   "base_peak_bytes": null,
+   "normalize": "0348a455b7e950fb2d345a93d22cd00300ee082d3981b07c1f56c957b83a4e51",
+   "obs_sha": "8224898a59725c51928ad06299790df42857cedb9f51163111e09e0239662f99",
+   "parquet": {
+    "bgp_session_routes": [
+     5,
+     "b659ccd364dd5d57d6de9d1795c98ad82516c80f2576fb021eae9c4dc9254573"
+    ],
+    "bgp_sessions": [
+     3,
+     "fd3c30f6f0b2e3157532e0de7f3ccffa54da9fc26c1d6f420d8ef94448d3a8d0"
+    ],
+    "rib": [
+     11,
+     "d1441c2754e3e19d84457b00a5bdf6755038c2d53019182a60ece51089a88666"
+    ]
+   },
+   "parquet_layout": {
+    "bgp_session_routes": {
+     "row_groups": [
+      5
+     ],
+     "rows_sha": "a19b4d8ff65d42e5f6224a3410d4beecd5aa6db118ecd946bbf1b777c66f22ee",
+     "schema_sha": "64f29b4c8bb67cc2f3dc9b865c075a8e911ef2d53a3eb6f3110a485985960389"
+    },
+    "bgp_sessions": {
+     "row_groups": [
+      3
+     ],
+     "rows_sha": "ccf5b72a13004c470927dd9de8b0243970040c3cfd1f6b9cf98a1ff4aec79932",
+     "schema_sha": "c1aa6a93bfc40d58d1e400fdbefa1675d043f5556f28ecfdf560aa07f87a38ac"
+    },
+    "rib": {
+     "row_groups": [
+      11
+     ],
+     "rows_sha": "9271536b333e366c6072fb9e410f0cc43d5f77d9e5d6914f763097d9f88a8232",
+     "schema_sha": "32d5496e4995c6c7d62973865f82e738fa9c45f549517a5e7d7078208a0f8a76"
+    }
+   },
+   "raw_sha": "757e31bd3201cbc456b09fef534f0ae0a41402bd0ac6c9ee455a48495de66cc6",
+   "sections": {
+    "PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp neighbors 10.0.0.2 advertised-routes json\"": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp neighbors 10.0.0.2 received-routes json\"": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp neighbors 10.0.0.2 routes json\"": {
+     "detail": "'PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp neighbors 10.0.0.2 routes json\"' exited 1: Permission denied",
+     "row_count": null,
+     "status": "unauthorized"
+    },
+    "PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp neighbors 203.0.113.2 advertised-routes json\"": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp neighbors 203.0.113.2 received-routes json\"": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp neighbors 203.0.113.2 routes json\"": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp vrf all summary json\"": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "addrs": {
+     "detail": "",
+     "row_count": 3,
+     "status": "ok"
+    },
+    "config": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "link_speeds": {
+     "detail": "",
+     "row_count": 4,
+     "status": "ok"
+    },
+    "links": {
+     "detail": "",
+     "row_count": 3,
+     "status": "ok"
+    },
+    "routes": {
+     "detail": "",
+     "row_count": 7,
+     "status": "ok"
+    },
+    "routes6": {
+     "detail": "",
+     "row_count": 3,
+     "status": "ok"
+    },
+    "routes6_table_100": {
+     "detail": "'PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show ipv6 route table 100 json\"' rejected by device: % Unknown command",
+     "row_count": null,
+     "status": "unsupported"
+    },
+    "routes_table_100": {
+     "detail": "",
+     "row_count": 0,
+     "status": "empty"
+    },
+    "version": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    }
+   },
+   "side_tables": {
+    "bgp_session_routes": [
+     5,
+     "30d7f65c93e3ee019d85c9aa1a56640189d6e47b08e46878c29a899b3779fa01"
+    ],
+    "bgp_sessions": [
+     3,
+     "8c135106caa3de40ea6e9a6d27e39fd5774bbd32cc7c2beb551e4cd575cc533a"
+    ],
+    "rib": [
+     11,
+     "d477266c031aafff0f70fd7acd55a05dadf65f58e21e3c88b7f642c641d406d2"
+    ]
+   },
+   "table_outcomes": {
+    "bgp_session_routes/bgp:rproc:dev:qemu1234:default:bgp~10.0.0.2:default/accepted": {
+     "detail": "'PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp neighbors 10.0.0.2 routes json\"' exited 1: Permission denied",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": null,
+     "status": "failed"
+    },
+    "bgp_session_routes/bgp:rproc:dev:qemu1234:default:bgp~10.0.0.2:default/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 1,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:qemu1234:default:bgp~10.0.0.2:default/received": {
+     "detail": "% Inbound soft-reconfiguration is not configured for this neighbor",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": null,
+     "status": "not-captured"
+    },
+    "bgp_session_routes/bgp:rproc:dev:qemu1234:default:bgp~203.0.113.2:default/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 1,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:qemu1234:default:bgp~203.0.113.2:default/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 1,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:qemu1234:default:bgp~203.0.113.2:default/received": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2,
+     "status": "complete"
+    },
+    "ospf_lsdb": {
+     "detail": "the device does not have the feature this table reads",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": null,
+     "status": "unsupported"
+    }
+   },
+   "tables": {
+    "bgp_session_routes": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "sidestore/bgp_session_routes/edge/edge1.example.net/1700000000000-aaaaaaaa.parquet",
+     "row_count": 5,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:qemu1234:default:bgp~10.0.0.2:default/accepted": {
+     "detail": "'PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp neighbors 10.0.0.2 routes json\"' exited 1: Permission denied",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": null,
+     "status": "failed"
+    },
+    "bgp_session_routes/bgp:rproc:dev:qemu1234:default:bgp~10.0.0.2:default/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 1,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:qemu1234:default:bgp~10.0.0.2:default/received": {
+     "detail": "% Inbound soft-reconfiguration is not configured for this neighbor",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": null,
+     "status": "not-captured"
+    },
+    "bgp_session_routes/bgp:rproc:dev:qemu1234:default:bgp~203.0.113.2:default/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 1,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:qemu1234:default:bgp~203.0.113.2:default/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 1,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:qemu1234:default:bgp~203.0.113.2:default/received": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2,
+     "status": "complete"
+    },
+    "bgp_sessions": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "sidestore/bgp_sessions/edge/edge1.example.net/1700000000000-aaaaaaaa.parquet",
+     "row_count": 3,
+     "status": "complete"
+    },
+    "ospf_lsdb": {
+     "detail": "the device does not have the feature this table reads",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": null,
+     "status": "unsupported"
+    },
+    "rib": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "sidestore/rib/edge/edge1.example.net/1700000000000-aaaaaaaa.parquet",
+     "row_count": 11,
+     "status": "complete"
+    }
+   }
+  },
+  "medium/malformed_rib": {
+   "answers_sha": "0b0ec778422d62ffcd695ca011e01139a9a67f8b2181848b45042a3b515f7cbf",
+   "base_payload_sha": "838b10268e97e1a03a0c08e50f71b837a2ad89213d70256ff0a376758dd3a9d6",
+   "base_peak_bytes": 316700376,
+   "normalize": "0f3807640450b78d14656fdbe06b2a767311f8cf41635919a475afe330ab99f8",
+   "obs_sha": "a3bc7bb5c0aecfe2ab025a5e23acb178ecc1202d377bb7271b3db8a5c5e90d7d",
+   "parquet": {
+    "bgp_session_routes": [
+     120000,
+     "70ed81a4f2fce560d83a9bd786a7eeaabae9375e2491549985f9c0dcab8c22aa"
+    ],
+    "bgp_sessions": [
+     2,
+     "0ccbf0f63077c43c55604245d4b0a511968849206ca799d50cc5c35d2f9beee1"
+    ],
+    "rib": [
+     21936,
+     "dc701622c0f0aa96646ecacdfd12cd59f78615c0677d58cf1c33b1dd40c41e00"
+    ]
+   },
+   "parquet_layout": {
+    "bgp_session_routes": {
+     "row_groups": [
+      4096,
+      4096,
+      4096,
+      4096,
+      4096,
+      4096,
+      4096,
+      4096,
+      4096,
+      4096,
+      4096,
+      4096,
+      4096,
+      4096,
+      4096,
+      4096,
+      4096,
+      4096,
+      4096,
+      4096,
+      4096,
+      4096,
+      4096,
+      4096,
+      4096,
+      4096,
+      4096,
+      4096,
+      4096,
+      1216
+     ],
+     "rows_sha": "0b957835aadb4545354366af9b9e14362f2fb99c683240026fec97cb5eaa868f",
+     "schema_sha": "64f29b4c8bb67cc2f3dc9b865c075a8e911ef2d53a3eb6f3110a485985960389"
+    },
+    "bgp_sessions": {
+     "row_groups": [
+      2
+     ],
+     "rows_sha": "7ac035a8acda5421b8e00eda5c7a8f5ac3cb0005094423093cc6a57029c56abe",
+     "schema_sha": "c1aa6a93bfc40d58d1e400fdbefa1675d043f5556f28ecfdf560aa07f87a38ac"
+    },
+    "rib": {
+     "row_groups": [
+      4096,
+      4096,
+      4096,
+      4096,
+      4096,
+      1456
+     ],
+     "rows_sha": "d2bfdf7b189c7c3ea3f1a473f9b5461b204a4ad7f6b530a00b070127dac8e811",
+     "schema_sha": "32d5496e4995c6c7d62973865f82e738fa9c45f549517a5e7d7078208a0f8a76"
+    }
+   },
+   "raw_sha": "abc8467b43731e086a2ece2fbf07cd4b6c50ca66aab4af91e11e6547ede2ba9a",
+   "sections": {
+    "PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp neighbors 192.0.2.1 advertised-routes json\"": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp neighbors 192.0.2.1 received-routes json\"": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp neighbors 192.0.2.1 routes json\"": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp vrf RED neighbors 198.51.100.9 advertised-routes json\"": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp vrf RED neighbors 198.51.100.9 received-routes json\"": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp vrf RED neighbors 198.51.100.9 routes json\"": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp vrf all summary json\"": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "addrs": {
+     "detail": "",
+     "row_count": 1,
+     "status": "ok"
+    },
+    "config": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "link_speeds": {
+     "detail": "",
+     "row_count": 5,
+     "status": "ok"
+    },
+    "links": {
+     "detail": "",
+     "row_count": 4,
+     "status": "ok"
+    },
+    "routes": {
+     "detail": "",
+     "row_count": 20000,
+     "status": "ok"
+    },
+    "routes6": {
+     "detail": "Expecting property name enclosed in double quotes: line 348074 column 5 (char 8886629)",
+     "row_count": null,
+     "status": "malformed"
+    },
+    "routes6_table_100": {
+     "detail": "",
+     "row_count": 0,
+     "status": "empty"
+    },
+    "routes6_table_200": {
+     "detail": "",
+     "row_count": 0,
+     "status": "empty"
+    },
+    "routes_table_100": {
+     "detail": "",
+     "row_count": 0,
+     "status": "empty"
+    },
+    "routes_table_200": {
+     "detail": "",
+     "row_count": 0,
+     "status": "empty"
+    },
+    "version": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    }
+   },
+   "side_tables": {
+    "bgp_session_routes": [
+     120000,
+     "9f330dd5598bcfe8b9c86dc5a5ee63273c325f50e0f49ddf195eecf3d06c1e34"
+    ],
+    "bgp_sessions": [
+     2,
+     "4fe7f4579debd779d66c8a845f64fe44a073cb308806a4809e8cb8a4501de025"
+    ],
+    "rib": [
+     21936,
+     "012ab584ebd3e786ddb8d0aca9f58b76538fc591ae4193d852b6424072e0a341"
+    ]
+   },
+   "table_outcomes": {
+    "bgp_session_routes/bgp:rproc:dev:synth0001:default:bgp~192.0.2.1:default/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 20000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:synth0001:default:bgp~192.0.2.1:default/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 20000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:synth0001:default:bgp~192.0.2.1:default/received": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 20000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:synth0001:red:bgp~198.51.100.9:RED/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 20000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:synth0001:red:bgp~198.51.100.9:RED/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 20000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:synth0001:red:bgp~198.51.100.9:RED/received": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 20000,
+     "status": "complete"
+    },
+    "ospf_lsdb": {
+     "detail": "the device does not have the feature this table reads",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": null,
+     "status": "unsupported"
+    }
+   },
+   "tables": {
+    "bgp_session_routes": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "sidestore/bgp_session_routes/edge/edge1.example.net/1700000000000-aaaaaaaa.parquet",
+     "row_count": 120000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:synth0001:default:bgp~192.0.2.1:default/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 20000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:synth0001:default:bgp~192.0.2.1:default/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 20000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:synth0001:default:bgp~192.0.2.1:default/received": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 20000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:synth0001:red:bgp~198.51.100.9:RED/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 20000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:synth0001:red:bgp~198.51.100.9:RED/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 20000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:synth0001:red:bgp~198.51.100.9:RED/received": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 20000,
+     "status": "complete"
+    },
+    "bgp_sessions": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "sidestore/bgp_sessions/edge/edge1.example.net/1700000000000-aaaaaaaa.parquet",
+     "row_count": 2,
+     "status": "complete"
+    },
+    "ospf_lsdb": {
+     "detail": "the device does not have the feature this table reads",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": null,
+     "status": "unsupported"
+    },
+    "rib": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "sidestore/rib/edge/edge1.example.net/1700000000000-aaaaaaaa.parquet",
+     "row_count": 21936,
+     "status": "complete"
+    }
+   }
+  },
+  "medium/plain": {
+   "answers_sha": "6e68dd4ed51b0c4bb5c5d78c1bc93a937985e819df6134f03d4c30cc58c0b8ab",
+   "base_payload_sha": "983add499ca94b7e27aaea1e545e7f1563e5f63c24b474f1f68fc43a196e1b38",
+   "base_peak_bytes": 331815925,
+   "normalize": "0f3807640450b78d14656fdbe06b2a767311f8cf41635919a475afe330ab99f8",
+   "obs_sha": "32213f08d2ccef37de990a7474d5c78c93866a312fcfddbb6012efd0e681b130",
+   "parquet": {
+    "bgp_session_routes": [
+     120000,
+     "70ed81a4f2fce560d83a9bd786a7eeaabae9375e2491549985f9c0dcab8c22aa"
+    ],
+    "bgp_sessions": [
+     2,
+     "0ccbf0f63077c43c55604245d4b0a511968849206ca799d50cc5c35d2f9beee1"
+    ],
+    "rib": [
+     43562,
+     "e65cfa740ead0e790b336e0817ad7c2554b6bec71b79f2e95acdf1d74376bde2"
+    ]
+   },
+   "parquet_layout": {
+    "bgp_session_routes": {
+     "row_groups": [
+      4096,
+      4096,
+      4096,
+      4096,
+      4096,
+      4096,
+      4096,
+      4096,
+      4096,
+      4096,
+      4096,
+      4096,
+      4096,
+      4096,
+      4096,
+      4096,
+      4096,
+      4096,
+      4096,
+      4096,
+      4096,
+      4096,
+      4096,
+      4096,
+      4096,
+      4096,
+      4096,
+      4096,
+      4096,
+      1216
+     ],
+     "rows_sha": "0b957835aadb4545354366af9b9e14362f2fb99c683240026fec97cb5eaa868f",
+     "schema_sha": "64f29b4c8bb67cc2f3dc9b865c075a8e911ef2d53a3eb6f3110a485985960389"
+    },
+    "bgp_sessions": {
+     "row_groups": [
+      2
+     ],
+     "rows_sha": "7ac035a8acda5421b8e00eda5c7a8f5ac3cb0005094423093cc6a57029c56abe",
+     "schema_sha": "c1aa6a93bfc40d58d1e400fdbefa1675d043f5556f28ecfdf560aa07f87a38ac"
+    },
+    "rib": {
+     "row_groups": [
+      4096,
+      4096,
+      4096,
+      4096,
+      4096,
+      4096,
+      4096,
+      4096,
+      4096,
+      4096,
+      2602
+     ],
+     "rows_sha": "3de4940b25317d8c77edf1d52ff6aae8aa61ab4c51e2b403f45fa30d2d11bda9",
+     "schema_sha": "32d5496e4995c6c7d62973865f82e738fa9c45f549517a5e7d7078208a0f8a76"
+    }
+   },
+   "raw_sha": "f0cfa99613a8f1550311d9713a618b1622e3a7b2435e37fe99d6d6de039f6b46",
+   "sections": {
+    "PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp neighbors 192.0.2.1 advertised-routes json\"": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp neighbors 192.0.2.1 received-routes json\"": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp neighbors 192.0.2.1 routes json\"": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp vrf RED neighbors 198.51.100.9 advertised-routes json\"": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp vrf RED neighbors 198.51.100.9 received-routes json\"": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp vrf RED neighbors 198.51.100.9 routes json\"": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp vrf all summary json\"": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "addrs": {
+     "detail": "",
+     "row_count": 1,
+     "status": "ok"
+    },
+    "config": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "link_speeds": {
+     "detail": "",
+     "row_count": 5,
+     "status": "ok"
+    },
+    "links": {
+     "detail": "",
+     "row_count": 4,
+     "status": "ok"
+    },
+    "routes": {
+     "detail": "",
+     "row_count": 20000,
+     "status": "ok"
+    },
+    "routes6": {
+     "detail": "",
+     "row_count": 20000,
+     "status": "ok"
+    },
+    "routes6_table_100": {
+     "detail": "",
+     "row_count": 0,
+     "status": "empty"
+    },
+    "routes6_table_200": {
+     "detail": "",
+     "row_count": 0,
+     "status": "empty"
+    },
+    "routes_table_100": {
+     "detail": "",
+     "row_count": 0,
+     "status": "empty"
+    },
+    "routes_table_200": {
+     "detail": "",
+     "row_count": 0,
+     "status": "empty"
+    },
+    "version": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    }
+   },
+   "side_tables": {
+    "bgp_session_routes": [
+     120000,
+     "9f330dd5598bcfe8b9c86dc5a5ee63273c325f50e0f49ddf195eecf3d06c1e34"
+    ],
+    "bgp_sessions": [
+     2,
+     "4fe7f4579debd779d66c8a845f64fe44a073cb308806a4809e8cb8a4501de025"
+    ],
+    "rib": [
+     43562,
+     "66c6af79c31b745b2dbb0dd6204d77ecac5f38e38586c26a3a75be71d57daa74"
+    ]
+   },
+   "table_outcomes": {
+    "bgp_session_routes/bgp:rproc:dev:synth0001:default:bgp~192.0.2.1:default/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 20000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:synth0001:default:bgp~192.0.2.1:default/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 20000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:synth0001:default:bgp~192.0.2.1:default/received": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 20000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:synth0001:red:bgp~198.51.100.9:RED/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 20000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:synth0001:red:bgp~198.51.100.9:RED/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 20000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:synth0001:red:bgp~198.51.100.9:RED/received": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 20000,
+     "status": "complete"
+    },
+    "ospf_lsdb": {
+     "detail": "the device does not have the feature this table reads",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": null,
+     "status": "unsupported"
+    }
+   },
+   "tables": {
+    "bgp_session_routes": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "sidestore/bgp_session_routes/edge/edge1.example.net/1700000000000-aaaaaaaa.parquet",
+     "row_count": 120000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:synth0001:default:bgp~192.0.2.1:default/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 20000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:synth0001:default:bgp~192.0.2.1:default/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 20000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:synth0001:default:bgp~192.0.2.1:default/received": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 20000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:synth0001:red:bgp~198.51.100.9:RED/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 20000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:synth0001:red:bgp~198.51.100.9:RED/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 20000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:synth0001:red:bgp~198.51.100.9:RED/received": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 20000,
+     "status": "complete"
+    },
+    "bgp_sessions": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "sidestore/bgp_sessions/edge/edge1.example.net/1700000000000-aaaaaaaa.parquet",
+     "row_count": 2,
+     "status": "complete"
+    },
+    "ospf_lsdb": {
+     "detail": "the device does not have the feature this table reads",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": null,
+     "status": "unsupported"
+    },
+    "rib": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "sidestore/rib/edge/edge1.example.net/1700000000000-aaaaaaaa.parquet",
+     "row_count": 43562,
+     "status": "complete"
+    }
+   }
+  },
+  "small/empty_bgp": {
+   "answers_sha": "bf59e4afd22bc9f9643742cad71260e6335e55865fed80fb6029badea1db3b88",
+   "base_payload_sha": "abef31f781c046ae2442a9026009ec155830e23c06b1a7e934a0377dad6c1814",
+   "base_peak_bytes": null,
+   "normalize": "558b2abcb94374b3fb7ebc0a692b0836cc4fdb4fcbdc199316819968cb61506e",
+   "obs_sha": "943d8e4f113aa4e59181480999f7053f7c06a0c0d47e253ee233103c0b4043d8",
+   "parquet": {
+    "bgp_session_routes": [
+     10000,
+     "9ca609c897729970d35b6ff0a5f34102902ee84d950e58c01ff7a09f4f62d464"
+    ],
+    "bgp_sessions": [
+     2,
+     "69e8b127e3c805266a7f54b4beead608225383631624855a14103bf3ffdfe296"
+    ],
+    "rib": [
+     4362,
+     "48b191523db33d5898d9c70d12088bf1735b4c19fc930ad6065f49d7a00f8f6f"
+    ]
+   },
+   "parquet_layout": {
+    "bgp_session_routes": {
+     "row_groups": [
+      4096,
+      4096,
+      1808
+     ],
+     "rows_sha": "f9e1614c95742a248dd2eb6dfbfaf0c91365a3cbb19e21c928cccfee00f86819",
+     "schema_sha": "64f29b4c8bb67cc2f3dc9b865c075a8e911ef2d53a3eb6f3110a485985960389"
+    },
+    "bgp_sessions": {
+     "row_groups": [
+      2
+     ],
+     "rows_sha": "6e19afd65e1a11f5e100063b5e9e10af7127365fc422fc9275074728826bbcfd",
+     "schema_sha": "c1aa6a93bfc40d58d1e400fdbefa1675d043f5556f28ecfdf560aa07f87a38ac"
+    },
+    "rib": {
+     "row_groups": [
+      4096,
+      266
+     ],
+     "rows_sha": "2d07b4f96e4540ae692b5bb7af7bfcb529613179719a97758afa513b3a961d9c",
+     "schema_sha": "32d5496e4995c6c7d62973865f82e738fa9c45f549517a5e7d7078208a0f8a76"
+    }
+   },
+   "raw_sha": "01987bef5fabead78d181c66fe187086f68db4b2c4b7c4a15690d57856eb92f2",
+   "sections": {
+    "PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp neighbors 192.0.2.1 advertised-routes json\"": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp neighbors 192.0.2.1 received-routes json\"": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp neighbors 192.0.2.1 routes json\"": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp vrf RED neighbors 198.51.100.9 advertised-routes json\"": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp vrf RED neighbors 198.51.100.9 received-routes json\"": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp vrf RED neighbors 198.51.100.9 routes json\"": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp vrf all summary json\"": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "addrs": {
+     "detail": "",
+     "row_count": 1,
+     "status": "ok"
+    },
+    "config": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "link_speeds": {
+     "detail": "",
+     "row_count": 5,
+     "status": "ok"
+    },
+    "links": {
+     "detail": "",
+     "row_count": 4,
+     "status": "ok"
+    },
+    "routes": {
+     "detail": "",
+     "row_count": 2000,
+     "status": "ok"
+    },
+    "routes6": {
+     "detail": "",
+     "row_count": 2000,
+     "status": "ok"
+    },
+    "routes6_table_100": {
+     "detail": "",
+     "row_count": 0,
+     "status": "empty"
+    },
+    "routes6_table_200": {
+     "detail": "",
+     "row_count": 0,
+     "status": "empty"
+    },
+    "routes_table_100": {
+     "detail": "",
+     "row_count": 0,
+     "status": "empty"
+    },
+    "routes_table_200": {
+     "detail": "",
+     "row_count": 0,
+     "status": "empty"
+    },
+    "version": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    }
+   },
+   "side_tables": {
+    "bgp_session_routes": [
+     10000,
+     "a274011c83a43158f67d8fc65b623157d01176f8d4af768f9f46e3e946b79eb4"
+    ],
+    "bgp_sessions": [
+     2,
+     "63567253f4e286e1cd1ddad6c9efebe840788a05e3bfe896ea0cbdb2ec7bd9df"
+    ],
+    "rib": [
+     4362,
+     "a205c34ae7dd88ac28c5b81f17f288d5451d66419b1c8caad2f96808d7d3b25e"
+    ]
+   },
+   "table_outcomes": {
+    "bgp_session_routes/bgp:rproc:dev:synth0001:default:bgp~192.0.2.1:default/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:synth0001:default:bgp~192.0.2.1:default/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:synth0001:default:bgp~192.0.2.1:default/received": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:synth0001:red:bgp~198.51.100.9:RED/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:synth0001:red:bgp~198.51.100.9:RED/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 0,
+     "status": "complete-empty"
+    },
+    "bgp_session_routes/bgp:rproc:dev:synth0001:red:bgp~198.51.100.9:RED/received": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "ospf_lsdb": {
+     "detail": "the device does not have the feature this table reads",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": null,
+     "status": "unsupported"
+    }
+   },
+   "tables": {
+    "bgp_session_routes": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "sidestore/bgp_session_routes/edge/edge1.example.net/1700000000000-aaaaaaaa.parquet",
+     "row_count": 10000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:synth0001:default:bgp~192.0.2.1:default/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:synth0001:default:bgp~192.0.2.1:default/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:synth0001:default:bgp~192.0.2.1:default/received": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:synth0001:red:bgp~198.51.100.9:RED/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:synth0001:red:bgp~198.51.100.9:RED/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 0,
+     "status": "complete-empty"
+    },
+    "bgp_session_routes/bgp:rproc:dev:synth0001:red:bgp~198.51.100.9:RED/received": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "bgp_sessions": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "sidestore/bgp_sessions/edge/edge1.example.net/1700000000000-aaaaaaaa.parquet",
+     "row_count": 2,
+     "status": "complete"
+    },
+    "ospf_lsdb": {
+     "detail": "the device does not have the feature this table reads",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": null,
+     "status": "unsupported"
+    },
+    "rib": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "sidestore/rib/edge/edge1.example.net/1700000000000-aaaaaaaa.parquet",
+     "row_count": 4362,
+     "status": "complete"
+    }
+   }
+  },
+  "small/malformed_rib": {
+   "answers_sha": "4158ec5e487b230ac6b65315eadf1dbc0ed9a5801166d3b6a86f19067ea7eac6",
+   "base_payload_sha": "548ac2297e577583e9f7f4bdae436a2e25d7896914e55664b24c8d3ecca7c92b",
+   "base_peak_bytes": null,
+   "normalize": "911fc6167e59dff0804f0f27bc9633a5660de36a193d9a6e91d116bec5aa25e4",
+   "obs_sha": "2d0c9cf55a131b7bcedb2ce54fb6cd122b3af5eed1baaf4520c5c0bb0b3e4a52",
+   "parquet": {
+    "bgp_session_routes": [
+     12000,
+     "2e5b257bed064912fa8b3628887350d8e29976c0cb0fab777c1b64a498035369"
+    ],
+    "bgp_sessions": [
+     2,
+     "69e8b127e3c805266a7f54b4beead608225383631624855a14103bf3ffdfe296"
+    ],
+    "rib": [
+     2217,
+     "c9bc73e11151f9887a519b32d5ec5f321c634672e2513ae606ddb9c2e386272a"
+    ]
+   },
+   "parquet_layout": {
+    "bgp_session_routes": {
+     "row_groups": [
+      4096,
+      4096,
+      3808
+     ],
+     "rows_sha": "cd11acd2ceead0ba932c43add4bf3ccd55ffcdd1d5ee93b4d8925031e3b5da2c",
+     "schema_sha": "64f29b4c8bb67cc2f3dc9b865c075a8e911ef2d53a3eb6f3110a485985960389"
+    },
+    "bgp_sessions": {
+     "row_groups": [
+      2
+     ],
+     "rows_sha": "6e19afd65e1a11f5e100063b5e9e10af7127365fc422fc9275074728826bbcfd",
+     "schema_sha": "c1aa6a93bfc40d58d1e400fdbefa1675d043f5556f28ecfdf560aa07f87a38ac"
+    },
+    "rib": {
+     "row_groups": [
+      2217
+     ],
+     "rows_sha": "883d8bef88123e69059e02efcc36edac7dbbe80ff971f8ee54c144598fc6ad4f",
+     "schema_sha": "32d5496e4995c6c7d62973865f82e738fa9c45f549517a5e7d7078208a0f8a76"
+    }
+   },
+   "raw_sha": "d230c3d31ab772ea5d0e248f226f629053afb892961871b18c6036d457e024e6",
+   "sections": {
+    "PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp neighbors 192.0.2.1 advertised-routes json\"": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp neighbors 192.0.2.1 received-routes json\"": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp neighbors 192.0.2.1 routes json\"": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp vrf RED neighbors 198.51.100.9 advertised-routes json\"": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp vrf RED neighbors 198.51.100.9 received-routes json\"": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp vrf RED neighbors 198.51.100.9 routes json\"": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp vrf all summary json\"": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "addrs": {
+     "detail": "",
+     "row_count": 1,
+     "status": "ok"
+    },
+    "config": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "link_speeds": {
+     "detail": "",
+     "row_count": 5,
+     "status": "ok"
+    },
+    "links": {
+     "detail": "",
+     "row_count": 4,
+     "status": "ok"
+    },
+    "routes": {
+     "detail": "",
+     "row_count": 2000,
+     "status": "ok"
+    },
+    "routes6": {
+     "detail": "Unterminated string starting at: line 34748 column 9 (char 886862)",
+     "row_count": null,
+     "status": "malformed"
+    },
+    "routes6_table_100": {
+     "detail": "",
+     "row_count": 0,
+     "status": "empty"
+    },
+    "routes6_table_200": {
+     "detail": "",
+     "row_count": 0,
+     "status": "empty"
+    },
+    "routes_table_100": {
+     "detail": "",
+     "row_count": 0,
+     "status": "empty"
+    },
+    "routes_table_200": {
+     "detail": "",
+     "row_count": 0,
+     "status": "empty"
+    },
+    "version": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    }
+   },
+   "side_tables": {
+    "bgp_session_routes": [
+     12000,
+     "b0998366d870fe128aeeeafe5c5799faea6d6b25edd8925b60960e84e68f4b1d"
+    ],
+    "bgp_sessions": [
+     2,
+     "63567253f4e286e1cd1ddad6c9efebe840788a05e3bfe896ea0cbdb2ec7bd9df"
+    ],
+    "rib": [
+     2217,
+     "6e73834189c4a0f82e603f5dd9fe8d4f771f0ca395b3a0675a3babfd81f84756"
+    ]
+   },
+   "table_outcomes": {
+    "bgp_session_routes/bgp:rproc:dev:synth0001:default:bgp~192.0.2.1:default/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:synth0001:default:bgp~192.0.2.1:default/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:synth0001:default:bgp~192.0.2.1:default/received": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:synth0001:red:bgp~198.51.100.9:RED/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:synth0001:red:bgp~198.51.100.9:RED/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:synth0001:red:bgp~198.51.100.9:RED/received": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "ospf_lsdb": {
+     "detail": "the device does not have the feature this table reads",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": null,
+     "status": "unsupported"
+    }
+   },
+   "tables": {
+    "bgp_session_routes": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "sidestore/bgp_session_routes/edge/edge1.example.net/1700000000000-aaaaaaaa.parquet",
+     "row_count": 12000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:synth0001:default:bgp~192.0.2.1:default/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:synth0001:default:bgp~192.0.2.1:default/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:synth0001:default:bgp~192.0.2.1:default/received": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:synth0001:red:bgp~198.51.100.9:RED/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:synth0001:red:bgp~198.51.100.9:RED/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:synth0001:red:bgp~198.51.100.9:RED/received": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "bgp_sessions": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "sidestore/bgp_sessions/edge/edge1.example.net/1700000000000-aaaaaaaa.parquet",
+     "row_count": 2,
+     "status": "complete"
+    },
+    "ospf_lsdb": {
+     "detail": "the device does not have the feature this table reads",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": null,
+     "status": "unsupported"
+    },
+    "rib": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "sidestore/rib/edge/edge1.example.net/1700000000000-aaaaaaaa.parquet",
+     "row_count": 2217,
+     "status": "complete"
+    }
+   }
+  },
+  "small/malformed_table": {
+   "answers_sha": "9ca2dbde93af767573bc77e7a9a9ae53a871a160c9419c9098243897c4b0ef78",
+   "base_payload_sha": "d737bfd6aa40b73380e606c570a3e02447ae2dbbcd377cb9b204825ed02a78f9",
+   "base_peak_bytes": null,
+   "normalize": "d593a95dc4d45178df66b1281d4891fbeefffc7f5e33e97e510643f00bc6c2d6",
+   "obs_sha": "42d1821a087ee9cd701d7df6ae9e64739c6dc837cf23eea28dfdbede034a7eb1",
+   "parquet": {
+    "bgp_session_routes": [
+     12000,
+     "2e5b257bed064912fa8b3628887350d8e29976c0cb0fab777c1b64a498035369"
+    ],
+    "bgp_sessions": [
+     2,
+     "69e8b127e3c805266a7f54b4beead608225383631624855a14103bf3ffdfe296"
+    ],
+    "rib": [
+     4349,
+     "ea3aeb41a2dc8f7bfbb15c3b985430ae5d8a2d16a581d861462670279eee5b54"
+    ]
+   },
+   "parquet_layout": {
+    "bgp_session_routes": {
+     "row_groups": [
+      4096,
+      4096,
+      3808
+     ],
+     "rows_sha": "cd11acd2ceead0ba932c43add4bf3ccd55ffcdd1d5ee93b4d8925031e3b5da2c",
+     "schema_sha": "64f29b4c8bb67cc2f3dc9b865c075a8e911ef2d53a3eb6f3110a485985960389"
+    },
+    "bgp_sessions": {
+     "row_groups": [
+      2
+     ],
+     "rows_sha": "6e19afd65e1a11f5e100063b5e9e10af7127365fc422fc9275074728826bbcfd",
+     "schema_sha": "c1aa6a93bfc40d58d1e400fdbefa1675d043f5556f28ecfdf560aa07f87a38ac"
+    },
+    "rib": {
+     "row_groups": [
+      4096,
+      253
+     ],
+     "rows_sha": "5963cd08fac7b9c831f97a98adac4a5b07eb7d9381048cb81c2f355051e67982",
+     "schema_sha": "32d5496e4995c6c7d62973865f82e738fa9c45f549517a5e7d7078208a0f8a76"
+    }
+   },
+   "raw_sha": "3a114ef5feaadc249303caefddd928e087ce42372b69ad4df379fc5962aaef3f",
+   "sections": {
+    "PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp neighbors 192.0.2.1 advertised-routes json\"": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp neighbors 192.0.2.1 received-routes json\"": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp neighbors 192.0.2.1 routes json\"": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp vrf RED neighbors 198.51.100.9 advertised-routes json\"": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp vrf RED neighbors 198.51.100.9 received-routes json\"": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp vrf RED neighbors 198.51.100.9 routes json\"": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp vrf all summary json\"": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "addrs": {
+     "detail": "",
+     "row_count": 1,
+     "status": "ok"
+    },
+    "config": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "link_speeds": {
+     "detail": "",
+     "row_count": 5,
+     "status": "ok"
+    },
+    "links": {
+     "detail": "",
+     "row_count": 4,
+     "status": "ok"
+    },
+    "routes": {
+     "detail": "",
+     "row_count": 2000,
+     "status": "ok"
+    },
+    "routes6": {
+     "detail": "",
+     "row_count": 2000,
+     "status": "ok"
+    },
+    "routes6_table_100": {
+     "detail": "",
+     "row_count": 0,
+     "status": "empty"
+    },
+    "routes6_table_200": {
+     "detail": "",
+     "row_count": 0,
+     "status": "empty"
+    },
+    "routes_table_100": {
+     "detail": "Unterminated string starting at: line 222 column 7 (char 5050)",
+     "row_count": null,
+     "status": "malformed"
+    },
+    "routes_table_200": {
+     "detail": "",
+     "row_count": 0,
+     "status": "empty"
+    },
+    "version": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    }
+   },
+   "side_tables": {
+    "bgp_session_routes": [
+     12000,
+     "b0998366d870fe128aeeeafe5c5799faea6d6b25edd8925b60960e84e68f4b1d"
+    ],
+    "bgp_sessions": [
+     2,
+     "63567253f4e286e1cd1ddad6c9efebe840788a05e3bfe896ea0cbdb2ec7bd9df"
+    ],
+    "rib": [
+     4349,
+     "fa4bc921675925c3ae1757ba6badac96a67a8b8efe35169bc391a5916537f9e4"
+    ]
+   },
+   "table_outcomes": {
+    "bgp_session_routes/bgp:rproc:dev:synth0001:default:bgp~192.0.2.1:default/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:synth0001:default:bgp~192.0.2.1:default/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:synth0001:default:bgp~192.0.2.1:default/received": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:synth0001:red:bgp~198.51.100.9:RED/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:synth0001:red:bgp~198.51.100.9:RED/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:synth0001:red:bgp~198.51.100.9:RED/received": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "ospf_lsdb": {
+     "detail": "the device does not have the feature this table reads",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": null,
+     "status": "unsupported"
+    }
+   },
+   "tables": {
+    "bgp_session_routes": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "sidestore/bgp_session_routes/edge/edge1.example.net/1700000000000-aaaaaaaa.parquet",
+     "row_count": 12000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:synth0001:default:bgp~192.0.2.1:default/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:synth0001:default:bgp~192.0.2.1:default/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:synth0001:default:bgp~192.0.2.1:default/received": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:synth0001:red:bgp~198.51.100.9:RED/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:synth0001:red:bgp~198.51.100.9:RED/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:synth0001:red:bgp~198.51.100.9:RED/received": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "bgp_sessions": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "sidestore/bgp_sessions/edge/edge1.example.net/1700000000000-aaaaaaaa.parquet",
+     "row_count": 2,
+     "status": "complete"
+    },
+    "ospf_lsdb": {
+     "detail": "the device does not have the feature this table reads",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": null,
+     "status": "unsupported"
+    },
+    "rib": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "sidestore/rib/edge/edge1.example.net/1700000000000-aaaaaaaa.parquet",
+     "row_count": 4349,
+     "status": "complete"
+    }
+   }
+  },
+  "small/percent_bgp": {
+   "answers_sha": "d94a5512ed990477dd0ea26f1ba81f7616eb2c5431136971f0e7aa030dc10307",
+   "base_payload_sha": "3bb1804915f5cc504b9ae7e987b29f3069a25c27936e61a950e6c11b03a30165",
+   "base_peak_bytes": null,
+   "normalize": "558b2abcb94374b3fb7ebc0a692b0836cc4fdb4fcbdc199316819968cb61506e",
+   "obs_sha": "943d8e4f113aa4e59181480999f7053f7c06a0c0d47e253ee233103c0b4043d8",
+   "parquet": {
+    "bgp_session_routes": [
+     10000,
+     "2c6314a0d77b9b15605085878a4761606a4993dee045d88e576c51bee3865cf9"
+    ],
+    "bgp_sessions": [
+     2,
+     "69e8b127e3c805266a7f54b4beead608225383631624855a14103bf3ffdfe296"
+    ],
+    "rib": [
+     4362,
+     "48b191523db33d5898d9c70d12088bf1735b4c19fc930ad6065f49d7a00f8f6f"
+    ]
+   },
+   "parquet_layout": {
+    "bgp_session_routes": {
+     "row_groups": [
+      4096,
+      4096,
+      1808
+     ],
+     "rows_sha": "1fbbaf2d866d7a38d7558202ff550da5f69be8cc89769bfc732e2149085e0afd",
+     "schema_sha": "64f29b4c8bb67cc2f3dc9b865c075a8e911ef2d53a3eb6f3110a485985960389"
+    },
+    "bgp_sessions": {
+     "row_groups": [
+      2
+     ],
+     "rows_sha": "6e19afd65e1a11f5e100063b5e9e10af7127365fc422fc9275074728826bbcfd",
+     "schema_sha": "c1aa6a93bfc40d58d1e400fdbefa1675d043f5556f28ecfdf560aa07f87a38ac"
+    },
+    "rib": {
+     "row_groups": [
+      4096,
+      266
+     ],
+     "rows_sha": "2d07b4f96e4540ae692b5bb7af7bfcb529613179719a97758afa513b3a961d9c",
+     "schema_sha": "32d5496e4995c6c7d62973865f82e738fa9c45f549517a5e7d7078208a0f8a76"
+    }
+   },
+   "raw_sha": "2295cef59b07c70b32324ab940866050707f4abd7d63e5920e2f31670126e31a",
+   "sections": {
+    "PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp neighbors 192.0.2.1 advertised-routes json\"": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp neighbors 192.0.2.1 received-routes json\"": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp neighbors 192.0.2.1 routes json\"": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp vrf RED neighbors 198.51.100.9 advertised-routes json\"": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp vrf RED neighbors 198.51.100.9 received-routes json\"": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp vrf RED neighbors 198.51.100.9 routes json\"": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp vrf all summary json\"": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "addrs": {
+     "detail": "",
+     "row_count": 1,
+     "status": "ok"
+    },
+    "config": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "link_speeds": {
+     "detail": "",
+     "row_count": 5,
+     "status": "ok"
+    },
+    "links": {
+     "detail": "",
+     "row_count": 4,
+     "status": "ok"
+    },
+    "routes": {
+     "detail": "",
+     "row_count": 2000,
+     "status": "ok"
+    },
+    "routes6": {
+     "detail": "",
+     "row_count": 2000,
+     "status": "ok"
+    },
+    "routes6_table_100": {
+     "detail": "",
+     "row_count": 0,
+     "status": "empty"
+    },
+    "routes6_table_200": {
+     "detail": "",
+     "row_count": 0,
+     "status": "empty"
+    },
+    "routes_table_100": {
+     "detail": "",
+     "row_count": 0,
+     "status": "empty"
+    },
+    "routes_table_200": {
+     "detail": "",
+     "row_count": 0,
+     "status": "empty"
+    },
+    "version": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    }
+   },
+   "side_tables": {
+    "bgp_session_routes": [
+     10000,
+     "fd8a52b94d4f4f38560ae61c80697624d946057019f1ccda0f6bfd145887d80a"
+    ],
+    "bgp_sessions": [
+     2,
+     "63567253f4e286e1cd1ddad6c9efebe840788a05e3bfe896ea0cbdb2ec7bd9df"
+    ],
+    "rib": [
+     4362,
+     "a205c34ae7dd88ac28c5b81f17f288d5451d66419b1c8caad2f96808d7d3b25e"
+    ]
+   },
+   "table_outcomes": {
+    "bgp_session_routes/bgp:rproc:dev:synth0001:default:bgp~192.0.2.1:default/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:synth0001:default:bgp~192.0.2.1:default/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:synth0001:default:bgp~192.0.2.1:default/received": {
+     "detail": "% Inbound soft-reconfiguration is not configured for this neighbor",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": null,
+     "status": "not-captured"
+    },
+    "bgp_session_routes/bgp:rproc:dev:synth0001:red:bgp~198.51.100.9:RED/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:synth0001:red:bgp~198.51.100.9:RED/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:synth0001:red:bgp~198.51.100.9:RED/received": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "ospf_lsdb": {
+     "detail": "the device does not have the feature this table reads",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": null,
+     "status": "unsupported"
+    }
+   },
+   "tables": {
+    "bgp_session_routes": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "sidestore/bgp_session_routes/edge/edge1.example.net/1700000000000-aaaaaaaa.parquet",
+     "row_count": 10000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:synth0001:default:bgp~192.0.2.1:default/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:synth0001:default:bgp~192.0.2.1:default/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:synth0001:default:bgp~192.0.2.1:default/received": {
+     "detail": "% Inbound soft-reconfiguration is not configured for this neighbor",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": null,
+     "status": "not-captured"
+    },
+    "bgp_session_routes/bgp:rproc:dev:synth0001:red:bgp~198.51.100.9:RED/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:synth0001:red:bgp~198.51.100.9:RED/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:synth0001:red:bgp~198.51.100.9:RED/received": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "bgp_sessions": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "sidestore/bgp_sessions/edge/edge1.example.net/1700000000000-aaaaaaaa.parquet",
+     "row_count": 2,
+     "status": "complete"
+    },
+    "ospf_lsdb": {
+     "detail": "the device does not have the feature this table reads",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": null,
+     "status": "unsupported"
+    },
+    "rib": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "sidestore/rib/edge/edge1.example.net/1700000000000-aaaaaaaa.parquet",
+     "row_count": 4362,
+     "status": "complete"
+    }
+   }
+  },
+  "small/plain": {
+   "answers_sha": "7afedaaa5e4c555ccf8ad8c74575245298900abcbeb514a8d19d2687df79a1cf",
+   "base_payload_sha": "462ebb239fdbe230339ef931f51d4d788e38f3e19a57e69bdc603670fb85a2a6",
+   "base_peak_bytes": null,
+   "normalize": "558b2abcb94374b3fb7ebc0a692b0836cc4fdb4fcbdc199316819968cb61506e",
+   "obs_sha": "943d8e4f113aa4e59181480999f7053f7c06a0c0d47e253ee233103c0b4043d8",
+   "parquet": {
+    "bgp_session_routes": [
+     12000,
+     "2e5b257bed064912fa8b3628887350d8e29976c0cb0fab777c1b64a498035369"
+    ],
+    "bgp_sessions": [
+     2,
+     "69e8b127e3c805266a7f54b4beead608225383631624855a14103bf3ffdfe296"
+    ],
+    "rib": [
+     4362,
+     "48b191523db33d5898d9c70d12088bf1735b4c19fc930ad6065f49d7a00f8f6f"
+    ]
+   },
+   "parquet_layout": {
+    "bgp_session_routes": {
+     "row_groups": [
+      4096,
+      4096,
+      3808
+     ],
+     "rows_sha": "cd11acd2ceead0ba932c43add4bf3ccd55ffcdd1d5ee93b4d8925031e3b5da2c",
+     "schema_sha": "64f29b4c8bb67cc2f3dc9b865c075a8e911ef2d53a3eb6f3110a485985960389"
+    },
+    "bgp_sessions": {
+     "row_groups": [
+      2
+     ],
+     "rows_sha": "6e19afd65e1a11f5e100063b5e9e10af7127365fc422fc9275074728826bbcfd",
+     "schema_sha": "c1aa6a93bfc40d58d1e400fdbefa1675d043f5556f28ecfdf560aa07f87a38ac"
+    },
+    "rib": {
+     "row_groups": [
+      4096,
+      266
+     ],
+     "rows_sha": "2d07b4f96e4540ae692b5bb7af7bfcb529613179719a97758afa513b3a961d9c",
+     "schema_sha": "32d5496e4995c6c7d62973865f82e738fa9c45f549517a5e7d7078208a0f8a76"
+    }
+   },
+   "raw_sha": "a15560d0c3b40b17baaa6dd5e06f967895da1da20d0d98de40c939ed8269a8c9",
+   "sections": {
+    "PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp neighbors 192.0.2.1 advertised-routes json\"": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp neighbors 192.0.2.1 received-routes json\"": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp neighbors 192.0.2.1 routes json\"": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp vrf RED neighbors 198.51.100.9 advertised-routes json\"": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp vrf RED neighbors 198.51.100.9 received-routes json\"": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp vrf RED neighbors 198.51.100.9 routes json\"": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp vrf all summary json\"": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "addrs": {
+     "detail": "",
+     "row_count": 1,
+     "status": "ok"
+    },
+    "config": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "link_speeds": {
+     "detail": "",
+     "row_count": 5,
+     "status": "ok"
+    },
+    "links": {
+     "detail": "",
+     "row_count": 4,
+     "status": "ok"
+    },
+    "routes": {
+     "detail": "",
+     "row_count": 2000,
+     "status": "ok"
+    },
+    "routes6": {
+     "detail": "",
+     "row_count": 2000,
+     "status": "ok"
+    },
+    "routes6_table_100": {
+     "detail": "",
+     "row_count": 0,
+     "status": "empty"
+    },
+    "routes6_table_200": {
+     "detail": "",
+     "row_count": 0,
+     "status": "empty"
+    },
+    "routes_table_100": {
+     "detail": "",
+     "row_count": 0,
+     "status": "empty"
+    },
+    "routes_table_200": {
+     "detail": "",
+     "row_count": 0,
+     "status": "empty"
+    },
+    "version": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    }
+   },
+   "side_tables": {
+    "bgp_session_routes": [
+     12000,
+     "b0998366d870fe128aeeeafe5c5799faea6d6b25edd8925b60960e84e68f4b1d"
+    ],
+    "bgp_sessions": [
+     2,
+     "63567253f4e286e1cd1ddad6c9efebe840788a05e3bfe896ea0cbdb2ec7bd9df"
+    ],
+    "rib": [
+     4362,
+     "a205c34ae7dd88ac28c5b81f17f288d5451d66419b1c8caad2f96808d7d3b25e"
+    ]
+   },
+   "table_outcomes": {
+    "bgp_session_routes/bgp:rproc:dev:synth0001:default:bgp~192.0.2.1:default/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:synth0001:default:bgp~192.0.2.1:default/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:synth0001:default:bgp~192.0.2.1:default/received": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:synth0001:red:bgp~198.51.100.9:RED/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:synth0001:red:bgp~198.51.100.9:RED/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:synth0001:red:bgp~198.51.100.9:RED/received": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "ospf_lsdb": {
+     "detail": "the device does not have the feature this table reads",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": null,
+     "status": "unsupported"
+    }
+   },
+   "tables": {
+    "bgp_session_routes": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "sidestore/bgp_session_routes/edge/edge1.example.net/1700000000000-aaaaaaaa.parquet",
+     "row_count": 12000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:synth0001:default:bgp~192.0.2.1:default/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:synth0001:default:bgp~192.0.2.1:default/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:synth0001:default:bgp~192.0.2.1:default/received": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:synth0001:red:bgp~198.51.100.9:RED/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:synth0001:red:bgp~198.51.100.9:RED/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:synth0001:red:bgp~198.51.100.9:RED/received": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "bgp_sessions": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "sidestore/bgp_sessions/edge/edge1.example.net/1700000000000-aaaaaaaa.parquet",
+     "row_count": 2,
+     "status": "complete"
+    },
+    "ospf_lsdb": {
+     "detail": "the device does not have the feature this table reads",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": null,
+     "status": "unsupported"
+    },
+    "rib": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "sidestore/rib/edge/edge1.example.net/1700000000000-aaaaaaaa.parquet",
+     "row_count": 4362,
+     "status": "complete"
+    }
+   }
+  },
+  "small/refused": {
+   "answers_sha": "632e650acbd838e31f304593d64fca2b9bef4c454007878541b5a359e5274248",
+   "base_payload_sha": "e09b946ca9ecf4d93cc1ae8c4d862bfe49652265e7e1e2b1d151a67ff4e580fd",
+   "base_peak_bytes": null,
+   "normalize": "29bf706c7d347910191425c38f11dd24e2ae8005731d14b2f129348a7cbc5c65",
+   "obs_sha": "c6803452b348d4dd9a359a1268b315a6b0640246973b5595a86839a9aa6b2780",
+   "parquet": {
+    "bgp_session_routes": [
+     10000,
+     "2e9ceca5df0990819f8419c48ffaf01b06196ab42b0c098a6ff50ccff8dee386"
+    ],
+    "bgp_sessions": [
+     2,
+     "69e8b127e3c805266a7f54b4beead608225383631624855a14103bf3ffdfe296"
+    ],
+    "rib": [
+     4355,
+     "955a52b202031874e09a22a2b64fb0bdd563211951792e08d2cf918ca7f016f1"
+    ]
+   },
+   "parquet_layout": {
+    "bgp_session_routes": {
+     "row_groups": [
+      4096,
+      4096,
+      1808
+     ],
+     "rows_sha": "2687e420e46207243f2526358a1219633d7a5cb3f889e5113e4170f40182cd82",
+     "schema_sha": "64f29b4c8bb67cc2f3dc9b865c075a8e911ef2d53a3eb6f3110a485985960389"
+    },
+    "bgp_sessions": {
+     "row_groups": [
+      2
+     ],
+     "rows_sha": "6e19afd65e1a11f5e100063b5e9e10af7127365fc422fc9275074728826bbcfd",
+     "schema_sha": "c1aa6a93bfc40d58d1e400fdbefa1675d043f5556f28ecfdf560aa07f87a38ac"
+    },
+    "rib": {
+     "row_groups": [
+      4096,
+      259
+     ],
+     "rows_sha": "72e3ba9ea5628c3d2f5b0695f43ac69565e26fe3e0913eff525ad19f75c491d2",
+     "schema_sha": "32d5496e4995c6c7d62973865f82e738fa9c45f549517a5e7d7078208a0f8a76"
+    }
+   },
+   "raw_sha": "4ff0847d986de168d33df64b7bc7a11a34e4d8e04a1a93e94c9acc2085fc8945",
+   "sections": {
+    "PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp neighbors 192.0.2.1 advertised-routes json\"": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp neighbors 192.0.2.1 received-routes json\"": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp neighbors 192.0.2.1 routes json\"": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp vrf RED neighbors 198.51.100.9 advertised-routes json\"": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp vrf RED neighbors 198.51.100.9 received-routes json\"": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp vrf RED neighbors 198.51.100.9 routes json\"": {
+     "detail": "'PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp vrf RED neighbors 198.51.100.9 routes json\"' exited 1: Permission denied",
+     "row_count": null,
+     "status": "unauthorized"
+    },
+    "PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp vrf all summary json\"": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "addrs": {
+     "detail": "",
+     "row_count": 1,
+     "status": "ok"
+    },
+    "config": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    },
+    "link_speeds": {
+     "detail": "",
+     "row_count": 5,
+     "status": "ok"
+    },
+    "links": {
+     "detail": "",
+     "row_count": 4,
+     "status": "ok"
+    },
+    "routes": {
+     "detail": "",
+     "row_count": 2000,
+     "status": "ok"
+    },
+    "routes6": {
+     "detail": "",
+     "row_count": 2000,
+     "status": "ok"
+    },
+    "routes6_table_100": {
+     "detail": "'PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show ipv6 route table 100 json\"' rejected by device: % Unknown command",
+     "row_count": null,
+     "status": "unsupported"
+    },
+    "routes6_table_200": {
+     "detail": "",
+     "row_count": 0,
+     "status": "empty"
+    },
+    "routes_table_100": {
+     "detail": "",
+     "row_count": 0,
+     "status": "empty"
+    },
+    "routes_table_200": {
+     "detail": "",
+     "row_count": 0,
+     "status": "empty"
+    },
+    "version": {
+     "detail": "",
+     "row_count": null,
+     "status": "ok"
+    }
+   },
+   "side_tables": {
+    "bgp_session_routes": [
+     10000,
+     "c9f7d2f0fe68c98a96e1b0c9f1f1a9e21becd56112d808c97d1cafdcd11c2029"
+    ],
+    "bgp_sessions": [
+     2,
+     "63567253f4e286e1cd1ddad6c9efebe840788a05e3bfe896ea0cbdb2ec7bd9df"
+    ],
+    "rib": [
+     4355,
+     "1058bb768ab34037f49964a5c380fe29c496a58acfc5895a7f22436418f580f0"
+    ]
+   },
+   "table_outcomes": {
+    "bgp_session_routes/bgp:rproc:dev:synth0001:default:bgp~192.0.2.1:default/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:synth0001:default:bgp~192.0.2.1:default/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:synth0001:default:bgp~192.0.2.1:default/received": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:synth0001:red:bgp~198.51.100.9:RED/accepted": {
+     "detail": "'PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp vrf RED neighbors 198.51.100.9 routes json\"' exited 1: Permission denied",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": null,
+     "status": "failed"
+    },
+    "bgp_session_routes/bgp:rproc:dev:synth0001:red:bgp~198.51.100.9:RED/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:synth0001:red:bgp~198.51.100.9:RED/received": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "ospf_lsdb": {
+     "detail": "the device does not have the feature this table reads",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": null,
+     "status": "unsupported"
+    }
+   },
+   "tables": {
+    "bgp_session_routes": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "sidestore/bgp_session_routes/edge/edge1.example.net/1700000000000-aaaaaaaa.parquet",
+     "row_count": 10000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:synth0001:default:bgp~192.0.2.1:default/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:synth0001:default:bgp~192.0.2.1:default/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:synth0001:default:bgp~192.0.2.1:default/received": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:synth0001:red:bgp~198.51.100.9:RED/accepted": {
+     "detail": "'PATH=/usr/sbin:/sbin:/usr/bin:/bin vtysh -c \"show bgp vrf RED neighbors 198.51.100.9 routes json\"' exited 1: Permission denied",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": null,
+     "status": "failed"
+    },
+    "bgp_session_routes/bgp:rproc:dev:synth0001:red:bgp~198.51.100.9:RED/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:synth0001:red:bgp~198.51.100.9:RED/received": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "bgp_sessions": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "sidestore/bgp_sessions/edge/edge1.example.net/1700000000000-aaaaaaaa.parquet",
+     "row_count": 2,
+     "status": "complete"
+    },
+    "ospf_lsdb": {
+     "detail": "the device does not have the feature this table reads",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": null,
+     "status": "unsupported"
+    },
+    "rib": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "sidestore/rib/edge/edge1.example.net/1700000000000-aaaaaaaa.parquet",
+     "row_count": 4355,
+     "status": "complete"
+    }
+   }
+  }
+ },
+ "collector": {
+  "capture_bgp": "all",
+  "host": "edge1.example.net",
+  "routing_scope": "corp",
+  "site_code": "hq",
+  "source_name": "edge"
+ },
+ "memory_row_group_rows": 8192,
+ "row_group_rows": 4096,
+ "run_id": "1700000000000-aaaaaaaa",
+ "snapshot_ts": 1700000000000
+}

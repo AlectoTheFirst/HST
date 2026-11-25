@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HST</title>
+    <!--
+      public/theme-init.js sets `data-theme` before the first paint. It is a
+      classic script without `defer` or `async`, and the backend CSP
+      `script-src 'self'` permits it. Its storage key and its resolution rule
+      match src/shell/theme.ts.
+    -->
+    <script src="/theme-init.js"></script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

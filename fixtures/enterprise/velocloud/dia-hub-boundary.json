@@ -1,0 +1,824 @@
+{
+  "api_profile": "velocloud-vco-6.4.0-v3",
+  "orchestrator_release": "6.4.0.0",
+  "fetched_at_ms": 1000,
+  "discovered": false,
+  "enterprises": [
+    {
+      "logicalId": "ent-1",
+      "name": "Acme",
+      "enterprise_id": 1,
+      "edges": [
+        {
+          "_href": "/api/sdwan/v2/enterprises/ent-1/edges/e-br",
+          "id": 1,
+          "logicalId": "e-br",
+          "name": "branch-1",
+          "serialNumber": "S-e-br",
+          "modelNumber": "edge610",
+          "edgeState": "CONNECTED",
+          "isHub": false,
+          "site": {
+            "_href": "/api/sdwan/v2/enterprises/ent-1/sites/site-e-br",
+            "name": "Frankfurt",
+            "city": "Frankfurt",
+            "lat": 50.1,
+            "lon": 8.7
+          },
+          "links": [
+            {
+              "_href": "/api/sdwan/v2/enterprises/ent-1/links/l-br-mpls",
+              "logicalId": "l-br-mpls",
+              "internalId": "int-l-br-mpls",
+              "interface": "GE1",
+              "ipAddress": "172.16.1.2",
+              "networkSide": "WAN",
+              "networkType": "ETHERNET",
+              "displayName": "OurNet GE1",
+              "isp": "OurNet",
+              "state": "STABLE",
+              "linkMode": "ACTIVE"
+            },
+            {
+              "_href": "/api/sdwan/v2/enterprises/ent-1/links/l-br-dia",
+              "logicalId": "l-br-dia",
+              "internalId": "int-l-br-dia",
+              "interface": "GE2",
+              "ipAddress": "198.51.100.2",
+              "networkSide": "WAN",
+              "networkType": "ETHERNET",
+              "displayName": "ThirdParty ISP GE2",
+              "isp": "ThirdParty ISP",
+              "state": "STABLE",
+              "linkMode": "ACTIVE"
+            }
+          ],
+          "configuration": {
+            "operator": {
+              "id": 55,
+              "name": "operator-profile",
+              "modules": [
+                {
+                  "name": "controlPlane",
+                  "type": "controlPlane",
+                  "version": "0",
+                  "isEdgeSpecific": false
+                },
+                {
+                  "name": "metaData",
+                  "type": "metaData",
+                  "version": "3",
+                  "isEdgeSpecific": false
+                }
+              ]
+            },
+            "enterprise": {
+              "id": 77,
+              "name": "profile-1",
+              "modules": [
+                {
+                  "name": "deviceSettings",
+                  "type": "deviceSettings",
+                  "version": "9",
+                  "isEdgeSpecific": true,
+                  "edgeSpecificData": {
+                    "routedInterfaces": [
+                      {
+                        "name": "GE1",
+                        "wanOverlay": "AUTO_DISCOVERED",
+                        "segmentId": 0,
+                        "segment": {
+                          "_href": "/api/sdwan/v2/enterprises/ent-1/segments/s-0",
+                          "name": "Global Segment"
+                        },
+                        "addressing": {
+                          "type": "STATIC",
+                          "cidrIp": "172.16.1.2",
+                          "cidrPrefix": 30,
+                          "gateway": "172.16.1.1"
+                        }
+                      },
+                      {
+                        "name": "GE3",
+                        "wanOverlay": "DISABLED",
+                        "segmentId": 1,
+                        "segment": {
+                          "_href": "/api/sdwan/v2/enterprises/ent-1/segments/s-1"
+                        },
+                        "addressing": {
+                          "type": "STATIC",
+                          "cidrIp": "10.9.9.1",
+                          "cidrPrefix": 24
+                        }
+                      }
+                    ],
+                    "lan": {
+                      "networks": [
+                        {
+                          "name": "users",
+                          "vlanId": 10,
+                          "cidrIp": "10.10.10.1",
+                          "cidrPrefix": 24,
+                          "segmentId": 1,
+                          "segment": {
+                            "_href": "/api/sdwan/v2/enterprises/ent-1/segments/s-1"
+                          }
+                        }
+                      ]
+                    },
+                    "segments": [
+                      {
+                        "segmentId": 1,
+                        "segment": {
+                          "_href": "/api/sdwan/v2/enterprises/ent-1/segments/s-1",
+                          "name": "corp"
+                        },
+                        "bgp": {
+                          "enabled": true,
+                          "ASN": "65010",
+                          "routerId": "10.9.9.1",
+                          "neighbors": [
+                            {
+                              "neighborIp": "10.9.9.2",
+                              "neighborAS": "65000",
+                              "localIp": "10.9.9.1"
+                            }
+                          ]
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "QOS",
+                  "type": "QOS",
+                  "version": "4",
+                  "isEdgeSpecific": false
+                },
+                {
+                  "name": "WAN",
+                  "type": "WAN",
+                  "version": "2",
+                  "isEdgeSpecific": false
+                },
+                {
+                  "name": "firewall",
+                  "type": "firewall",
+                  "version": "1",
+                  "isEdgeSpecific": false
+                }
+              ]
+            }
+          }
+        },
+        {
+          "_href": "/api/sdwan/v2/enterprises/ent-1/edges/e-hub",
+          "id": 2,
+          "logicalId": "e-hub",
+          "name": "hub-1",
+          "serialNumber": "S-e-hub",
+          "modelNumber": "edge610",
+          "edgeState": "CONNECTED",
+          "isHub": true,
+          "site": {
+            "_href": "/api/sdwan/v2/enterprises/ent-1/sites/site-e-hub",
+            "name": "Berlin",
+            "city": "Berlin",
+            "lat": 50.1,
+            "lon": 8.7
+          },
+          "links": [
+            {
+              "_href": "/api/sdwan/v2/enterprises/ent-1/links/l-hub-mpls",
+              "logicalId": "l-hub-mpls",
+              "internalId": "int-l-hub-mpls",
+              "interface": "GE1",
+              "ipAddress": "172.16.9.2",
+              "networkSide": "WAN",
+              "networkType": "ETHERNET",
+              "displayName": "OurNet GE1",
+              "isp": "OurNet",
+              "state": "STABLE",
+              "linkMode": "ACTIVE"
+            },
+            {
+              "_href": "/api/sdwan/v2/enterprises/ent-1/links/l-hub-dia",
+              "logicalId": "l-hub-dia",
+              "internalId": "int-l-hub-dia",
+              "interface": "GE2",
+              "ipAddress": "203.0.113.2",
+              "networkSide": "WAN",
+              "networkType": "ETHERNET",
+              "displayName": "DC ISP GE2",
+              "isp": "DC ISP",
+              "state": "STABLE",
+              "linkMode": "ACTIVE"
+            }
+          ],
+          "configuration": {
+            "operator": {
+              "id": 55,
+              "name": "operator-profile",
+              "modules": [
+                {
+                  "name": "controlPlane",
+                  "type": "controlPlane",
+                  "version": "0",
+                  "isEdgeSpecific": false
+                },
+                {
+                  "name": "metaData",
+                  "type": "metaData",
+                  "version": "3",
+                  "isEdgeSpecific": false
+                }
+              ]
+            },
+            "enterprise": {
+              "id": 77,
+              "name": "profile-1",
+              "modules": [
+                {
+                  "name": "deviceSettings",
+                  "type": "deviceSettings",
+                  "version": "9",
+                  "isEdgeSpecific": true,
+                  "edgeSpecificData": {
+                    "routedInterfaces": [
+                      {
+                        "name": "GE1",
+                        "wanOverlay": "AUTO_DISCOVERED",
+                        "segmentId": 0,
+                        "segment": {
+                          "_href": "/api/sdwan/v2/enterprises/ent-1/segments/s-0",
+                          "name": "Global Segment"
+                        },
+                        "addressing": {
+                          "type": "STATIC",
+                          "cidrIp": "172.16.9.2",
+                          "cidrPrefix": 30,
+                          "gateway": "172.16.9.1"
+                        }
+                      },
+                      {
+                        "name": "GE3",
+                        "wanOverlay": "DISABLED",
+                        "segmentId": 1,
+                        "segment": {
+                          "_href": "/api/sdwan/v2/enterprises/ent-1/segments/s-1"
+                        },
+                        "addressing": {
+                          "type": "STATIC",
+                          "cidrIp": "10.9.8.1",
+                          "cidrPrefix": 24
+                        }
+                      }
+                    ],
+                    "lan": {
+                      "networks": [
+                        {
+                          "name": "users",
+                          "vlanId": 20,
+                          "cidrIp": "10.20.20.1",
+                          "cidrPrefix": 24,
+                          "segmentId": 1,
+                          "segment": {
+                            "_href": "/api/sdwan/v2/enterprises/ent-1/segments/s-1"
+                          }
+                        }
+                      ]
+                    },
+                    "segments": [
+                      {
+                        "segmentId": 1,
+                        "segment": {
+                          "_href": "/api/sdwan/v2/enterprises/ent-1/segments/s-1",
+                          "name": "corp"
+                        },
+                        "bgp": {
+                          "enabled": true,
+                          "ASN": "65010",
+                          "routerId": "10.9.8.1",
+                          "neighbors": [
+                            {
+                              "neighborIp": "10.9.8.2",
+                              "neighborAS": "65000",
+                              "localIp": "10.9.8.1"
+                            }
+                          ]
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "QOS",
+                  "type": "QOS",
+                  "version": "4",
+                  "isEdgeSpecific": false
+                },
+                {
+                  "name": "WAN",
+                  "type": "WAN",
+                  "version": "2",
+                  "isEdgeSpecific": false
+                },
+                {
+                  "name": "firewall",
+                  "type": "firewall",
+                  "version": "1",
+                  "isEdgeSpecific": false
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "profiles": {
+        "77": {
+          "id": 77,
+          "name": "profile-1",
+          "type": "SEGMENT_BASED",
+          "modules": [
+            {
+              "name": "deviceSettings",
+              "version": "9",
+              "data": {
+                "segments": [
+                  {
+                    "segmentId": 0,
+                    "segment": {
+                      "_href": "/api/sdwan/v2/enterprises/ent-1/segments/s-0",
+                      "name": "Global Segment"
+                    },
+                    "bgp": {
+                      "enabled": true,
+                      "ASN": "65010",
+                      "neighbors": [
+                        {
+                          "neighborIp": "10.255.0.9"
+                        }
+                      ]
+                    },
+                    "vpn": {
+                      "enabled": true,
+                      "edgeToEdgeDetail": {
+                        "vpnHubs": [
+                          {
+                            "_href": "/api/sdwan/v2/enterprises/ent-1/edges/e-hub",
+                            "name": "hub-1",
+                            "type": "edgeHubCluster"
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  {
+                    "segmentId": 1,
+                    "segment": {
+                      "_href": "/api/sdwan/v2/enterprises/ent-1/segments/s-1",
+                      "name": "corp"
+                    },
+                    "bgp": {
+                      "enabled": true,
+                      "ASN": "65010"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "name": "QOS",
+              "version": "4",
+              "data": {
+                "segments": [
+                  {
+                    "segmentId": 1,
+                    "segment": {
+                      "_href": "/api/sdwan/v2/enterprises/ent-1/segments/s-1",
+                      "name": "corp"
+                    },
+                    "rules": [
+                      {
+                        "name": "voice",
+                        "ruleLogicalId": "rule-voice",
+                        "match": {},
+                        "action": {
+                          "edge2EdgeRouteAction": {
+                            "linkPolicy": "fixed",
+                            "wanlink": "l-br-mpls"
+                          }
+                        }
+                      },
+                      {
+                        "name": "web",
+                        "ruleLogicalId": "rule-web",
+                        "match": {},
+                        "action": {
+                          "edge2EdgeRouteAction": {
+                            "linkPolicy": "auto",
+                            "interface": "GE2"
+                          }
+                        }
+                      },
+                      {
+                        "name": "backup",
+                        "ruleLogicalId": "rule-backup",
+                        "match": {},
+                        "action": {
+                          "edge2EdgeRouteAction": {
+                            "linkPolicy": "private"
+                          }
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            },
+            {
+              "name": "WAN",
+              "version": "2",
+              "data": {}
+            }
+          ]
+        }
+      },
+      "edge_details": {
+        "e-br": {
+          "modules": {
+            "WAN": {
+              "version": "2",
+              "schemaVersion": "3.2.0",
+              "type": "WAN",
+              "data": {
+                "links": [
+                  {
+                    "logicalId": "l-br-mpls",
+                    "internalId": "int-l-br-mpls",
+                    "name": "OurNet GE1",
+                    "mode": "PRIVATE",
+                    "type": "WIRED",
+                    "isp": "OurNet",
+                    "upstreamMbps": 100,
+                    "downstreamMbps": 200,
+                    "MTU": 1500,
+                    "nextHopIpAddress": "172.16.1.1",
+                    "vlanId": 0,
+                    "interfaces": [
+                      "GE1"
+                    ]
+                  },
+                  {
+                    "logicalId": "l-br-dia",
+                    "internalId": "int-l-br-dia",
+                    "name": "ThirdParty ISP GE2",
+                    "mode": "PUBLIC",
+                    "type": "WIRED",
+                    "isp": "ThirdParty ISP",
+                    "upstreamMbps": 100,
+                    "downstreamMbps": 200,
+                    "MTU": 1500,
+                    "nextHopIpAddress": "198.51.100.1",
+                    "vlanId": 0,
+                    "interfaces": [
+                      "GE2"
+                    ]
+                  }
+                ],
+                "networks": []
+              }
+            },
+            "controlPlane": {
+              "version": "0",
+              "type": "controlPlane",
+              "data": {
+                "gatewaySegmentDetailList": [
+                  {
+                    "segment": {
+                      "_href": "/api/sdwan/v2/enterprises/ent-1/segments/s-1",
+                      "segmentId": 1,
+                      "name": "corp"
+                    },
+                    "gatewayDetailList": [
+                      {
+                        "name": "gw-1",
+                        "ipAddress": "192.0.2.10",
+                        "logicalId": "gatewayg-1",
+                        "roles": [
+                          {
+                            "role": "VPN_TUNNEL"
+                          },
+                          {
+                            "role": "primary"
+                          }
+                        ]
+                      },
+                      {
+                        "name": "gw-dns",
+                        "ipAddress": "192.0.2.20",
+                        "logicalId": "gatewayg-2",
+                        "roles": [
+                          {
+                            "role": "DNS"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ],
+                "segments": [
+                  {
+                    "segment": {
+                      "_href": "/api/sdwan/v2/enterprises/ent-1/segments/s-1",
+                      "name": "corp"
+                    },
+                    "vpn": {
+                      "dataCenterEdges": [
+                        {
+                          "logicalId": "e-hub"
+                        }
+                      ]
+                    }
+                  }
+                ],
+                "routingConfiguration": {
+                  "edge": {
+                    "ospf": {
+                      "advertiseExternal": true,
+                      "advertiseInterArea": false
+                    },
+                    "bgp": {
+                      "advertiseStatic": true,
+                      "advertiseConnected": false
+                    }
+                  },
+                  "hub": {
+                    "ospf": {
+                      "advertiseExternal": false,
+                      "advertiseInterArea": true
+                    },
+                    "bgp": {
+                      "advertiseStatic": false,
+                      "advertiseConnected": true
+                    }
+                  },
+                  "preferenceBuckets": [
+                    {
+                      "entity": "HUB",
+                      "exitType": "EDGE",
+                      "protocol": "BGP"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "_freshness": {
+            "modules": {
+              "observed_at_ms": 900,
+              "stale": false
+            }
+          }
+        },
+        "e-hub": {
+          "modules": {
+            "WAN": {
+              "version": "2",
+              "schemaVersion": "3.2.0",
+              "type": "WAN",
+              "data": {
+                "links": [
+                  {
+                    "logicalId": "l-hub-mpls",
+                    "internalId": "int-l-hub-mpls",
+                    "name": "OurNet GE1",
+                    "mode": "PRIVATE",
+                    "type": "WIRED",
+                    "isp": "OurNet",
+                    "upstreamMbps": 100,
+                    "downstreamMbps": 200,
+                    "MTU": 1500,
+                    "nextHopIpAddress": null,
+                    "vlanId": 0,
+                    "interfaces": [
+                      "GE1"
+                    ]
+                  },
+                  {
+                    "logicalId": "l-hub-dia",
+                    "internalId": "int-l-hub-dia",
+                    "name": "DC ISP GE2",
+                    "mode": "PUBLIC",
+                    "type": "WIRED",
+                    "isp": "DC ISP",
+                    "upstreamMbps": 100,
+                    "downstreamMbps": 200,
+                    "MTU": 1500,
+                    "nextHopIpAddress": null,
+                    "vlanId": 0,
+                    "interfaces": [
+                      "GE2"
+                    ]
+                  }
+                ],
+                "networks": []
+              }
+            },
+            "controlPlane": {
+              "version": "0",
+              "type": "controlPlane",
+              "data": {
+                "gatewaySegmentDetailList": [
+                  {
+                    "segment": {
+                      "_href": "/api/sdwan/v2/enterprises/ent-1/segments/s-1",
+                      "segmentId": 1,
+                      "name": "corp"
+                    },
+                    "gatewayDetailList": [
+                      {
+                        "name": "gw-1",
+                        "ipAddress": "192.0.2.10",
+                        "logicalId": "gatewayg-1",
+                        "roles": [
+                          {
+                            "role": "VPN_TUNNEL"
+                          },
+                          {
+                            "role": "primary"
+                          }
+                        ]
+                      },
+                      {
+                        "name": "gw-dns",
+                        "ipAddress": "192.0.2.20",
+                        "logicalId": "gatewayg-2",
+                        "roles": [
+                          {
+                            "role": "DNS"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ],
+                "segments": [
+                  {
+                    "segment": {
+                      "_href": "/api/sdwan/v2/enterprises/ent-1/segments/s-1",
+                      "name": "corp"
+                    },
+                    "vpn": {
+                      "dataCenterEdges": [
+                        {
+                          "logicalId": "e-hub"
+                        }
+                      ]
+                    }
+                  }
+                ],
+                "routingConfiguration": {
+                  "edge": {
+                    "ospf": {
+                      "advertiseExternal": true,
+                      "advertiseInterArea": false
+                    },
+                    "bgp": {
+                      "advertiseStatic": true,
+                      "advertiseConnected": false
+                    }
+                  },
+                  "hub": {
+                    "ospf": {
+                      "advertiseExternal": false,
+                      "advertiseInterArea": true
+                    },
+                    "bgp": {
+                      "advertiseStatic": false,
+                      "advertiseConnected": true
+                    }
+                  },
+                  "preferenceBuckets": [
+                    {
+                      "entity": "HUB",
+                      "exitType": "EDGE",
+                      "protocol": "BGP"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "_freshness": {
+            "modules": {
+              "observed_at_ms": 900,
+              "stale": false
+            }
+          }
+        }
+      },
+      "route_table": {
+        "profiles": [
+          77
+        ],
+        "reduced": true,
+        "subnets": [
+          {
+            "subnet": "10.20.20.0/24:1",
+            "ipVersion": 4,
+            "learnedRoute": {
+              "cidrIp": "10.20.20.0",
+              "cidrPrefix": 24,
+              "segmentId": 1,
+              "logicalId": "r-1"
+            },
+            "preferredExits": [
+              {
+                "type": "LEARNED",
+                "exitType": "EDGE",
+                "entity": "HUB",
+                "protocol": "BGP",
+                "routeType": "E",
+                "segmentId": 1,
+                "edgeId": 2,
+                "edgeLogicalId": "e-hub",
+                "interface": "GE3",
+                "neighborIp": "10.9.8.2",
+                "cost": 20
+              }
+            ],
+            "eligableExits": [
+              {
+                "type": "CONNECTED",
+                "exitType": "ROUTER",
+                "learnedBy": "10.9.8.2",
+                "cost": 5
+              }
+            ]
+          },
+          {
+            "subnet": "10.10.10.0/24:1",
+            "ipVersion": 4,
+            "learnedRoute": {
+              "cidrIp": "10.10.10.0",
+              "cidrPrefix": 24,
+              "logicalId": "r-2"
+            },
+            "preferredExits": [
+              {
+                "type": "CONNECTED",
+                "exitType": "EDGE",
+                "entity": "EDGE",
+                "segmentId": 1,
+                "edgeId": 1,
+                "interface": "users",
+                "cost": 0
+              }
+            ],
+            "eligableExits": []
+          },
+          {
+            "subnet": "10.30.30.0/24:9",
+            "ipVersion": 4,
+            "learnedRoute": {
+              "cidrIp": "10.30.30.0",
+              "cidrPrefix": 24,
+              "logicalId": "r-3"
+            },
+            "preferredExits": [
+              {
+                "type": "STATIC",
+                "exitType": "EDGE",
+                "edgeId": 1,
+                "nextHopIp": "10.9.9.2"
+              }
+            ],
+            "eligableExits": []
+          }
+        ]
+      },
+      "bgp_sessions": [
+        {
+          "edge": {
+            "_href": "/api/sdwan/v2/enterprises/ent-1/edges/e-br"
+          },
+          "neighborIp": "10.9.9.2",
+          "neighborAS": 65000,
+          "state": "ESTABLISHED",
+          "pfxRcvd": 12,
+          "upDownTime": "01:02:03"
+        },
+        {
+          "edge": {
+            "_href": "/api/sdwan/v2/enterprises/ent-1/edges/e-br",
+            "logicalId": "e-br"
+          },
+          "neighborIp": "10.9.9.99",
+          "state": "IDLE"
+        }
+      ],
+      "gaps": []
+    }
+  ]
+}

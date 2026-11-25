@@ -1,0 +1,197 @@
+{{- if .Values.backup.enabled }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "hst.fullname" . }}-backup
+  labels: {{- include "hst.labels" . | nindent 4 }}
+    app.kubernetes.io/component: backup
+spec:
+  schedule: {{ .Values.backup.schedule | quote }}
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      activeDeadlineSeconds: 3600
+      template:
+        metadata:
+          labels: {{- include "hst.selectorLabels" . | nindent 12 }}
+            app.kubernetes.io/component: backup
+        spec:
+          restartPolicy: Never
+          {{- with .Values.imagePullSecrets }}
+          imagePullSecrets: {{- toYaml . | nindent 12 }}
+          {{- end }}
+          serviceAccountName: {{ include "hst.serviceAccountName" . }}
+          automountServiceAccountToken: false
+          securityContext:
+            runAsUser: {{ .Values.podSecurityContext.runAsUser }}
+            runAsGroup: {{ .Values.podSecurityContext.runAsGroup }}
+            fsGroup: {{ .Values.podSecurityContext.runAsGroup }}
+            seccompProfile: { type: RuntimeDefault }
+          affinity:
+            podAffinity:
+              requiredDuringSchedulingIgnoredDuringExecution:
+                - labelSelector:
+                    matchLabels: {{- include "hst.selectorLabels" . | nindent 22 }}
+                      app.kubernetes.io/component: app
+                  topologyKey: kubernetes.io/hostname
+          {{- /* The pod runs on the app pod's node, so it takes app.tolerations. */}}
+          {{- with .Values.app.tolerations }}
+          tolerations: {{- toYaml . | nindent 12 }}
+          {{- end }}
+          initContainers:
+            # `prepare` reads the committed CyclePointer under the collection lock and
+            # stages the files of that manifest.
+            - name: prepare
+              image: {{ include "hst.image" . }}
+              imagePullPolicy: {{ .Values.image.pullPolicy }}
+              command: ["sh", "-c"]
+              args:
+                - |
+                  set -eu
+                  printf '%s' "${POD_UID}" > /work/set-id
+                  hst recovery prepare /work --set-id "${POD_UID}"
+              env:
+                {{- include "hst.env" . | nindent 16 }}
+                {{- with .Values.app.extraEnv }}
+                {{- toYaml . | nindent 16 }}
+                {{- end }}
+                - name: POD_UID
+                  valueFrom: { fieldRef: { fieldPath: metadata.uid } }
+                - name: HST_BACKUP_ENCRYPTION_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ required "backup.recoverySecretName is required when backup.enabled=true" .Values.backup.recoverySecretName }}
+                      key: encryption-key
+                - name: HST_BACKUP_OBJECT_PREFIX
+                  value: {{ .Values.backup.s3.prefix | quote }}
+              {{- with .Values.app.envFrom }}
+              envFrom: {{- toYaml . | nindent 16 }}
+              {{- end }}
+              securityContext: &backupSecurity
+                runAsNonRoot: true
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities: { drop: ["ALL"] }
+              resources: {{- toYaml .Values.backup.recoveryResources | nindent 16 }}
+              volumeMounts:
+                - { name: data, mountPath: /srv/data, readOnly: true }
+                - { name: secret-key, mountPath: /etc/hst, readOnly: true }
+                - { name: work, mountPath: /work }
+                - { name: tmp, mountPath: /tmp }
+                {{- /* With tls.enabled, hst.env sets the paths of the CA files of these mounts. */}}
+                {{- if .Values.neo4j.tls.enabled }}
+                {{- include "hst.neo4jCaVolumeMount" . | nindent 16 }}
+                {{- end }}
+                {{- if .Values.postgres.tls.enabled }}
+                {{- include "hst.postgresCaVolumeMount" . | nindent 16 }}
+                {{- end }}
+            # `dump` runs after `prepare`, so the Postgres dump is newer than the staged
+            # graph.
+            - name: dump
+              image: {{ .Values.postgres.image | quote }}
+              command: ["sh", "-c"]
+              args:
+                - |
+                  set -eu
+                  set_id=$(cat /work/set-id)
+                  dump="/work/sets/${set_id}/postgres.dump"
+                  trap '[ $? -eq 0 ] || rm -f "${dump}"' EXIT
+                  pg_dump -h {{ include "hst.postgresHost" . }} -U {{ .Values.postgres.username }} \
+                    -Fc {{ .Values.postgres.database }} > "${dump}"
+              env:
+                - name: PGPASSWORD
+                  valueFrom:
+                    secretKeyRef: { name: {{ include "hst.secretName" . }}, key: postgres-password }
+              securityContext: *backupSecurity
+              resources: {{- toYaml .Values.backup.resources | nindent 16 }}
+              volumeMounts:
+                - { name: work, mountPath: /work }
+            - name: finalize
+              image: {{ include "hst.image" . }}
+              imagePullPolicy: {{ .Values.image.pullPolicy }}
+              command: ["sh", "-c"]
+              args:
+                - |
+                  set -eu
+                  set_id=$(cat /work/set-id)
+                  trap 'rm -f "/work/sets/${set_id}/postgres.dump"' EXIT
+                  hst recovery finalize /work --set-id "${set_id}"
+              env:
+                - name: HST_BACKUP_ENCRYPTION_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.backup.recoverySecretName }}
+                      key: encryption-key
+                - name: HST_BACKUP_OBJECT_PREFIX
+                  value: {{ .Values.backup.s3.prefix | quote }}
+              securityContext: *backupSecurity
+              resources: {{- toYaml .Values.backup.recoveryResources | nindent 16 }}
+              volumeMounts:
+                - { name: work, mountPath: /work }
+                - { name: tmp, mountPath: /tmp }
+          containers:
+            - name: upload
+              image: {{ .Values.backup.s3ClientImage | quote }}
+              command: ["sh", "-c"]
+              args:
+                - |
+                  set -eu
+                  set_id=$(cat /work/set-id)
+                  root="/work/sets/${set_id}"
+                  prefix="{{ .Values.backup.s3.prefix }}${HST_BACKUP_PREFIX_SEP}"
+                  find "${root}" -type f ! -name draft.json ! -name recovery-set.json | LC_ALL=C sort | while read -r file; do
+                    relative=${file#${root}/}
+                    digest=$(sha256sum "${file}" | cut -d' ' -f1)
+                    size=$(wc -c < "${file}" | tr -d ' ')
+                    key="${prefix}sets/${set_id}/${relative}"
+                    aws s3 cp "${file}" "s3://${S3_BUCKET}/${key}" --endpoint-url "${S3_ENDPOINT}" --metadata "sha256=${digest}"
+                    remote_size=$(aws s3api head-object --bucket "${S3_BUCKET}" --key "${key}" --endpoint-url "${S3_ENDPOINT}" --query ContentLength --output text)
+                    remote_digest=$(aws s3api head-object --bucket "${S3_BUCKET}" --key "${key}" --endpoint-url "${S3_ENDPOINT}" --query Metadata.sha256 --output text)
+                    test "${remote_size}" = "${size}" && test "${remote_digest}" = "${digest}"
+                  done
+                  # The set record is uploaded after the check of every object.
+                  aws s3 cp "${root}/recovery-set.json" "s3://${S3_BUCKET}/${prefix}recovery-set/${set_id}.json" --endpoint-url "${S3_ENDPOINT}"
+              env:
+                - name: HST_BACKUP_PREFIX_SEP
+                  value: {{ ternary "/" "" (ne .Values.backup.s3.prefix "") | quote }}
+                - name: S3_BUCKET
+                  value: {{ required "backup.s3.bucket is required when backup.enabled=true" .Values.backup.s3.bucket | quote }}
+                - name: S3_ENDPOINT
+                  value: {{ required "backup.s3.endpoint is required when backup.enabled=true" .Values.backup.s3.endpoint | quote }}
+                - name: AWS_ACCESS_KEY_ID
+                  valueFrom:
+                    secretKeyRef: { name: {{ required "backup.s3.secretName is required when backup.enabled=true" .Values.backup.s3.secretName }}, key: accessKey }
+                - name: AWS_SECRET_ACCESS_KEY
+                  valueFrom:
+                    secretKeyRef: { name: {{ .Values.backup.s3.secretName }}, key: secretKey }
+                - { name: AWS_DEFAULT_REGION, value: us-east-1 }
+                - { name: AWS_EC2_METADATA_DISABLED, value: "true" }
+                - { name: HOME, value: /work }
+              securityContext: *backupSecurity
+              resources: {{- toYaml .Values.backup.resources | nindent 16 }}
+              volumeMounts:
+                - { name: work, mountPath: /work }
+                - { name: tmp, mountPath: /tmp }
+          volumes:
+            - name: data
+              persistentVolumeClaim:
+                claimName: {{ include "hst.fullname" . }}-data
+                readOnly: true
+            - name: secret-key
+              secret:
+                secretName: {{ include "hst.secretName" . }}
+                items:
+                  - key: secret-key
+                    path: secret-key
+            - { name: work, emptyDir: {} }
+            - { name: tmp, emptyDir: {} }
+            {{- if .Values.neo4j.tls.enabled }}
+            {{- include "hst.neo4jCaVolume" . | nindent 12 }}
+            {{- end }}
+            {{- if .Values.postgres.tls.enabled }}
+            {{- include "hst.postgresCaVolume" . | nindent 12 }}
+            {{- end }}
+{{- end }}

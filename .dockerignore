@@ -1,0 +1,82 @@
+# Build context of the builds that take the repository root as context.
+# podman reads this file while no .containerignore exists.
+#
+# A pattern matches from the context root. The `**/` form matches at any depth.
+# The last matching line decides. Each local-only pattern stands after the `!` lines.
+
+.git/
+.github/
+docs/
+
+tools/*
+!tools/build_symbolic_wheels.py
+!tools/smoke_image.py
+!tools/check_symbolic_licenses.py
+!tools/enterprise_private_acceptance.py
+!tools/run_enterprise_remote.py
+!tools/run_limited.py
+
+tests/*
+!tests/enterprise/
+!tests/enterprise/**
+!tests/*.py
+
+# Credentials and local configuration
+**/.env
+**/.env.*
+compose.override.yaml
+cluster-config/
+**/*.cer
+**/*.crt
+**/*.key
+**/*.kubeconfig
+**/*.p12
+**/*.pem
+**/*.pfx
+
+# Run data
+data/
+backups/
+raw/
+output/
+.archive/
+**/snapshots/
+**/dumps/
+**/captures/
+**/*.dump
+**/*.pcap
+**/*.pcapng
+**/*.parquet
+**/*.jsonl
+**/*.log
+
+# Build output
+**/dist/
+**/build/
+**/*.egg-info/
+third_party/symbolic/wheelhouse/
+
+# Environments and caches
+**/.venv/
+**/venv/
+**/node_modules/
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+**/*.pyd
+**/.pytest_cache/
+**/.ruff_cache/
+**/.mypy_cache/
+**/.coverage
+**/.coverage.*
+**/coverage.xml
+**/htmlcov/
+
+# Tool and editor state
+.claude/
+.code-review-graph/
+.superpowers/
+**/.idea/
+**/.vscode/
+**/*.swp
+**/.DS_Store

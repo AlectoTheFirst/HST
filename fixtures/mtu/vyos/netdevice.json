@@ -1,0 +1,28 @@
+{
+  "fixture_provenance": "hand_written_synthetic_not_device_capture",
+  "version_text": "Version: VyOS 1.5-rolling-synthetic\nHardware S/N: MTU-SYNTHETIC\n",
+  "config": {
+    "system": {"host-name": "mtu-fixture"},
+    "interfaces": {
+      "ethernet": {
+        "eth0": {"mtu": "9000", "vif": {"10": {"mtu": "1500"}}},
+        "eth1": {},
+        "eth2": {}
+      },
+      "bonding": {"bond0": {"mtu": "9000", "member": {"interface": ["eth1", "eth2"]}}},
+      "bridge": {"br0": {"mtu": "9000", "member": {"interface": ["bond0"]}}},
+      "wireguard": {"wg0": {"mtu": "1420"}},
+      "tunnel": {"tun0": {"mtu": "1476", "encapsulation": "gre", "local-ip": "192.0.2.1", "remote-ip": "192.0.2.2"}}
+    }
+  },
+  "links": [
+    {"ifname": "eth0", "ifindex": 2, "mtu": 1500, "address": "invalid-mac", "link_type": "ether"},
+    {"ifname": "eth0.10", "ifindex": 3, "link": "eth0", "mtu": 1500},
+    {"ifname": "eth1", "ifindex": 4, "master": "bond0", "mtu": 9000, "operstate": "UP"},
+    {"ifname": "eth2", "ifindex": 5, "master": "bond0", "mtu": 1500, "operstate": "DOWN"},
+    {"ifname": "bond0", "ifindex": 6, "master": "br0", "mtu": 9000},
+    {"ifname": "br0", "ifindex": 7, "mtu": 9000},
+    {"ifname": "wg0", "ifindex": 8, "mtu": 1420},
+    {"ifname": "tun0", "ifindex": 9, "mtu": 1476}
+  ]
+}

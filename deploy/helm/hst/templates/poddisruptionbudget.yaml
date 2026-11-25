@@ -1,0 +1,18 @@
+{{- if .Values.podDisruptionBudget.enabled }}
+{{- /*
+The budget covers the app pods. Postgres and Neo4j run 1 replica each, and a budget over
+1 replica blocks every node drain. With app.replicaCount 1 and minAvailable 1 the budget
+blocks every drain too, so it needs a replicaCount above minAvailable.
+*/}}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "hst.fullname" . }}
+  labels: {{- include "hst.labels" . | nindent 4 }}
+    app.kubernetes.io/component: app
+spec:
+  minAvailable: {{ .Values.podDisruptionBudget.minAvailable }}
+  selector:
+    matchLabels: {{- include "hst.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: app
+{{- end }}

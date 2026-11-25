@@ -1,0 +1,84 @@
+{
+  "format_version": 1,
+  "verified_on": "2026-09-12",
+  "status": "selected_inputs_integrated",
+  "architecture": {
+    "production_backend": "dd.cudd",
+    "native_engine": "CUDD",
+    "batfish_reuse": "attributed Python ports of selected algorithms; no production JVM service",
+    "manager_scope": "one manager per family per isolated analysis child",
+    "native_runtime_compatibility": "target_status of third_party/symbolic/build-lock.json holds the qualification of each target"
+  },
+  "batfish": {
+    "repository": "https://github.com/batfish/batfish",
+    "commit": "2a513d04a14b99d72fe0079f85ad8be3f5b6f4fa",
+    "commit_time": "2026-09-11T19:57:09Z",
+    "root_license": "Apache-2.0",
+    "license_url": "https://raw.githubusercontent.com/batfish/batfish/2a513d04a14b99d72fe0079f85ad8be3f5b6f4fa/LICENSE",
+    "license_sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+    "root_notice_file_present_at_pin": false,
+    "port_sources": [
+      {
+        "path": "projects/common/src/main/java/org/batfish/common/bdd/BDDInteger.java",
+        "url": "https://raw.githubusercontent.com/batfish/batfish/2a513d04a14b99d72fe0079f85ad8be3f5b6f4fa/projects/common/src/main/java/org/batfish/common/bdd/BDDInteger.java",
+        "sha256": "ffffed8f01be9161f7feb0d3e8a64056ef5d7500465d8689c4d0e1ad0dc01633",
+        "destination": "src/hst/symbolic/bitvector.py"
+      },
+      {
+        "path": "projects/common/src/main/java/org/batfish/common/bdd/ImmutableBDDInteger.java",
+        "url": "https://raw.githubusercontent.com/batfish/batfish/2a513d04a14b99d72fe0079f85ad8be3f5b6f4fa/projects/common/src/main/java/org/batfish/common/bdd/ImmutableBDDInteger.java",
+        "sha256": "86b4cc618d6b9ec6d731cf2b5564cf2d084d285e6c966342ef88b2b5a2cdae2d",
+        "destination": "src/hst/symbolic/bitvector.py"
+      },
+      {
+        "path": "projects/common/src/main/java/org/batfish/common/bdd/HeaderSpaceToBDD.java",
+        "url": "https://raw.githubusercontent.com/batfish/batfish/2a513d04a14b99d72fe0079f85ad8be3f5b6f4fa/projects/common/src/main/java/org/batfish/common/bdd/HeaderSpaceToBDD.java",
+        "sha256": "4bbbfb462367de094707644273ba8644213f9d215a9ac534e46559a1b9507791",
+        "destination": "src/hst/symbolic/predicates.py"
+      },
+      {
+        "path": "projects/batfish/src/main/java/org/batfish/bddreachability/transition/EraseAndSet.java",
+        "url": "https://raw.githubusercontent.com/batfish/batfish/2a513d04a14b99d72fe0079f85ad8be3f5b6f4fa/projects/batfish/src/main/java/org/batfish/bddreachability/transition/EraseAndSet.java",
+        "sha256": "eb25666c0a5897fc805d226a0846092a59b316aff5a3184d4c053b08e0281902",
+        "destination": "src/hst/symbolic/relations.py"
+      }
+    ]
+  },
+  "dd": {
+    "version": "0.6.0",
+    "source_license": "BSD-3-Clause",
+    "requires_python": ">=3.11",
+    "sdist_url": "https://files.pythonhosted.org/packages/18/b2/57a2d7151e7e904092e0411f79e8dadfc3ae143679236a9dec88f4667f8a/dd-0.6.0.tar.gz",
+    "sdist_sha256": "4baadadc9b2ebf6136a5b84dc51a43cec5fe91203286cd377e1e093358cdffcd",
+    "build_source_url": "https://raw.githubusercontent.com/tulip-control/dd/v0.6.0/download.py",
+    "build_source_sha256": "c63d5cac1ef11602131a02698cb981b32fbb25e3ee86e6a63b8579fb7323c62c",
+    "license_url": "https://raw.githubusercontent.com/tulip-control/dd/v0.6.0/LICENSE",
+    "license_sha256": "725af7ce62efc835d01bd3964f6b5d1f4f17e5b266ff0b7cf52dab1ac08f8d3a"
+  },
+  "cudd": {
+    "version": "3.0.0",
+    "source_url": "https://downloads.sourceforge.net/project/cudd-mirror/cudd-3.0.0.tar.gz",
+    "source_sha256": "b8e966b4562c96a03e7fbea239729587d7b395d53cadcc39a7203b49cf7eeb69",
+    "hash_provenance": "dd v0.6.0 download.py holds the hash as CUDD_SHA256. tools/build_symbolic_wheels.py checks each fetched archive against it.",
+    "license_provenance": "third_party/symbolic/licenses/cudd-3.0.0-BSD-3-Clause.txt is the notice file. Native dependency notices are independent of Batfish."
+  },
+  "build": {
+    "cython_version": "3.3.0",
+    "python_abis": [
+      "3.12",
+      "3.14"
+    ],
+    "platforms": [
+      "linux-amd64",
+      "linux-arm64",
+      "macos-arm64"
+    ],
+    "required_build_lock": "third_party/symbolic/build-lock.json",
+    "requirements": [
+      "Pin each build tool by version and SHA-256 in the build lock.",
+      "Record source and per-platform wheel hashes; rebuild bindings rather than reuse old generated C.",
+      "Keep native compatibility patches with source provenance.",
+      "Do not install a pure-Python fallback as the enterprise backend."
+    ]
+  }
+}

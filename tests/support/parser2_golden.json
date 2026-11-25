@@ -1,0 +1,2527 @@
+{
+ "cases": {
+  "iosxe/fixture/no_trailing_newline": {
+   "raw_sha": "841bf678fd01ffbcbabb7982c8707d51dd8e5e6d52fc4d57dccf9290ec08e969"
+  },
+  "iosxe/fixture/plain": {
+   "raw_sha": "0fa50def5b95fa970a88bfee9dec2db225642f4214667c76e1ed0b2708397a02"
+  },
+  "iosxe/fixture/unicode": {
+   "raw_sha": "79e1613d64e5a4de7a6c72e899e7c2e2625682372b62bb38138d0ad6c797d8e3"
+  },
+  "iosxe/medium/no_trailing_newline": {
+   "inter": "10f0c15d0d35dcc9bceaffd85b84b7e375a8a45c8886bc8b2db9e7c53df0a1d0",
+   "parquet.bgp_session_routes": [
+    80000,
+    "ba3f1ac20797fff21319917d24fad48ff089c605a87fbda03206653c7b691fb2"
+   ],
+   "parquet_layout.bgp_session_routes": {
+    "row_groups": [
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     2176
+    ],
+    "rows_sha": "e9ab6223d304a5fe44e274bf16d63c49e1877796a5d1c2d02cb1e6675698d100",
+    "schema_sha": "64f29b4c8bb67cc2f3dc9b865c075a8e911ef2d53a3eb6f3110a485985960389"
+   },
+   "raw_sha": "6b6634e988850bc1ed18102c2f5489597cee235d526ba0363c5b2b90849c9e75",
+   "side_tables.bgp_session_routes": [
+    80000,
+    "9292fada4af2957c8a9a5adf45be9dd40bc718c9d32aeb76d1c3d69d55a19122"
+   ],
+   "table_outcomes": {
+    "bgp_session_routes/bgp:rproc:dev:fcw2140l0gh:default:bgp~198.18.0.1:default/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 20000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fcw2140l0gh:default:bgp~198.18.0.1:default/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 20000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fcw2140l0gh:default:bgp~198.18.0.1:default/received": {
+     "detail": "% BGP is not configured with soft-reconfiguration inbound for this neighbor",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": null,
+     "status": "not-captured"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fcw2140l0gh:default:bgp~198.18.0.2:default/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 20000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fcw2140l0gh:default:bgp~198.18.0.2:default/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 0,
+     "status": "complete-empty"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fcw2140l0gh:default:bgp~198.18.0.2:default/received": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 20000,
+     "status": "complete"
+    },
+    "ospf_lsdb": {
+     "detail": "the device does not have the feature this table reads",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": null,
+     "status": "unsupported"
+    }
+   },
+   "tables": {
+    "arp": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "sidestore/arp/edge/edge1.example.net/1700000000000-aaaaaaaa.parquet",
+     "row_count": 2,
+     "status": "complete"
+    },
+    "bgp_session_routes": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "sidestore/bgp_session_routes/edge/edge1.example.net/1700000000000-aaaaaaaa.parquet",
+     "row_count": 80000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fcw2140l0gh:default:bgp~198.18.0.1:default/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 20000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fcw2140l0gh:default:bgp~198.18.0.1:default/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 20000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fcw2140l0gh:default:bgp~198.18.0.1:default/received": {
+     "detail": "% BGP is not configured with soft-reconfiguration inbound for this neighbor",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": null,
+     "status": "not-captured"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fcw2140l0gh:default:bgp~198.18.0.2:default/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 20000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fcw2140l0gh:default:bgp~198.18.0.2:default/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 0,
+     "status": "complete-empty"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fcw2140l0gh:default:bgp~198.18.0.2:default/received": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 20000,
+     "status": "complete"
+    },
+    "bgp_sessions": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "sidestore/bgp_sessions/edge/edge1.example.net/1700000000000-aaaaaaaa.parquet",
+     "row_count": 2,
+     "status": "complete"
+    },
+    "mac": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 0,
+     "status": "complete-empty"
+    },
+    "ospf_lsdb": {
+     "detail": "the device does not have the feature this table reads",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": null,
+     "status": "unsupported"
+    },
+    "rib": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "sidestore/rib/edge/edge1.example.net/1700000000000-aaaaaaaa.parquet",
+     "row_count": 22006,
+     "status": "complete"
+    }
+   }
+  },
+  "iosxe/medium/plain": {
+   "inter": "10f0c15d0d35dcc9bceaffd85b84b7e375a8a45c8886bc8b2db9e7c53df0a1d0",
+   "parquet.bgp_session_routes": [
+    80000,
+    "ba3f1ac20797fff21319917d24fad48ff089c605a87fbda03206653c7b691fb2"
+   ],
+   "parquet_layout.bgp_session_routes": {
+    "row_groups": [
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     2176
+    ],
+    "rows_sha": "e9ab6223d304a5fe44e274bf16d63c49e1877796a5d1c2d02cb1e6675698d100",
+    "schema_sha": "64f29b4c8bb67cc2f3dc9b865c075a8e911ef2d53a3eb6f3110a485985960389"
+   },
+   "raw_sha": "b3e9518934b947027d3f8ba6a70da626ee4e166b59f8e3428e2af7e8fed1de3c",
+   "side_tables.bgp_session_routes": [
+    80000,
+    "9292fada4af2957c8a9a5adf45be9dd40bc718c9d32aeb76d1c3d69d55a19122"
+   ],
+   "table_outcomes": {
+    "bgp_session_routes/bgp:rproc:dev:fcw2140l0gh:default:bgp~198.18.0.1:default/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 20000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fcw2140l0gh:default:bgp~198.18.0.1:default/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 20000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fcw2140l0gh:default:bgp~198.18.0.1:default/received": {
+     "detail": "% BGP is not configured with soft-reconfiguration inbound for this neighbor",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": null,
+     "status": "not-captured"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fcw2140l0gh:default:bgp~198.18.0.2:default/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 20000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fcw2140l0gh:default:bgp~198.18.0.2:default/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 0,
+     "status": "complete-empty"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fcw2140l0gh:default:bgp~198.18.0.2:default/received": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 20000,
+     "status": "complete"
+    },
+    "ospf_lsdb": {
+     "detail": "the device does not have the feature this table reads",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": null,
+     "status": "unsupported"
+    }
+   },
+   "tables": {
+    "arp": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "sidestore/arp/edge/edge1.example.net/1700000000000-aaaaaaaa.parquet",
+     "row_count": 2,
+     "status": "complete"
+    },
+    "bgp_session_routes": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "sidestore/bgp_session_routes/edge/edge1.example.net/1700000000000-aaaaaaaa.parquet",
+     "row_count": 80000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fcw2140l0gh:default:bgp~198.18.0.1:default/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 20000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fcw2140l0gh:default:bgp~198.18.0.1:default/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 20000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fcw2140l0gh:default:bgp~198.18.0.1:default/received": {
+     "detail": "% BGP is not configured with soft-reconfiguration inbound for this neighbor",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": null,
+     "status": "not-captured"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fcw2140l0gh:default:bgp~198.18.0.2:default/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 20000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fcw2140l0gh:default:bgp~198.18.0.2:default/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 0,
+     "status": "complete-empty"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fcw2140l0gh:default:bgp~198.18.0.2:default/received": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 20000,
+     "status": "complete"
+    },
+    "bgp_sessions": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "sidestore/bgp_sessions/edge/edge1.example.net/1700000000000-aaaaaaaa.parquet",
+     "row_count": 2,
+     "status": "complete"
+    },
+    "mac": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 0,
+     "status": "complete-empty"
+    },
+    "ospf_lsdb": {
+     "detail": "the device does not have the feature this table reads",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": null,
+     "status": "unsupported"
+    },
+    "rib": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "sidestore/rib/edge/edge1.example.net/1700000000000-aaaaaaaa.parquet",
+     "row_count": 22006,
+     "status": "complete"
+    }
+   }
+  },
+  "iosxe/medium/unicode": {
+   "inter": "de8c666f59d849a0330d410fc7c9ecedd4b0ce6644c30dbc4de4df2e7d3a684f",
+   "parquet.bgp_session_routes": [
+    79999,
+    "476d69eacdb342f74b695ccb118d0fc752dc3486b914cf853e5d015b6500f05f"
+   ],
+   "parquet_layout.bgp_session_routes": {
+    "row_groups": [
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     2175
+    ],
+    "rows_sha": "70d8c789b1a5be6a4827d456dc80fc72dae3b6188a8cd9d365d59df47449885f",
+    "schema_sha": "64f29b4c8bb67cc2f3dc9b865c075a8e911ef2d53a3eb6f3110a485985960389"
+   },
+   "raw_sha": "13682557d37447d7b8dca69ae8b92300013466d89cb5d12cfd371706e683cd52",
+   "side_tables.bgp_session_routes": [
+    79999,
+    "5f792751ac29c7061bcbea9ff45e8a934decf3977230711408e719961e06ca6e"
+   ],
+   "table_outcomes": {
+    "bgp_session_routes/bgp:rproc:dev:fcw2140l0gh:default:bgp~198.18.0.1:default/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 19999,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fcw2140l0gh:default:bgp~198.18.0.1:default/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 20000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fcw2140l0gh:default:bgp~198.18.0.1:default/received": {
+     "detail": "% BGP is not configured with soft-reconfiguration inbound for this neighbor (Z\u00fcrich \u2603 \u03a9 uplink",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": null,
+     "status": "not-captured"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fcw2140l0gh:default:bgp~198.18.0.2:default/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 20000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fcw2140l0gh:default:bgp~198.18.0.2:default/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 0,
+     "status": "complete-empty"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fcw2140l0gh:default:bgp~198.18.0.2:default/received": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 20000,
+     "status": "complete"
+    },
+    "ospf_lsdb": {
+     "detail": "the device does not have the feature this table reads",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": null,
+     "status": "unsupported"
+    }
+   },
+   "tables": {
+    "arp": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "sidestore/arp/edge/edge1.example.net/1700000000000-aaaaaaaa.parquet",
+     "row_count": 2,
+     "status": "complete"
+    },
+    "bgp_session_routes": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "sidestore/bgp_session_routes/edge/edge1.example.net/1700000000000-aaaaaaaa.parquet",
+     "row_count": 79999,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fcw2140l0gh:default:bgp~198.18.0.1:default/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 19999,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fcw2140l0gh:default:bgp~198.18.0.1:default/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 20000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fcw2140l0gh:default:bgp~198.18.0.1:default/received": {
+     "detail": "% BGP is not configured with soft-reconfiguration inbound for this neighbor (Z\u00fcrich \u2603 \u03a9 uplink",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": null,
+     "status": "not-captured"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fcw2140l0gh:default:bgp~198.18.0.2:default/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 20000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fcw2140l0gh:default:bgp~198.18.0.2:default/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 0,
+     "status": "complete-empty"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fcw2140l0gh:default:bgp~198.18.0.2:default/received": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 20000,
+     "status": "complete"
+    },
+    "bgp_sessions": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "sidestore/bgp_sessions/edge/edge1.example.net/1700000000000-aaaaaaaa.parquet",
+     "row_count": 2,
+     "status": "complete"
+    },
+    "mac": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 0,
+     "status": "complete-empty"
+    },
+    "ospf_lsdb": {
+     "detail": "the device does not have the feature this table reads",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": null,
+     "status": "unsupported"
+    },
+    "rib": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "sidestore/rib/edge/edge1.example.net/1700000000000-aaaaaaaa.parquet",
+     "row_count": 22006,
+     "status": "complete"
+    }
+   }
+  },
+  "iosxe/small/no_trailing_newline": {
+   "inter": "5ae085c5144c7f0d8775213eaa8edd43b08a897a3a933f9f0bc81f70ff98bc5e",
+   "parquet.bgp_session_routes": [
+    8000,
+    "e364e26f60098116fa055571af21e4649a19716982114953f04e1cbd583b120d"
+   ],
+   "parquet_layout.bgp_session_routes": {
+    "row_groups": [
+     4096,
+     3904
+    ],
+    "rows_sha": "d58db110cd39db6c10acbad77fdcbca027e983536f2479586e2b56903bf4de1b",
+    "schema_sha": "64f29b4c8bb67cc2f3dc9b865c075a8e911ef2d53a3eb6f3110a485985960389"
+   },
+   "raw_sha": "d19be1cdd0800062e93b1cd872509848ad21ee37e68a0ae0c5a4f5d737055f8f",
+   "side_tables.bgp_session_routes": [
+    8000,
+    "39eacae33a682a44fed6f253c930c7ef15ec8c243a40918bcbcc1e70d64d5891"
+   ],
+   "table_outcomes": {
+    "bgp_session_routes/bgp:rproc:dev:fcw2140l0gh:default:bgp~198.18.0.1:default/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fcw2140l0gh:default:bgp~198.18.0.1:default/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fcw2140l0gh:default:bgp~198.18.0.1:default/received": {
+     "detail": "% BGP is not configured with soft-reconfiguration inbound for this neighbor",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": null,
+     "status": "not-captured"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fcw2140l0gh:default:bgp~198.18.0.2:default/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fcw2140l0gh:default:bgp~198.18.0.2:default/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 0,
+     "status": "complete-empty"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fcw2140l0gh:default:bgp~198.18.0.2:default/received": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "ospf_lsdb": {
+     "detail": "the device does not have the feature this table reads",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": null,
+     "status": "unsupported"
+    }
+   },
+   "tables": {
+    "arp": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "sidestore/arp/edge/edge1.example.net/1700000000000-aaaaaaaa.parquet",
+     "row_count": 2,
+     "status": "complete"
+    },
+    "bgp_session_routes": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "sidestore/bgp_session_routes/edge/edge1.example.net/1700000000000-aaaaaaaa.parquet",
+     "row_count": 8000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fcw2140l0gh:default:bgp~198.18.0.1:default/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fcw2140l0gh:default:bgp~198.18.0.1:default/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fcw2140l0gh:default:bgp~198.18.0.1:default/received": {
+     "detail": "% BGP is not configured with soft-reconfiguration inbound for this neighbor",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": null,
+     "status": "not-captured"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fcw2140l0gh:default:bgp~198.18.0.2:default/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fcw2140l0gh:default:bgp~198.18.0.2:default/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 0,
+     "status": "complete-empty"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fcw2140l0gh:default:bgp~198.18.0.2:default/received": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "bgp_sessions": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "sidestore/bgp_sessions/edge/edge1.example.net/1700000000000-aaaaaaaa.parquet",
+     "row_count": 2,
+     "status": "complete"
+    },
+    "mac": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 0,
+     "status": "complete-empty"
+    },
+    "ospf_lsdb": {
+     "detail": "the device does not have the feature this table reads",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": null,
+     "status": "unsupported"
+    },
+    "rib": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "sidestore/rib/edge/edge1.example.net/1700000000000-aaaaaaaa.parquet",
+     "row_count": 2187,
+     "status": "complete"
+    }
+   }
+  },
+  "iosxe/small/plain": {
+   "inter": "5ae085c5144c7f0d8775213eaa8edd43b08a897a3a933f9f0bc81f70ff98bc5e",
+   "parquet.bgp_session_routes": [
+    8000,
+    "e364e26f60098116fa055571af21e4649a19716982114953f04e1cbd583b120d"
+   ],
+   "parquet_layout.bgp_session_routes": {
+    "row_groups": [
+     4096,
+     3904
+    ],
+    "rows_sha": "d58db110cd39db6c10acbad77fdcbca027e983536f2479586e2b56903bf4de1b",
+    "schema_sha": "64f29b4c8bb67cc2f3dc9b865c075a8e911ef2d53a3eb6f3110a485985960389"
+   },
+   "raw_sha": "1ff0b4257dac85dd2e6d1152a012a0bf6c48fd726c9b834b9fbd2f41ed60fe2f",
+   "side_tables.bgp_session_routes": [
+    8000,
+    "39eacae33a682a44fed6f253c930c7ef15ec8c243a40918bcbcc1e70d64d5891"
+   ],
+   "table_outcomes": {
+    "bgp_session_routes/bgp:rproc:dev:fcw2140l0gh:default:bgp~198.18.0.1:default/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fcw2140l0gh:default:bgp~198.18.0.1:default/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fcw2140l0gh:default:bgp~198.18.0.1:default/received": {
+     "detail": "% BGP is not configured with soft-reconfiguration inbound for this neighbor",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": null,
+     "status": "not-captured"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fcw2140l0gh:default:bgp~198.18.0.2:default/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fcw2140l0gh:default:bgp~198.18.0.2:default/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 0,
+     "status": "complete-empty"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fcw2140l0gh:default:bgp~198.18.0.2:default/received": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "ospf_lsdb": {
+     "detail": "the device does not have the feature this table reads",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": null,
+     "status": "unsupported"
+    }
+   },
+   "tables": {
+    "arp": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "sidestore/arp/edge/edge1.example.net/1700000000000-aaaaaaaa.parquet",
+     "row_count": 2,
+     "status": "complete"
+    },
+    "bgp_session_routes": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "sidestore/bgp_session_routes/edge/edge1.example.net/1700000000000-aaaaaaaa.parquet",
+     "row_count": 8000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fcw2140l0gh:default:bgp~198.18.0.1:default/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fcw2140l0gh:default:bgp~198.18.0.1:default/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fcw2140l0gh:default:bgp~198.18.0.1:default/received": {
+     "detail": "% BGP is not configured with soft-reconfiguration inbound for this neighbor",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": null,
+     "status": "not-captured"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fcw2140l0gh:default:bgp~198.18.0.2:default/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fcw2140l0gh:default:bgp~198.18.0.2:default/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 0,
+     "status": "complete-empty"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fcw2140l0gh:default:bgp~198.18.0.2:default/received": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "bgp_sessions": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "sidestore/bgp_sessions/edge/edge1.example.net/1700000000000-aaaaaaaa.parquet",
+     "row_count": 2,
+     "status": "complete"
+    },
+    "mac": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 0,
+     "status": "complete-empty"
+    },
+    "ospf_lsdb": {
+     "detail": "the device does not have the feature this table reads",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": null,
+     "status": "unsupported"
+    },
+    "rib": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "sidestore/rib/edge/edge1.example.net/1700000000000-aaaaaaaa.parquet",
+     "row_count": 2187,
+     "status": "complete"
+    }
+   }
+  },
+  "iosxe/small/unicode": {
+   "inter": "7a23ea218b859d5cfce3049d1bd92ca9009aa18ee915c4261d168830a23535d2",
+   "parquet.bgp_session_routes": [
+    7999,
+    "085b803614ee003ec361b6da71726e918e091ba8096e6af7f4c8814955b051ef"
+   ],
+   "parquet_layout.bgp_session_routes": {
+    "row_groups": [
+     4096,
+     3903
+    ],
+    "rows_sha": "4d78287166b07636870193f528b7bfefe8c60b91ad9a129f850c0b5eff0423c8",
+    "schema_sha": "64f29b4c8bb67cc2f3dc9b865c075a8e911ef2d53a3eb6f3110a485985960389"
+   },
+   "raw_sha": "2015c55f997ab2a0b8f405682611efc346a2e37f23d5ba2699e160d32c6db25d",
+   "side_tables.bgp_session_routes": [
+    7999,
+    "8fdc626f4fc0c6b39db2a6e4c820af758277b0b83fbe89251e7ab93e401d4a4b"
+   ],
+   "table_outcomes": {
+    "bgp_session_routes/bgp:rproc:dev:fcw2140l0gh:default:bgp~198.18.0.1:default/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 1999,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fcw2140l0gh:default:bgp~198.18.0.1:default/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fcw2140l0gh:default:bgp~198.18.0.1:default/received": {
+     "detail": "% BGP is not configured with soft-reconfiguration inbound for this neighbor (Z\u00fcrich \u2603 \u03a9 uplink",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": null,
+     "status": "not-captured"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fcw2140l0gh:default:bgp~198.18.0.2:default/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fcw2140l0gh:default:bgp~198.18.0.2:default/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 0,
+     "status": "complete-empty"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fcw2140l0gh:default:bgp~198.18.0.2:default/received": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "ospf_lsdb": {
+     "detail": "the device does not have the feature this table reads",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": null,
+     "status": "unsupported"
+    }
+   },
+   "tables": {
+    "arp": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "sidestore/arp/edge/edge1.example.net/1700000000000-aaaaaaaa.parquet",
+     "row_count": 2,
+     "status": "complete"
+    },
+    "bgp_session_routes": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "sidestore/bgp_session_routes/edge/edge1.example.net/1700000000000-aaaaaaaa.parquet",
+     "row_count": 7999,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fcw2140l0gh:default:bgp~198.18.0.1:default/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 1999,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fcw2140l0gh:default:bgp~198.18.0.1:default/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fcw2140l0gh:default:bgp~198.18.0.1:default/received": {
+     "detail": "% BGP is not configured with soft-reconfiguration inbound for this neighbor (Z\u00fcrich \u2603 \u03a9 uplink",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": null,
+     "status": "not-captured"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fcw2140l0gh:default:bgp~198.18.0.2:default/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fcw2140l0gh:default:bgp~198.18.0.2:default/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 0,
+     "status": "complete-empty"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fcw2140l0gh:default:bgp~198.18.0.2:default/received": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "bgp_sessions": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "sidestore/bgp_sessions/edge/edge1.example.net/1700000000000-aaaaaaaa.parquet",
+     "row_count": 2,
+     "status": "complete"
+    },
+    "mac": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 0,
+     "status": "complete-empty"
+    },
+    "ospf_lsdb": {
+     "detail": "the device does not have the feature this table reads",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": null,
+     "status": "unsupported"
+    },
+    "rib": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "sidestore/rib/edge/edge1.example.net/1700000000000-aaaaaaaa.parquet",
+     "row_count": 2187,
+     "status": "complete"
+    }
+   }
+  },
+  "iosxe/tenth/plain": {
+   "inter": "c14facd79973000eed741bf25348dfca16a130bbd82761c2c5117b6ba7e707db",
+   "parquet.bgp_session_routes": [
+    401000,
+    "de9b66f8e6a7c071792316164bbb773f16231bc7fbd6a7ec134a8a355a5763dd"
+   ],
+   "parquet_layout.bgp_session_routes": {
+    "row_groups": [
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     3688
+    ],
+    "rows_sha": "8b965001482fd13d70e30b1ab4954f64554a4b058e948d64d077c2a8139e4c50",
+    "schema_sha": "64f29b4c8bb67cc2f3dc9b865c075a8e911ef2d53a3eb6f3110a485985960389"
+   },
+   "raw_sha": "8a8d48b12b0fa6802e1953f1ff7dfa824791bd8bfaf898dc25781094259f2411",
+   "side_tables.bgp_session_routes": [
+    401000,
+    "baf52b593cfd9b1bf311c873362d305c5d07a531a8e77b1f76ad087ac38549e1"
+   ],
+   "table_outcomes": {
+    "bgp_session_routes/bgp:rproc:dev:fcw2140l0gh:default:bgp~198.18.0.1:default/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 100000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fcw2140l0gh:default:bgp~198.18.0.1:default/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 1000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fcw2140l0gh:default:bgp~198.18.0.1:default/received": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 100000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fcw2140l0gh:default:bgp~198.18.0.2:default/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 100000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fcw2140l0gh:default:bgp~198.18.0.2:default/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 0,
+     "status": "complete-empty"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fcw2140l0gh:default:bgp~198.18.0.2:default/received": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 100000,
+     "status": "complete"
+    },
+    "ospf_lsdb": {
+     "detail": "the device does not have the feature this table reads",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": null,
+     "status": "unsupported"
+    }
+   },
+   "tables": {
+    "arp": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "sidestore/arp/edge/edge1.example.net/1700000000000-aaaaaaaa.parquet",
+     "row_count": 2,
+     "status": "complete"
+    },
+    "bgp_session_routes": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "sidestore/bgp_session_routes/edge/edge1.example.net/1700000000000-aaaaaaaa.parquet",
+     "row_count": 401000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fcw2140l0gh:default:bgp~198.18.0.1:default/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 100000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fcw2140l0gh:default:bgp~198.18.0.1:default/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 1000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fcw2140l0gh:default:bgp~198.18.0.1:default/received": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 100000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fcw2140l0gh:default:bgp~198.18.0.2:default/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 100000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fcw2140l0gh:default:bgp~198.18.0.2:default/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 0,
+     "status": "complete-empty"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fcw2140l0gh:default:bgp~198.18.0.2:default/received": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 100000,
+     "status": "complete"
+    },
+    "bgp_sessions": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "sidestore/bgp_sessions/edge/edge1.example.net/1700000000000-aaaaaaaa.parquet",
+     "row_count": 2,
+     "status": "complete"
+    },
+    "mac": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 0,
+     "status": "complete-empty"
+    },
+    "ospf_lsdb": {
+     "detail": "the device does not have the feature this table reads",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": null,
+     "status": "unsupported"
+    },
+    "rib": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "sidestore/rib/edge/edge1.example.net/1700000000000-aaaaaaaa.parquet",
+     "row_count": 109728,
+     "status": "complete"
+    }
+   }
+  },
+  "iosxr/fixture/no_trailing_newline": {
+   "raw_sha": "b56953d5ed662f55773bc148ccaf573877bae850953f6aaacd5cecb4f430bc66"
+  },
+  "iosxr/fixture/plain": {
+   "raw_sha": "71561d08f24045978e8d905efbd0562aa33ae52fe7a621fee76f515d496624fc"
+  },
+  "iosxr/fixture/unicode": {
+   "raw_sha": "9bcac6b12d61e79e392a89e5ae3a219195b67797b9046be35bfdc7ce4bcd2c7b"
+  },
+  "iosxr/medium/no_trailing_newline": {
+   "inter": "9f22f9dd451ba95e822d02f96f1b9ed317819b9609f4b9a5721ef8ee7059ee99",
+   "parquet.bgp_session_routes": [
+    80000,
+    "bdf865c0cae435a82c6852ba2149f3c07aa3bc66fb0ace1340d74e85215d763c"
+   ],
+   "parquet_layout.bgp_session_routes": {
+    "row_groups": [
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     2176
+    ],
+    "rows_sha": "b2b8be72810babb53f94e2338ed92701581876d55725f0881eca7927a732cb4d",
+    "schema_sha": "64f29b4c8bb67cc2f3dc9b865c075a8e911ef2d53a3eb6f3110a485985960389"
+   },
+   "raw_sha": "ab913c2e11241f21694b953792b3fb28bd8ea27a59b7682c59f4a0540da79907",
+   "side_tables.bgp_session_routes": [
+    80000,
+    "e95187746e32bd91c8500abe60a918e60655b99529fe6fb6ada9f80f78579fa9"
+   ],
+   "table_outcomes": {
+    "bgp_session_routes/bgp:rproc:dev:fox2140xr01:default:bgp~198.18.0.1:default/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 20000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fox2140xr01:default:bgp~198.18.0.1:default/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 20000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fox2140xr01:default:bgp~198.18.0.1:default/received": {
+     "detail": "% Inbound soft reconfiguration not configured for this neighbor",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": null,
+     "status": "not-captured"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fox2140xr01:default:bgp~198.18.0.2:default/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 20000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fox2140xr01:default:bgp~198.18.0.2:default/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 0,
+     "status": "complete-empty"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fox2140xr01:default:bgp~198.18.0.2:default/received": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 20000,
+     "status": "complete"
+    },
+    "ospf_lsdb": {
+     "detail": "the device does not have the feature this table reads",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": null,
+     "status": "unsupported"
+    }
+   },
+   "tables": {
+    "arp": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "sidestore/arp/edge/edge1.example.net/1700000000000-aaaaaaaa.parquet",
+     "row_count": 2,
+     "status": "complete"
+    },
+    "bgp_session_routes": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "sidestore/bgp_session_routes/edge/edge1.example.net/1700000000000-aaaaaaaa.parquet",
+     "row_count": 80000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fox2140xr01:default:bgp~198.18.0.1:default/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 20000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fox2140xr01:default:bgp~198.18.0.1:default/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 20000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fox2140xr01:default:bgp~198.18.0.1:default/received": {
+     "detail": "% Inbound soft reconfiguration not configured for this neighbor",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": null,
+     "status": "not-captured"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fox2140xr01:default:bgp~198.18.0.2:default/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 20000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fox2140xr01:default:bgp~198.18.0.2:default/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 0,
+     "status": "complete-empty"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fox2140xr01:default:bgp~198.18.0.2:default/received": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 20000,
+     "status": "complete"
+    },
+    "bgp_sessions": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "sidestore/bgp_sessions/edge/edge1.example.net/1700000000000-aaaaaaaa.parquet",
+     "row_count": 2,
+     "status": "complete"
+    },
+    "mac": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 0,
+     "status": "complete-empty"
+    },
+    "ospf_lsdb": {
+     "detail": "the device does not have the feature this table reads",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": null,
+     "status": "unsupported"
+    },
+    "rib": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "sidestore/rib/edge/edge1.example.net/1700000000000-aaaaaaaa.parquet",
+     "row_count": 21941,
+     "status": "complete"
+    }
+   }
+  },
+  "iosxr/medium/plain": {
+   "inter": "9f22f9dd451ba95e822d02f96f1b9ed317819b9609f4b9a5721ef8ee7059ee99",
+   "parquet.bgp_session_routes": [
+    80000,
+    "bdf865c0cae435a82c6852ba2149f3c07aa3bc66fb0ace1340d74e85215d763c"
+   ],
+   "parquet_layout.bgp_session_routes": {
+    "row_groups": [
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     2176
+    ],
+    "rows_sha": "b2b8be72810babb53f94e2338ed92701581876d55725f0881eca7927a732cb4d",
+    "schema_sha": "64f29b4c8bb67cc2f3dc9b865c075a8e911ef2d53a3eb6f3110a485985960389"
+   },
+   "raw_sha": "8b3b9592df4dbbd85adaaf9e68979ab4d349285e9ae8eb396b5e24584884ffae",
+   "side_tables.bgp_session_routes": [
+    80000,
+    "e95187746e32bd91c8500abe60a918e60655b99529fe6fb6ada9f80f78579fa9"
+   ],
+   "table_outcomes": {
+    "bgp_session_routes/bgp:rproc:dev:fox2140xr01:default:bgp~198.18.0.1:default/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 20000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fox2140xr01:default:bgp~198.18.0.1:default/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 20000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fox2140xr01:default:bgp~198.18.0.1:default/received": {
+     "detail": "% Inbound soft reconfiguration not configured for this neighbor",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": null,
+     "status": "not-captured"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fox2140xr01:default:bgp~198.18.0.2:default/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 20000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fox2140xr01:default:bgp~198.18.0.2:default/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 0,
+     "status": "complete-empty"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fox2140xr01:default:bgp~198.18.0.2:default/received": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 20000,
+     "status": "complete"
+    },
+    "ospf_lsdb": {
+     "detail": "the device does not have the feature this table reads",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": null,
+     "status": "unsupported"
+    }
+   },
+   "tables": {
+    "arp": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "sidestore/arp/edge/edge1.example.net/1700000000000-aaaaaaaa.parquet",
+     "row_count": 2,
+     "status": "complete"
+    },
+    "bgp_session_routes": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "sidestore/bgp_session_routes/edge/edge1.example.net/1700000000000-aaaaaaaa.parquet",
+     "row_count": 80000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fox2140xr01:default:bgp~198.18.0.1:default/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 20000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fox2140xr01:default:bgp~198.18.0.1:default/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 20000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fox2140xr01:default:bgp~198.18.0.1:default/received": {
+     "detail": "% Inbound soft reconfiguration not configured for this neighbor",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": null,
+     "status": "not-captured"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fox2140xr01:default:bgp~198.18.0.2:default/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 20000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fox2140xr01:default:bgp~198.18.0.2:default/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 0,
+     "status": "complete-empty"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fox2140xr01:default:bgp~198.18.0.2:default/received": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 20000,
+     "status": "complete"
+    },
+    "bgp_sessions": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "sidestore/bgp_sessions/edge/edge1.example.net/1700000000000-aaaaaaaa.parquet",
+     "row_count": 2,
+     "status": "complete"
+    },
+    "mac": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 0,
+     "status": "complete-empty"
+    },
+    "ospf_lsdb": {
+     "detail": "the device does not have the feature this table reads",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": null,
+     "status": "unsupported"
+    },
+    "rib": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "sidestore/rib/edge/edge1.example.net/1700000000000-aaaaaaaa.parquet",
+     "row_count": 21941,
+     "status": "complete"
+    }
+   }
+  },
+  "iosxr/medium/unicode": {
+   "inter": "575010abc8839828863d320b3723c0c6ec2bfb6ae3dbc3fb40cfa27f6579eb83",
+   "parquet.bgp_session_routes": [
+    79998,
+    "727ff71439d08f6e7e5f435faa4b1610882b438a1856db20a323bbb5005969fa"
+   ],
+   "parquet_layout.bgp_session_routes": {
+    "row_groups": [
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     4096,
+     2174
+    ],
+    "rows_sha": "db28ba9776d6ad4834a4a322eed4fa2b1e163137ef5844435c45729ff3c4af23",
+    "schema_sha": "64f29b4c8bb67cc2f3dc9b865c075a8e911ef2d53a3eb6f3110a485985960389"
+   },
+   "raw_sha": "1ac51dcb4dbca24d3d070f0d8a175d66ed3a8466a658d1bee616914308d401e2",
+   "side_tables.bgp_session_routes": [
+    79998,
+    "5d6965d777635c95afb83675c34a7b5806167e23fa336feeb74e8a9a7a2833f6"
+   ],
+   "table_outcomes": {
+    "bgp_session_routes/bgp:rproc:dev:fox2140xr01:default:bgp~198.18.0.1:default/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 19998,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fox2140xr01:default:bgp~198.18.0.1:default/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 20000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fox2140xr01:default:bgp~198.18.0.1:default/received": {
+     "detail": "% Inbound soft reconfiguration not configured for this neighbor (Z\u00fcrich \u2603 \u03a9 uplink",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": null,
+     "status": "not-captured"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fox2140xr01:default:bgp~198.18.0.2:default/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 20000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fox2140xr01:default:bgp~198.18.0.2:default/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 0,
+     "status": "complete-empty"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fox2140xr01:default:bgp~198.18.0.2:default/received": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 20000,
+     "status": "complete"
+    },
+    "ospf_lsdb": {
+     "detail": "the device does not have the feature this table reads",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": null,
+     "status": "unsupported"
+    }
+   },
+   "tables": {
+    "arp": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "sidestore/arp/edge/edge1.example.net/1700000000000-aaaaaaaa.parquet",
+     "row_count": 2,
+     "status": "complete"
+    },
+    "bgp_session_routes": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "sidestore/bgp_session_routes/edge/edge1.example.net/1700000000000-aaaaaaaa.parquet",
+     "row_count": 79998,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fox2140xr01:default:bgp~198.18.0.1:default/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 19998,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fox2140xr01:default:bgp~198.18.0.1:default/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 20000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fox2140xr01:default:bgp~198.18.0.1:default/received": {
+     "detail": "% Inbound soft reconfiguration not configured for this neighbor (Z\u00fcrich \u2603 \u03a9 uplink",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": null,
+     "status": "not-captured"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fox2140xr01:default:bgp~198.18.0.2:default/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 20000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fox2140xr01:default:bgp~198.18.0.2:default/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 0,
+     "status": "complete-empty"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fox2140xr01:default:bgp~198.18.0.2:default/received": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 20000,
+     "status": "complete"
+    },
+    "bgp_sessions": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "sidestore/bgp_sessions/edge/edge1.example.net/1700000000000-aaaaaaaa.parquet",
+     "row_count": 2,
+     "status": "complete"
+    },
+    "mac": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 0,
+     "status": "complete-empty"
+    },
+    "ospf_lsdb": {
+     "detail": "the device does not have the feature this table reads",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": null,
+     "status": "unsupported"
+    },
+    "rib": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "sidestore/rib/edge/edge1.example.net/1700000000000-aaaaaaaa.parquet",
+     "row_count": 21941,
+     "status": "complete"
+    }
+   }
+  },
+  "iosxr/small/no_trailing_newline": {
+   "inter": "8bae8dbfa590504b985a130767b9c726fe7a8710d17f235f7ac326554fae5dfa",
+   "parquet.bgp_session_routes": [
+    8000,
+    "36c19837dd536321c31b8b743048cfcb19153d1d0c4acddb35b9b1ccb5169beb"
+   ],
+   "parquet_layout.bgp_session_routes": {
+    "row_groups": [
+     4096,
+     3904
+    ],
+    "rows_sha": "628ae092dc7a0cbef9c1a825c2b6b0ceba7dea1cc69cdc27e4e1be74f5e75859",
+    "schema_sha": "64f29b4c8bb67cc2f3dc9b865c075a8e911ef2d53a3eb6f3110a485985960389"
+   },
+   "raw_sha": "b0ce64fb6ec10c244baed0fb88998459a223ab32e21b0f82cb0a1e13f3976233",
+   "side_tables.bgp_session_routes": [
+    8000,
+    "1813b88b0e92b64807a35447b5cc883fada829994c96c7faee5c1723b27635bd"
+   ],
+   "table_outcomes": {
+    "bgp_session_routes/bgp:rproc:dev:fox2140xr01:default:bgp~198.18.0.1:default/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fox2140xr01:default:bgp~198.18.0.1:default/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fox2140xr01:default:bgp~198.18.0.1:default/received": {
+     "detail": "% Inbound soft reconfiguration not configured for this neighbor",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": null,
+     "status": "not-captured"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fox2140xr01:default:bgp~198.18.0.2:default/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fox2140xr01:default:bgp~198.18.0.2:default/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 0,
+     "status": "complete-empty"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fox2140xr01:default:bgp~198.18.0.2:default/received": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "ospf_lsdb": {
+     "detail": "the device does not have the feature this table reads",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": null,
+     "status": "unsupported"
+    }
+   },
+   "tables": {
+    "arp": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "sidestore/arp/edge/edge1.example.net/1700000000000-aaaaaaaa.parquet",
+     "row_count": 2,
+     "status": "complete"
+    },
+    "bgp_session_routes": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "sidestore/bgp_session_routes/edge/edge1.example.net/1700000000000-aaaaaaaa.parquet",
+     "row_count": 8000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fox2140xr01:default:bgp~198.18.0.1:default/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fox2140xr01:default:bgp~198.18.0.1:default/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fox2140xr01:default:bgp~198.18.0.1:default/received": {
+     "detail": "% Inbound soft reconfiguration not configured for this neighbor",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": null,
+     "status": "not-captured"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fox2140xr01:default:bgp~198.18.0.2:default/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fox2140xr01:default:bgp~198.18.0.2:default/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 0,
+     "status": "complete-empty"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fox2140xr01:default:bgp~198.18.0.2:default/received": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "bgp_sessions": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "sidestore/bgp_sessions/edge/edge1.example.net/1700000000000-aaaaaaaa.parquet",
+     "row_count": 2,
+     "status": "complete"
+    },
+    "mac": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 0,
+     "status": "complete-empty"
+    },
+    "ospf_lsdb": {
+     "detail": "the device does not have the feature this table reads",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": null,
+     "status": "unsupported"
+    },
+    "rib": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "sidestore/rib/edge/edge1.example.net/1700000000000-aaaaaaaa.parquet",
+     "row_count": 2207,
+     "status": "complete"
+    }
+   }
+  },
+  "iosxr/small/plain": {
+   "inter": "8bae8dbfa590504b985a130767b9c726fe7a8710d17f235f7ac326554fae5dfa",
+   "parquet.bgp_session_routes": [
+    8000,
+    "36c19837dd536321c31b8b743048cfcb19153d1d0c4acddb35b9b1ccb5169beb"
+   ],
+   "parquet_layout.bgp_session_routes": {
+    "row_groups": [
+     4096,
+     3904
+    ],
+    "rows_sha": "628ae092dc7a0cbef9c1a825c2b6b0ceba7dea1cc69cdc27e4e1be74f5e75859",
+    "schema_sha": "64f29b4c8bb67cc2f3dc9b865c075a8e911ef2d53a3eb6f3110a485985960389"
+   },
+   "raw_sha": "cc8a408599dfd01fc555805c1db3b7a9ddf95233dbef2074cab3669c18c83542",
+   "side_tables.bgp_session_routes": [
+    8000,
+    "1813b88b0e92b64807a35447b5cc883fada829994c96c7faee5c1723b27635bd"
+   ],
+   "table_outcomes": {
+    "bgp_session_routes/bgp:rproc:dev:fox2140xr01:default:bgp~198.18.0.1:default/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fox2140xr01:default:bgp~198.18.0.1:default/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fox2140xr01:default:bgp~198.18.0.1:default/received": {
+     "detail": "% Inbound soft reconfiguration not configured for this neighbor",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": null,
+     "status": "not-captured"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fox2140xr01:default:bgp~198.18.0.2:default/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fox2140xr01:default:bgp~198.18.0.2:default/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 0,
+     "status": "complete-empty"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fox2140xr01:default:bgp~198.18.0.2:default/received": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "ospf_lsdb": {
+     "detail": "the device does not have the feature this table reads",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": null,
+     "status": "unsupported"
+    }
+   },
+   "tables": {
+    "arp": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "sidestore/arp/edge/edge1.example.net/1700000000000-aaaaaaaa.parquet",
+     "row_count": 2,
+     "status": "complete"
+    },
+    "bgp_session_routes": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "sidestore/bgp_session_routes/edge/edge1.example.net/1700000000000-aaaaaaaa.parquet",
+     "row_count": 8000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fox2140xr01:default:bgp~198.18.0.1:default/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fox2140xr01:default:bgp~198.18.0.1:default/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fox2140xr01:default:bgp~198.18.0.1:default/received": {
+     "detail": "% Inbound soft reconfiguration not configured for this neighbor",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": null,
+     "status": "not-captured"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fox2140xr01:default:bgp~198.18.0.2:default/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fox2140xr01:default:bgp~198.18.0.2:default/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 0,
+     "status": "complete-empty"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fox2140xr01:default:bgp~198.18.0.2:default/received": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "bgp_sessions": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "sidestore/bgp_sessions/edge/edge1.example.net/1700000000000-aaaaaaaa.parquet",
+     "row_count": 2,
+     "status": "complete"
+    },
+    "mac": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 0,
+     "status": "complete-empty"
+    },
+    "ospf_lsdb": {
+     "detail": "the device does not have the feature this table reads",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": null,
+     "status": "unsupported"
+    },
+    "rib": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "sidestore/rib/edge/edge1.example.net/1700000000000-aaaaaaaa.parquet",
+     "row_count": 2207,
+     "status": "complete"
+    }
+   }
+  },
+  "iosxr/small/unicode": {
+   "inter": "8b183843b42781f7316cefd966cd733dcf43765f3cb969c11d29f77b73aaadb7",
+   "parquet.bgp_session_routes": [
+    7998,
+    "f394647a83e9e2da67450098f4e047927014975685bc0860ac3881b34690a5b0"
+   ],
+   "parquet_layout.bgp_session_routes": {
+    "row_groups": [
+     4096,
+     3902
+    ],
+    "rows_sha": "44c350becc482888e13af62bcd065f5116ac1fb53af19ff5df2342df4a5e30da",
+    "schema_sha": "64f29b4c8bb67cc2f3dc9b865c075a8e911ef2d53a3eb6f3110a485985960389"
+   },
+   "raw_sha": "8de7be01ff1fa03bec8e643cd6fc4d988afeea3794d27f6f72457a4b60a0e2ab",
+   "side_tables.bgp_session_routes": [
+    7998,
+    "8b7bcb144adeeb95d58189f29882532ce0b02283717b54d82303c8110bcb53f7"
+   ],
+   "table_outcomes": {
+    "bgp_session_routes/bgp:rproc:dev:fox2140xr01:default:bgp~198.18.0.1:default/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 1998,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fox2140xr01:default:bgp~198.18.0.1:default/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fox2140xr01:default:bgp~198.18.0.1:default/received": {
+     "detail": "% Inbound soft reconfiguration not configured for this neighbor (Z\u00fcrich \u2603 \u03a9 uplink",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": null,
+     "status": "not-captured"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fox2140xr01:default:bgp~198.18.0.2:default/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fox2140xr01:default:bgp~198.18.0.2:default/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 0,
+     "status": "complete-empty"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fox2140xr01:default:bgp~198.18.0.2:default/received": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "ospf_lsdb": {
+     "detail": "the device does not have the feature this table reads",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": null,
+     "status": "unsupported"
+    }
+   },
+   "tables": {
+    "arp": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "sidestore/arp/edge/edge1.example.net/1700000000000-aaaaaaaa.parquet",
+     "row_count": 2,
+     "status": "complete"
+    },
+    "bgp_session_routes": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "sidestore/bgp_session_routes/edge/edge1.example.net/1700000000000-aaaaaaaa.parquet",
+     "row_count": 7998,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fox2140xr01:default:bgp~198.18.0.1:default/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 1998,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fox2140xr01:default:bgp~198.18.0.1:default/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fox2140xr01:default:bgp~198.18.0.1:default/received": {
+     "detail": "% Inbound soft reconfiguration not configured for this neighbor (Z\u00fcrich \u2603 \u03a9 uplink",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": null,
+     "status": "not-captured"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fox2140xr01:default:bgp~198.18.0.2:default/accepted": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fox2140xr01:default:bgp~198.18.0.2:default/advertised": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 0,
+     "status": "complete-empty"
+    },
+    "bgp_session_routes/bgp:rproc:dev:fox2140xr01:default:bgp~198.18.0.2:default/received": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 2000,
+     "status": "complete"
+    },
+    "bgp_sessions": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "sidestore/bgp_sessions/edge/edge1.example.net/1700000000000-aaaaaaaa.parquet",
+     "row_count": 2,
+     "status": "complete"
+    },
+    "mac": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": 0,
+     "status": "complete-empty"
+    },
+    "ospf_lsdb": {
+     "detail": "the device does not have the feature this table reads",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "",
+     "row_count": null,
+     "status": "unsupported"
+    },
+    "rib": {
+     "detail": "",
+     "observed_ms": null,
+     "parser_version": null,
+     "path": "sidestore/rib/edge/edge1.example.net/1700000000000-aaaaaaaa.parquet",
+     "row_count": 2207,
+     "status": "complete"
+    }
+   }
+  }
+ },
+ "fields": [
+  "raw_sha",
+  "inter",
+  "table_outcomes",
+  "tables",
+  "side_tables.bgp_session_routes",
+  "parquet.bgp_session_routes",
+  "parquet_layout.bgp_session_routes"
+ ],
+ "parser_versions": {
+  "iosxe": "2",
+  "iosxr": "2"
+ }
+}

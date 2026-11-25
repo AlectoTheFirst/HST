@@ -1,0 +1,29 @@
+{
+  "format_version": 1,
+  "kind": "synthetic-policy-scale-inputs",
+  "purpose": "Synthetic math-compiler diagnostics only; this fixture is not whole-enterprise qualification.",
+  "seed": 1209,
+  "seeds": [1209, 1210, 1211, 1212, 1213],
+  "rule_counts": [1000, 5000, 20000, 50000, 100000],
+  "default_rule_counts": [1000],
+  "warmup_count": 3,
+  "warm_query_count": 20,
+  "context": {
+    "estate": "synthetic-estate",
+    "authority": "synthetic-manager",
+    "domain": "synthetic-domain",
+    "firewall_instance": "gateway/vs/1",
+    "vrf": "synthetic-vrf",
+    "address_family": 4
+  },
+  "workload": {
+    "ordered_layer_count": 3,
+    "inline_layer_count": 20,
+    "group_depth": 12,
+    "group_branches": 10,
+    "service_object_count": 16,
+    "overlapping_address_ranges": true,
+    "shared_group_references": true,
+    "negated_rule_fraction": 0.2
+  }
+}

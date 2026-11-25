@@ -1,0 +1,192 @@
+/* The object search (UnifiedSearch.tsx): the field, the kind chips and the
+   hits grouped by kind. Colours come from the theme tokens only. */
+
+.us {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.us-input {
+  font: 500 13px var(--ui);
+  color: var(--text);
+  background: var(--field);
+  border: 1px solid var(--fieldb);
+  border-radius: 5px;
+  padding: 6px 10px;
+  min-width: 0;
+}
+
+.us-input:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.us-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.us-popover {
+  position: relative;
+}
+
+.us-popover .us-panel {
+  position: absolute;
+  top: calc(100% + 2px);
+  left: 0;
+  z-index: 5;
+  width: min(420px, calc(100vw - 32px));
+  max-height: 60vh;
+  overflow-y: auto;
+  padding: 6px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--text) 18%, transparent);
+}
+
+.us-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.us-chip {
+  border: 1px solid var(--border);
+  background: var(--panel2);
+  color: var(--muted2);
+  border-radius: 999px;
+  padding: 2px 9px;
+  font: 500 11.5px var(--ui);
+  cursor: pointer;
+}
+
+.us-chip.on {
+  background: var(--accent-soft);
+  color: var(--acctext);
+  border-color: var(--accent);
+}
+
+.us-count {
+  font: 600 11px var(--ui);
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.us-results,
+.us-items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.us-results {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.us-grouphead {
+  display: flex;
+  gap: 6px;
+  align-items: baseline;
+  padding: 0 8px 2px;
+  font: 600 11px var(--ui);
+  color: var(--muted2);
+}
+
+.us-hit {
+  width: 100%;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 1px 8px;
+  align-items: baseline;
+  text-align: left;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  font: 500 12.5px var(--ui);
+  cursor: pointer;
+}
+
+.us-hit:hover,
+.us-hit:focus-visible {
+  background: var(--sel);
+  outline: none;
+}
+
+.us-hit:focus-visible {
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+.us-hit.on {
+  background: var(--accent-soft);
+}
+
+.us-hit:disabled {
+  cursor: default;
+  color: var(--muted2);
+}
+
+.us-kind {
+  font: 600 10px var(--ui);
+  color: var(--muted2);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.us-name {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.us-detail {
+  grid-column: 2;
+  color: var(--muted2);
+}
+
+.us-uid {
+  grid-column: 2;
+  font: 400 11px var(--mono);
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+.us-more {
+  align-self: flex-start;
+  margin: 2px 8px 0;
+  font: 500 12px var(--ui);
+  color: var(--acctext);
+  background: transparent;
+  border: 0;
+  padding: 2px 0;
+  cursor: pointer;
+}
+
+.us-more:disabled {
+  color: var(--muted);
+  cursor: default;
+}
+
+.us-note {
+  margin: 0;
+  padding: 2px 8px;
+  font: 400 12px var(--ui);
+  color: var(--muted2);
+}
+
+.us-error {
+  color: var(--badtext);
+}
+
+/* the kind chips of the command palette, under its field */
+.palette-kinds {
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--border);
+}

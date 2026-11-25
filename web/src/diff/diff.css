@@ -1,0 +1,166 @@
+/* What changed (DiffPage) and the change-simulation buckets. These views
+   load lazily. */
+
+/*
+ * ---- diff pane (diff/DiffPage.tsx, "What changed") ----
+ * The page is a flex column, as .explore-page and .trace-page are. The
+ * toolbar has the card look of .composer and holds the 2 SnapshotPicker
+ * instances.
+ */
+
+.diff-page {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 12px 16px;
+  gap: 10px;
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.diff-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 14px;
+  flex: none;
+}
+
+.diff-arrow {
+  font: 400 13px var(--ui);
+  color: var(--muted);
+}
+
+/* same idiom as .netmap-empty: this page cannot ride that class's cascade
+   since it is not nested inside .netmap. */
+.diff-empty {
+  margin: auto;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.diff-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  flex: none;
+}
+
+.diff-chip {
+  display: inline-flex;
+  align-items: center;
+  font: 600 11px var(--ui);
+  font-variant-numeric: tabular-nums;
+  border-radius: 5px;
+  padding: 4px 10px;
+}
+
+.diff-chip.ok {
+  background: var(--okbg);
+  color: var(--oktext);
+  border: 1px solid var(--okb);
+}
+
+.diff-chip.bad {
+  background: var(--badbg);
+  color: var(--badtext);
+  border: 1px solid var(--badb);
+}
+
+.diff-chip.warn {
+  background: var(--warnbg);
+  color: var(--warntext);
+  border: 1px solid var(--warnb);
+}
+
+.diff-truncated {
+  font: 500 11px var(--ui);
+  color: var(--warntext);
+  background: var(--warnbg);
+  border: 1px solid var(--warnb);
+  border-radius: 6px;
+  padding: 6px 10px;
+  flex: none;
+}
+
+.diff-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.diff-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.diff-groupheadrow {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.diff-grouphead {
+  margin: 0;
+  font: 600 11px var(--ui);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* direction reminder beside each group heading ("in B, not in A") */
+.diff-groupnote {
+  font: 500 11px var(--ui);
+  color: var(--muted);
+}
+
+.diff-grouphead.ok {
+  color: var(--oktext);
+}
+
+.diff-grouphead.bad {
+  color: var(--badtext);
+}
+
+.diff-grouphead.warn {
+  color: var(--warntext);
+}
+
+.diff-tablewrap {
+  overflow-x: auto;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.diff-tablewrap table {
+  width: 100%;
+}
+
+.diff-changes {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-top: 6px;
+  padding: 6px 0 2px;
+}
+
+.diff-change-row {
+  display: flex;
+  gap: 10px;
+  font: 400 11.5px var(--mono);
+}
+
+.diff-change-key {
+  color: var(--muted2);
+  min-width: 100px;
+}
+
+.diff-change-vals {
+  color: var(--text);
+  overflow-wrap: anywhere;
+}

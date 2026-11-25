@@ -1,0 +1,16 @@
+{{ .Chart.Name }} {{ .Chart.AppVersion }} installed as {{ .Release.Name }}.
+
+pods:
+  kubectl -n {{ .Release.Namespace }} get pods -l app.kubernetes.io/instance={{ .Release.Name }} -w
+
+url:
+{{- if .Values.ingress.enabled }}
+{{- range fromJsonArray (include "hst.ingressHosts" .) }}
+  http{{ if $.Values.ingress.tls.enabled }}s{{ end }}://{{ . }}
+{{- end }}
+{{- end }}
+  kubectl -n {{ .Release.Namespace }} port-forward svc/{{ include "hst.fullname" . }} 8787:{{ .Values.service.port }}
+  http://127.0.0.1:8787
+
+admin:
+  kubectl -n {{ .Release.Namespace }} exec -it deploy/{{ include "hst.fullname" . }} -- hst user create-admin

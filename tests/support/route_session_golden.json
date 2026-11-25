@@ -1,0 +1,278 @@
+{
+  "fields": [
+    "inter",
+    "side_tables.rib",
+    "parquet.rib",
+    "parquet_layout.rib"
+  ],
+  "cases": {
+    "iosxe/fixture/plain": {
+      "inter": "65c5e3ad4a0920eb37ef5727782ca4292b274bd2f1b32e22abb725593a2ab0e9",
+      "side_tables.rib": [
+        2,
+        "791d7f70de41df184c5ff86968c943252a7d1abf636a04f0085342684d20a5a4"
+      ]
+    },
+    "iosxe/fixture/no_trailing_newline": {
+      "inter": "65c5e3ad4a0920eb37ef5727782ca4292b274bd2f1b32e22abb725593a2ab0e9",
+      "side_tables.rib": [
+        2,
+        "791d7f70de41df184c5ff86968c943252a7d1abf636a04f0085342684d20a5a4"
+      ]
+    },
+    "iosxe/fixture/unicode": {
+      "inter": "c07aab13d2b0707ec78b4a729bfd21941e418a613f9370bc1844d01280949570",
+      "side_tables.rib": [
+        2,
+        "791d7f70de41df184c5ff86968c943252a7d1abf636a04f0085342684d20a5a4"
+      ]
+    },
+    "iosxe/small/plain": {
+      "inter": "b6e8aa883625fec679b16b1ad25b10a4e17cb5145b495916e5ade16e2290fa84",
+      "side_tables.rib": [
+        2187,
+        "1a9ed0b79379f23b853a9985b7e2c56b9b9e48bbb7a1e593d7335b19307e0526"
+      ]
+    },
+    "iosxe/small/no_trailing_newline": {
+      "inter": "b6e8aa883625fec679b16b1ad25b10a4e17cb5145b495916e5ade16e2290fa84",
+      "side_tables.rib": [
+        2187,
+        "1a9ed0b79379f23b853a9985b7e2c56b9b9e48bbb7a1e593d7335b19307e0526"
+      ]
+    },
+    "iosxe/small/unicode": {
+      "inter": "6f3e12635b95f68966703b4b1ea094295f3acce7fd719a2064084196017ef185",
+      "side_tables.rib": [
+        2187,
+        "1a9ed0b79379f23b853a9985b7e2c56b9b9e48bbb7a1e593d7335b19307e0526"
+      ]
+    },
+    "iosxe/medium/plain": {
+      "inter": "24ba40eb5501e9da16cc9b719b340494f14b0d19ec984c297411f7c5f8097028",
+      "side_tables.rib": [
+        22006,
+        "05aabe338e2e82e29585a55c08f694fff5312dba897c59ec32abe9fd80546a6c"
+      ]
+    },
+    "iosxe/medium/no_trailing_newline": {
+      "inter": "24ba40eb5501e9da16cc9b719b340494f14b0d19ec984c297411f7c5f8097028",
+      "side_tables.rib": [
+        22006,
+        "05aabe338e2e82e29585a55c08f694fff5312dba897c59ec32abe9fd80546a6c"
+      ]
+    },
+    "iosxe/medium/unicode": {
+      "inter": "b01546876ea7fff8fe303b6d1eaa5569a849ea3c8ed46180ea0486465e401677",
+      "side_tables.rib": [
+        22006,
+        "05aabe338e2e82e29585a55c08f694fff5312dba897c59ec32abe9fd80546a6c"
+      ]
+    },
+    "iosxr/fixture/plain": {
+      "inter": "0386827541770a89ce35bff002bf61b14ca2e4baac68e9b509a51d03d571935e",
+      "side_tables.rib": [
+        2,
+        "f72c81f298b14d2bfc128406c9bb3d98219e6866aa63f82833f9dba6b76e08b0"
+      ]
+    },
+    "iosxr/fixture/no_trailing_newline": {
+      "inter": "0386827541770a89ce35bff002bf61b14ca2e4baac68e9b509a51d03d571935e",
+      "side_tables.rib": [
+        2,
+        "f72c81f298b14d2bfc128406c9bb3d98219e6866aa63f82833f9dba6b76e08b0"
+      ]
+    },
+    "iosxr/fixture/unicode": {
+      "inter": "c4f04c639d8059972eb043e1dc6d1eae7aaec35d1ffa43c107888c1498449b9b",
+      "side_tables.rib": [
+        2,
+        "f72c81f298b14d2bfc128406c9bb3d98219e6866aa63f82833f9dba6b76e08b0"
+      ]
+    },
+    "iosxr/small/plain": {
+      "inter": "37f441053c22fd77c74bbb8f98d7ca725b506d1ba75e34b47eed64c798835b69",
+      "side_tables.rib": [
+        2207,
+        "e6f75f7ad8907eb5fcba0a9fecf7dfcaafc6afa63039a62ff475752b05084c19"
+      ],
+      "parquet.rib": [
+        2207,
+        "49641db8b76d5af890d00c7f3243e8f9f859e7977d0aabc21ed54f3d081226ed"
+      ],
+      "parquet_layout.rib": {
+        "row_groups": [
+          2207
+        ],
+        "schema_sha": "32d5496e4995c6c7d62973865f82e738fa9c45f549517a5e7d7078208a0f8a76",
+        "rows_sha": "845878938888f3f7db0e67c580813b3ac254e6e0467ded58f940e0a0b17c2f03"
+      }
+    },
+    "iosxr/small/no_trailing_newline": {
+      "inter": "37f441053c22fd77c74bbb8f98d7ca725b506d1ba75e34b47eed64c798835b69",
+      "side_tables.rib": [
+        2207,
+        "e6f75f7ad8907eb5fcba0a9fecf7dfcaafc6afa63039a62ff475752b05084c19"
+      ],
+      "parquet.rib": [
+        2207,
+        "49641db8b76d5af890d00c7f3243e8f9f859e7977d0aabc21ed54f3d081226ed"
+      ],
+      "parquet_layout.rib": {
+        "row_groups": [
+          2207
+        ],
+        "schema_sha": "32d5496e4995c6c7d62973865f82e738fa9c45f549517a5e7d7078208a0f8a76",
+        "rows_sha": "845878938888f3f7db0e67c580813b3ac254e6e0467ded58f940e0a0b17c2f03"
+      }
+    },
+    "iosxr/small/unicode": {
+      "inter": "479f58af8bd2eefff0d72c0312b715a494e0540ac95bd11b67b7b4be97b6b384",
+      "side_tables.rib": [
+        2207,
+        "e6f75f7ad8907eb5fcba0a9fecf7dfcaafc6afa63039a62ff475752b05084c19"
+      ],
+      "parquet.rib": [
+        2207,
+        "49641db8b76d5af890d00c7f3243e8f9f859e7977d0aabc21ed54f3d081226ed"
+      ],
+      "parquet_layout.rib": {
+        "row_groups": [
+          2207
+        ],
+        "schema_sha": "32d5496e4995c6c7d62973865f82e738fa9c45f549517a5e7d7078208a0f8a76",
+        "rows_sha": "845878938888f3f7db0e67c580813b3ac254e6e0467ded58f940e0a0b17c2f03"
+      }
+    },
+    "iosxr/medium/plain": {
+      "inter": "4d338cb469a83f08e6659f41a1a2a3a4abb873c5a33129b25517e47c5e162876",
+      "side_tables.rib": [
+        21941,
+        "7e65fa75c697afbc8cccd754112c3c80e7a4f6811034da9ad2e29050cad02d09"
+      ],
+      "parquet.rib": [
+        21941,
+        "7372904f47d909462a28cecc1086d355f79665e204ba8d7036487e8a7e9dc41b"
+      ],
+      "parquet_layout.rib": {
+        "row_groups": [
+          4096,
+          4096,
+          4096,
+          4096,
+          4096,
+          1461
+        ],
+        "schema_sha": "32d5496e4995c6c7d62973865f82e738fa9c45f549517a5e7d7078208a0f8a76",
+        "rows_sha": "d26e2b9773b070b9ac775bc73bf96a50cd0ae495e0dc6441fddcca5c4cd8a1c6"
+      }
+    },
+    "iosxr/medium/no_trailing_newline": {
+      "inter": "4d338cb469a83f08e6659f41a1a2a3a4abb873c5a33129b25517e47c5e162876",
+      "side_tables.rib": [
+        21941,
+        "7e65fa75c697afbc8cccd754112c3c80e7a4f6811034da9ad2e29050cad02d09"
+      ],
+      "parquet.rib": [
+        21941,
+        "7372904f47d909462a28cecc1086d355f79665e204ba8d7036487e8a7e9dc41b"
+      ],
+      "parquet_layout.rib": {
+        "row_groups": [
+          4096,
+          4096,
+          4096,
+          4096,
+          4096,
+          1461
+        ],
+        "schema_sha": "32d5496e4995c6c7d62973865f82e738fa9c45f549517a5e7d7078208a0f8a76",
+        "rows_sha": "d26e2b9773b070b9ac775bc73bf96a50cd0ae495e0dc6441fddcca5c4cd8a1c6"
+      }
+    },
+    "iosxr/medium/unicode": {
+      "inter": "189f69e9fa7b465f73565f93d32ed90e96da47191f7fb976806cafad72fe1a83",
+      "side_tables.rib": [
+        21941,
+        "7e65fa75c697afbc8cccd754112c3c80e7a4f6811034da9ad2e29050cad02d09"
+      ],
+      "parquet.rib": [
+        21941,
+        "7372904f47d909462a28cecc1086d355f79665e204ba8d7036487e8a7e9dc41b"
+      ],
+      "parquet_layout.rib": {
+        "row_groups": [
+          4096,
+          4096,
+          4096,
+          4096,
+          4096,
+          1461
+        ],
+        "schema_sha": "32d5496e4995c6c7d62973865f82e738fa9c45f549517a5e7d7078208a0f8a76",
+        "rows_sha": "d26e2b9773b070b9ac775bc73bf96a50cd0ae495e0dc6441fddcca5c4cd8a1c6"
+      }
+    },
+    "nxos/fixture/plain": {
+      "side_tables.rib": [
+        2,
+        "4ff3c7b3c95a19bb9844e57fde1763a5c3c04d92246040fe164593216d60580a"
+      ]
+    },
+    "nxos/fixture/no_trailing_newline": {
+      "side_tables.rib": [
+        2,
+        "4ff3c7b3c95a19bb9844e57fde1763a5c3c04d92246040fe164593216d60580a"
+      ]
+    },
+    "nxos/fixture/unicode": {
+      "side_tables.rib": [
+        2,
+        "4ff3c7b3c95a19bb9844e57fde1763a5c3c04d92246040fe164593216d60580a"
+      ]
+    },
+    "nxos/small/plain": {
+      "side_tables.rib": [
+        2200,
+        "f0bf745843d8201971f7ca752b192af2a25fec70816a3468d28f64e42b6ca8e0"
+      ]
+    },
+    "nxos/small/no_trailing_newline": {
+      "side_tables.rib": [
+        2200,
+        "f0bf745843d8201971f7ca752b192af2a25fec70816a3468d28f64e42b6ca8e0"
+      ]
+    },
+    "nxos/small/unicode": {
+      "side_tables.rib": [
+        2200,
+        "f0bf745843d8201971f7ca752b192af2a25fec70816a3468d28f64e42b6ca8e0"
+      ]
+    },
+    "nxos/medium/plain": {
+      "side_tables.rib": [
+        21924,
+        "d4bc587d06623df292c1733044237adcba30f184f03d14e09e8103b0bc234f95"
+      ]
+    },
+    "nxos/medium/no_trailing_newline": {
+      "side_tables.rib": [
+        21924,
+        "d4bc587d06623df292c1733044237adcba30f184f03d14e09e8103b0bc234f95"
+      ]
+    },
+    "nxos/medium/unicode": {
+      "side_tables.rib": [
+        21924,
+        "d4bc587d06623df292c1733044237adcba30f184f03d14e09e8103b0bc234f95"
+      ]
+    },
+    "iosxe/tenth/plain": {
+      "inter": "81547258ddc32275dac12c831064b22c8123cfa01f9407a03b63d9c2ff80897f",
+      "side_tables.rib": [
+        109728,
+        "c79c0e877fd773cc2757770070ba216992d8680a29a3791d21d8f38d6051d282"
+      ]
+    }
+  }
+}

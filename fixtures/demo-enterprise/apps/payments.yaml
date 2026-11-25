@@ -1,0 +1,86 @@
+schema_version: 1
+kind: BusinessApplication
+id: payments-production
+name: Payments
+description: "Card and transfer processing in Munich: PCI tiers behind the dc2 firewall cluster."
+environment: production
+state: draft
+services:
+  - id: payments-service
+    name: Payments service
+    connection_ids:
+      - clients-to-vip
+      - vip-to-api
+      - api-to-db
+    component_roles:
+      - group_id: frontend
+        role: endpoint
+groups:
+  - id: office-clients
+    name: Finance clients
+    members:
+      - id: vienna-users
+        address: 10.11.10.0/24
+      - id: warsaw-users
+        address: 10.13.10.0/24
+  - id: frontend
+    name: Payments VIP
+    members:
+      - id: payments-vip
+        address: 10.2.30.10
+  - id: api
+    name: Payments API
+    members:
+      - id: payments-api-01
+        address: 10.2.11.11
+      - id: payments-api-02
+        address: 10.2.11.12
+      - id: payments-api-03
+        address: 10.2.11.13
+      - id: payments-api-04
+        address: 10.2.11.14
+      - id: payments-api-05
+        address: 10.2.11.15
+  - id: db
+    name: Oracle database
+    members:
+      - id: payments-db-01
+        address: 10.2.12.11
+      - id: payments-db-02
+        address: 10.2.12.12
+      - id: payments-db-03
+        address: 10.2.12.13
+connections:
+  - id: clients-to-vip
+    name: Finance clients to VIP
+    source: office-clients
+    destination: frontend
+    protocol: tcp
+    destination_ports:
+      - 443
+    success: session
+    destination_condition:
+      kind: member
+      member: payments-vip
+  - id: vip-to-api
+    name: Web tier to API
+    source: frontend
+    destination: api
+    protocol: tcp
+    destination_ports:
+      - 9443
+    success: round-trip
+    destination_condition:
+      kind: member
+      member: payments-api-01
+  - id: api-to-db
+    name: API to Oracle
+    source: api
+    destination: db
+    protocol: tcp
+    destination_ports:
+      - 1521
+    success: session
+    destination_condition:
+      kind: member
+      member: payments-db-01

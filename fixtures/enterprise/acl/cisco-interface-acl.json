@@ -1,0 +1,59 @@
+{
+  "uid": "cisco-edge-acl",
+  "revision": "snapshot-1",
+  "installed": true,
+  "context": {
+    "estate": "lab",
+    "authority": "cisco-edge",
+    "domain": "routing",
+    "firewall_instance": "edge-1",
+    "vrf": "blue",
+    "address_family": 4
+  },
+  "rulebases": [
+    {
+      "uid": "edge-in",
+      "interface": "Gi0/0",
+      "direction": "in",
+      "pipeline": "forward-ingress",
+      "af": 4,
+      "installed": true,
+      "default_action": "deny",
+      "rules": [
+        {
+          "uid": "edge-in:10",
+          "position": 10,
+          "action": "permit",
+          "enabled": true,
+          "src": "10.0.0.0",
+          "src_wildcard": "0.0.254.255",
+          "dst_any": true,
+          "proto": "tcp",
+          "ports": "443",
+          "states": ["established"]
+        }
+      ]
+    },
+    {
+      "uid": "edge-out",
+      "interface": "Gi0/1",
+      "direction": "out",
+      "pipeline": "forward-egress",
+      "af": 4,
+      "installed": true,
+      "default_action": "deny",
+      "rules": [
+        {
+          "uid": "edge-out:10",
+          "position": 10,
+          "action": "permit",
+          "enabled": true,
+          "src_any": true,
+          "dst": "198.51.100.0/24",
+          "proto": "tcp",
+          "ports": "443"
+        }
+      ]
+    }
+  ]
+}

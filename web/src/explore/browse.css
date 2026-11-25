@@ -1,0 +1,514 @@
+/*
+ * Explore Search and Schema views (SearchView, SchemaView, ValuePicker).
+ * Card, tab, button and banner styles come from theme.css; this file adds the
+ * layout of the two views and the ranked bars. Theme tokens only.
+ */
+
+.explore-queries:not([hidden]) {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.xb,
+.xs {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font: 400 12.5px var(--ui);
+  color: var(--text);
+}
+
+.xb p,
+.xs p {
+  margin: 0;
+}
+
+.xb-search {
+  gap: 8px;
+}
+
+.xb-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.xb-input {
+  font: 500 13px var(--ui);
+  color: var(--text);
+  background: var(--field);
+  border: 1px solid var(--fieldb);
+  border-radius: 5px;
+  padding: 7px 10px;
+  outline: none;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.xb-input:focus-visible {
+  border-color: var(--accent);
+}
+
+.xb-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.xb-chip {
+  border: 1px solid var(--border);
+  background: var(--panel2);
+  color: var(--muted2);
+  border-radius: 999px;
+  padding: 3px 10px;
+  font: 500 11.5px var(--ui);
+  cursor: pointer;
+}
+
+.xb-chip.on {
+  background: var(--accent-soft);
+  color: var(--acctext);
+  border-color: var(--accent);
+}
+
+.xb-count {
+  font: 600 11px var(--ui);
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.xb-columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(360px, 100%), 1fr));
+  gap: 10px;
+  align-items: start;
+}
+
+.xb-list,
+.xb-groups,
+.xb-neighbors,
+.xs-barlist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.xb-hit,
+.xb-grouphead,
+.xb-neighbor {
+  width: 100%;
+  text-align: left;
+  border: 0;
+  background: transparent;
+  border-radius: var(--radius-sm);
+  padding: 6px 8px;
+  cursor: pointer;
+  color: var(--text);
+  font: inherit;
+}
+
+.xb-hit {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px 8px;
+  align-items: baseline;
+}
+
+.xb-hit:hover,
+.xb-grouphead:hover,
+.xb-neighbor:hover {
+  background: var(--sel);
+}
+
+.xb-hit.on {
+  background: var(--accent-soft);
+}
+
+.xb-kind {
+  font: 600 10px var(--ui);
+  color: var(--muted2);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.xb-name {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.xb-detail {
+  grid-column: 2;
+  color: var(--muted2);
+}
+
+.xb-uid {
+  grid-column: 2;
+  font: 400 11px var(--mono);
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+.xb-node {
+  gap: 10px;
+}
+
+.xb-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.xb-nodehead {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.xb-title {
+  margin: 0;
+  font: 600 16px var(--ui);
+  overflow-wrap: anywhere;
+}
+
+.xb-props {
+  display: grid;
+  grid-template-columns: minmax(110px, max-content) minmax(0, 1fr);
+  gap: 4px 14px;
+  margin: 0;
+}
+
+.xb-props > div {
+  display: contents;
+}
+
+.xb-props dt {
+  font: 500 11.5px var(--mono);
+  color: var(--muted2);
+}
+
+.xb-props dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.xb-bookkeeping > summary {
+  cursor: pointer;
+  font: 600 11.5px var(--ui);
+  color: var(--muted2);
+}
+
+.xb-grouphead {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.xb-grouphead[aria-expanded="true"] {
+  font-weight: 600;
+}
+
+.xb-neighbors {
+  padding: 2px 0 6px 14px;
+  border-left: 2px solid var(--border);
+  margin-left: 8px;
+}
+
+.xb-neighbor {
+  padding: 4px 8px;
+  color: var(--acctext);
+}
+
+.xb-graph {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.xb-graphbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.gv-open {
+  display: flex;
+  padding: 6px 0;
+}
+
+.gv-expand {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 6px 0 10px;
+}
+
+.gv-expand h3 {
+  margin: 0;
+}
+
+/* Schema and statistics */
+
+.xs-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 10px;
+}
+
+.xs-tile {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.xs-tilelabel {
+  font: 600 10px var(--ui);
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.xs-tilevalue {
+  font: 600 22px var(--ui);
+  font-variant-numeric: tabular-nums;
+}
+
+.xs-tilevalue.small {
+  font-size: 13px;
+  padding-top: 6px;
+}
+
+.xs-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
+  gap: 10px;
+  align-items: start;
+}
+
+.xs-bars {
+  gap: 6px;
+}
+
+.xs-bars .eyebrow,
+.xb .eyebrow,
+.xs .eyebrow {
+  margin: 0;
+}
+
+.xs-barrow {
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(90px, 38%) 1fr auto;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 6px;
+  border: 0;
+  background: transparent;
+  border-radius: var(--radius-sm);
+  text-align: left;
+  font: inherit;
+  color: var(--text);
+}
+
+button.xs-barrow {
+  cursor: pointer;
+}
+
+button.xs-barrow:hover {
+  background: var(--sel);
+}
+
+.xs-barrow.on {
+  background: var(--accent-soft);
+}
+
+.xs-barlabel {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.xs-layers {
+  margin-left: 6px;
+  font-size: 10.5px;
+  color: var(--muted);
+}
+
+.xs-bartrack {
+  height: 8px;
+  display: block;
+}
+
+/* One hue for one series; the data end is rounded, the baseline end square. */
+.xs-bar {
+  display: block;
+  height: 100%;
+  min-width: 2px;
+  background: var(--accent);
+  border-radius: 0 4px 4px 0;
+}
+
+.xs-barvalue {
+  font: 500 11.5px var(--ui);
+  color: var(--muted2);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  min-width: 48px;
+}
+
+.xs-rel {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 3px 6px;
+}
+
+.xs-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Value picker in the canned query form */
+
+.vp {
+  position: relative;
+  display: inline-block;
+}
+
+.vp-list {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 30;
+  min-width: 100%;
+  max-width: 360px;
+  max-height: 260px;
+  overflow-y: auto;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+}
+
+.vp-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 5px 8px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font: 500 12px var(--mono);
+  white-space: nowrap;
+}
+
+.vp-list li.on,
+.vp-list li:hover {
+  background: var(--sel);
+}
+
+.vp-count {
+  color: var(--muted);
+  font-family: var(--ui);
+}
+
+/* Routes from the side store (RoutesPanel) */
+
+.xr {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.xr-filters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr));
+  gap: 8px;
+}
+
+.xr-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.xr-field > span {
+  font: 600 10.5px var(--ui);
+  color: var(--muted2);
+}
+
+.xr-field input[aria-invalid="true"] {
+  border-color: var(--bad);
+}
+
+.xr-table {
+  padding: 0;
+  max-height: 420px;
+}
+
+/* the rows of the previous request, while the new one runs */
+.xr-stale {
+  opacity: 0.5;
+}
+
+.xr-table table {
+  width: 100%;
+  min-width: 0;
+}
+
+.xr-table td {
+  max-width: none;
+}
+
+.xr-best td {
+  background: var(--accent-soft);
+}
+
+.xr-tag {
+  margin-left: 8px;
+  font: 600 10px var(--ui);
+  color: var(--acctext);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.xr-pager {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.xr-pager .hint {
+  margin-right: auto;
+}
+
+/* The routes of every device's route table for a searched address or prefix
+   (GET /api/explore/route-search). Wide tables scroll inside the card. */
+.xb-routes {
+  margin-top: 10px;
+  overflow-x: auto;
+}
+
+.xb-route-table {
+  width: 100%;
+  font-size: 12px;
+}
+
+.xb-route-table td,
+.xb-route-table th {
+  white-space: nowrap;
+}

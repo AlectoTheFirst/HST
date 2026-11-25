@@ -1,0 +1,151 @@
+{
+ "cases": {
+  "chain-default-depth": {
+   "digest": "e2f7839802b9b279305ee48b88a5e04127b3ff51f1e046ef1aec1891474cb255",
+   "levels_walked": 1,
+   "prefix_count": 1,
+   "recorded_route_count": 2,
+   "recorded_routes_truncated": null
+  },
+  "chain-depth-4": {
+   "digest": "d2415f80f956273f261cb6d8a0ece2f08a84419aca298e286eedaa35a3a18cdd",
+   "levels_walked": 4,
+   "prefix_count": 5,
+   "recorded_route_count": 2,
+   "recorded_routes_truncated": null
+  },
+  "chain-depth-cap": {
+   "digest": "47e9abb9f750ab5131213ffd1243394633ae87a6d3ce6185583ecf5efeb66376",
+   "levels_walked": 8,
+   "prefix_count": 9,
+   "recorded_route_count": 2,
+   "recorded_routes_truncated": null
+  },
+  "direction-both": {
+   "digest": "1d153a81b0489639b36090a53198bce79d5e25f3b5200282f0d8e698736e5f2e",
+   "levels_walked": 1,
+   "prefix_count": 6,
+   "recorded_route_count": 6,
+   "recorded_routes_truncated": null
+  },
+  "direction-from": {
+   "digest": "8e140cb3d98d35e538cad97a1d73cbbd4efea575de621e51961664eedfcbcbfa",
+   "levels_walked": 1,
+   "prefix_count": 1,
+   "recorded_route_count": 1,
+   "recorded_routes_truncated": null
+  },
+  "direction-to": {
+   "digest": "0fcc522a93208c6a8ec487a2a221ebdb246adbab7932ef3873e784d8c51cb96d",
+   "levels_walked": 1,
+   "prefix_count": 5,
+   "recorded_route_count": 5,
+   "recorded_routes_truncated": null
+  },
+  "generated-1": {
+   "digest": "7bb9b7c47e91939d3fdda08f418e0cef1089b84b9618995b5b0f62a4dc6eb8ea",
+   "levels_walked": 1,
+   "prefix_count": 27,
+   "recorded_route_count": 30,
+   "recorded_routes_truncated": null
+  },
+  "generated-2": {
+   "digest": "76af26e0dc89718dbefcf190b9067fa06dcd385f3c9d01f3cc3354d923e84580",
+   "levels_walked": 2,
+   "prefix_count": 21,
+   "recorded_route_count": 19,
+   "recorded_routes_truncated": null
+  },
+  "generated-3": {
+   "digest": "b4f0be722bb9a8563513dcca2d4a5afedca8b3b672d354fb9acc9d81a73135b1",
+   "levels_walked": 2,
+   "prefix_count": 68,
+   "recorded_route_count": 63,
+   "recorded_routes_truncated": "63 recorded routes lose a denied next hop; the first 50 by prefix are listed"
+  },
+  "generated-4": {
+   "digest": "7576dcdae6fb58ea7d60a6b78f1eabe850b879f1846ead4757efe2dec4be273f",
+   "levels_walked": 1,
+   "prefix_count": 119,
+   "recorded_route_count": 126,
+   "recorded_routes_truncated": "126 recorded routes lose a denied next hop; the first 50 by prefix are listed"
+  },
+  "generated-5": {
+   "digest": "e6e670486d5895c9fe80f8900b140782d05fa86100400a63a08d550fd83a2e6c",
+   "levels_walked": 2,
+   "prefix_count": 39,
+   "recorded_route_count": 38,
+   "recorded_routes_truncated": null
+  },
+  "generated-6": {
+   "digest": "6a9af9aa3f5d21810c2a840346c1d85d57a163294ccd1a443077b0707a76e5db",
+   "levels_walked": 2,
+   "prefix_count": 20,
+   "recorded_route_count": 17,
+   "recorded_routes_truncated": null
+  },
+  "generated-7": {
+   "digest": "19dafe5c36a3bc589c47616aa369706aa7b1bc30baa45922158fed1d9f340706",
+   "levels_walked": 2,
+   "prefix_count": 54,
+   "recorded_route_count": 59,
+   "recorded_routes_truncated": "59 recorded routes lose a denied next hop; the first 50 by prefix are listed"
+  },
+  "generated-8": {
+   "digest": "3cca28fae95b8fbe836b2910c18825da2a99f54c5de7bc6c7e44745f166bd323",
+   "levels_walked": 2,
+   "prefix_count": 125,
+   "recorded_route_count": 127,
+   "recorded_routes_truncated": null
+  },
+  "merge": {
+   "digest": "d18d2da30cb136ee308160139e3f03ddfd8763cf687818257738acdc387b37b9",
+   "levels_walked": 1,
+   "prefix_count": 7,
+   "recorded_route_count": 11,
+   "recorded_routes_truncated": null
+  },
+  "odd-prefixes": {
+   "digest": "d4805451940b0bf3c381036950851b8b49d3b065edbda2e866e748538fdf691d",
+   "levels_walked": 2,
+   "prefix_count": 12,
+   "recorded_route_count": 9,
+   "recorded_routes_truncated": null
+  },
+  "sites-hq": {
+   "digest": "f59803b43324748099d60fcd1a0db04d1e04ec4393a4c1eeb8c2a32368665ca6",
+   "levels_walked": 2,
+   "prefix_count": 2,
+   "recorded_route_count": 1,
+   "recorded_routes_truncated": null
+  },
+  "sites-none": {
+   "digest": "6c38656d732b481c43c0f3d1acb94f64297f9f15d83a2c9ef04c6ebe705abdd3",
+   "levels_walked": 2,
+   "prefix_count": 6,
+   "recorded_route_count": 4,
+   "recorded_routes_truncated": null
+  },
+  "sites-not-found": {
+   "digest": "00135bc5bc0be5d450ee2d9e1e3fb7f58fd47800efceb48c85f96b91932f7c6e",
+   "levels_walked": 2,
+   "prefix_count": 3,
+   "recorded_route_count": 2,
+   "recorded_routes_truncated": null
+  },
+  "wide-detail": {
+   "digest": "188dd22866ff4028ce3f5f435e65794a5b84122bc754a61b693dcdb15a004b39",
+   "levels_walked": 1,
+   "prefix_count": 160,
+   "recorded_route_count": 160,
+   "recorded_routes_truncated": null
+  },
+  "wide-pane": {
+   "digest": "6280e228d16966f22f88fd6465309c394d459cd257b1ba2bfbc3d3e8e37f5d4d",
+   "levels_walked": 1,
+   "prefix_count": 160,
+   "recorded_route_count": 160,
+   "recorded_routes_truncated": "160 recorded routes lose a denied next hop; the first 50 by prefix are listed"
+  }
+ }
+}

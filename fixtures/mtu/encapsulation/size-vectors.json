@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "provenance": "hand_written_synthetic",
+  "vectors": [
+    {"id": "wg_ipv4_1500", "kind": "wireguard", "outer_af": 4, "parameters": {"outer_header_bytes": 20, "padding_mode": "multiple_16", "inner_mtu_bytes": null}, "outer_ip_budget": 1500, "original_ip_budget": 1440},
+    {"id": "wg_ipv6_1500", "kind": "wireguard", "outer_af": 6, "parameters": {"outer_header_bytes": 40, "padding_mode": "multiple_16", "inner_mtu_bytes": null}, "outer_ip_budget": 1500, "original_ip_budget": 1408},
+    {"id": "wg_ipv6_linux_cap", "kind": "wireguard", "outer_af": 6, "parameters": {"outer_header_bytes": 40, "padding_mode": "linux_mtu_cap", "inner_mtu_bytes": 1420}, "outer_ip_budget": 1500, "original_ip_budget": 1420},
+    {"id": "esp_cbc_1500", "kind": "ipsec", "outer_af": 4, "parameters": {"outer_header_bytes": 20, "mode": "tunnel", "cipher": "aes_cbc", "iv_bytes": 16, "icv_bytes": 12, "nat_t": false, "tfc_padding_bytes": 0}, "outer_ip_budget": 1500, "original_ip_budget": 1438}
+  ]
+}

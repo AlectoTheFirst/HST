@@ -1,0 +1,91 @@
+schema_version: 1
+kind: BusinessApplication
+id: checkout-production
+name: Checkout
+description: Synthetic production checkout example
+environment: production
+state: draft
+services:
+  - id: checkout-frontend
+    name: Checkout frontend
+    connection_ids: [clients-to-frontend, frontend-to-api, api-to-database]
+    component_roles:
+      - group_id: frontend
+        role: endpoint
+groups:
+  - id: branch-clients
+    name: Branch clients
+    members:
+      - id: branch-ipv4
+        address: 192.0.2.0/24
+        context: vrf:branch
+      - id: branch-ipv6
+        address: 2001:db8:10::/64
+        context: vrf:branch
+  - id: frontend
+    name: Frontend
+    members:
+      - id: web-primary
+        address: 198.51.100.10
+  - id: api
+    name: API
+    members:
+      - id: api-primary
+        inventory:
+          kind: interface
+          uid: interface:api-primary
+          role: destination
+          context: vrf:production
+  - id: database
+    name: Checkout database
+    members:
+      - id: database-primary
+        address: 203.0.113.20
+        context: vrf:production
+connections:
+  - id: clients-to-frontend
+    name: Branch clients to frontend
+    source: branch-clients
+    destination: frontend
+    protocol: tcp
+    destination_ports: [443]
+    source_ports: [1024-65535]
+    success: session
+    source_context:
+      vrf: vrf:branch
+    destination_condition:
+      kind: member
+      member: web-primary
+    mtu:
+      mode: packet
+      ip_packet_bytes: 1500
+      ipv4_df: true
+  - id: frontend-to-api
+    name: Frontend to API
+    source: frontend
+    destination: api
+    protocol: tcp
+    destination_ports: [8443]
+    success: round-trip
+    destination_context:
+      vrf: vrf:production
+    destination_condition:
+      kind: threshold
+      n: 1
+      parts:
+        - kind: member
+          member: api-primary
+  - id: api-to-database
+    name: API to database
+    source: api
+    destination: database
+    protocol: tcp
+    destination_ports: [5432]
+    success: session
+    source_context:
+      vrf: vrf:production
+    destination_context:
+      vrf: vrf:production
+    destination_condition:
+      kind: member
+      member: database-primary

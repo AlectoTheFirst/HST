@@ -1,0 +1,154 @@
+HST Source-Available Licence, version 1.0
+
+Copyright (c) 2026 Christian Stark. All rights reserved.
+
+1. Ownership
+
+"Software" means this software and its accompanying documentation in every
+form in which the copyright holder named above (the "Licensor") publishes it,
+including source code, builds and container images. The Software is
+proprietary. It is licensed, not sold. Publishing the source code does not
+place the Software in the public domain. The Licensor keeps every right that
+this licence does not expressly grant.
+
+By copying, building, running or modifying the Software you accept this
+licence. If you do not accept it, you have no right to do any of these.
+
+2. What you may do without asking
+
+The Licensor grants you a personal, non-exclusive, non-transferable,
+non-sublicensable, revocable licence, free of charge, to:
+
+(a) read the source code;
+
+(b) copy, build and run the Software on systems you control, at your own
+    risk, for your own internal use other than production use;
+
+(c) modify the Software, and build and run your modified copy, for the sole
+    purpose of preparing a contribution and submitting it to the Licensor
+    under the Contributor Licence Agreement (CLA.md).
+
+"Production use" means relying on the Software or its results in the
+operation of a business, a network or a service.
+
+3. What you may not do
+
+Everything not listed in section 2 requires a licence under section 4. In
+particular, without one you may not:
+
+(a) use the Software in production, or for or on behalf of anyone else,
+    including by offering it as a hosted or managed service;
+
+(b) distribute, publish, sublicense, sell, rent, lend or otherwise make the
+    Software or any modified version of it available to anyone, in whole or
+    in part, in source or object form, other than by submitting a
+    contribution to the Licensor;
+
+(c) create derivative works of the Software, other than as stated in
+    section 2(c);
+
+(d) use the Software or any part of it to develop a product or service that
+    competes with it, or to train or evaluate a machine learning model;
+
+(e) remove or alter any copyright, licence or attribution notice.
+
+Where the platform the Software is published on lets its users view or copy
+a public repository through the platform's own functions, such as a fork,
+that copy stays on the platform, carries this licence, and gives you no
+rights beyond section 2.
+
+4. Production use and other further licences
+
+Production use, and any other use beyond section 2, is available on request.
+Send the request to the Licensor by e-mail to strata-sec@xmx.starkweb.io.
+
+A further licence exists only once the Licensor has granted it to you in
+writing. It covers only the person or organisation, the use, the period and
+the conditions, including any fee, that the grant states. The Licensor is
+free to refuse a request, to attach conditions to a grant, and to decide
+each request differently. A request, a reply that is not a grant, or the
+Licensor's silence grants nothing.
+
+Unless the grant says otherwise, a further licence is non-exclusive,
+non-transferable and non-sublicensable, and every provision of this licence
+that the grant does not expressly replace continues to apply. Where the
+grant and this licence conflict, the grant prevails.
+
+5. Names and marks
+
+This licence grants no right to use the names, logos or trade marks of the
+Licensor or of the Software, except to state where the Software comes from.
+
+6. Contributions
+
+The Licensor accepts contributions only under the Contributor Licence
+Agreement (CLA.md) and is under no obligation to accept, use or keep any
+contribution.
+
+7. Termination
+
+The licence in section 2 ends automatically, without notice, as soon as you
+breach this licence. The Licensor may also end it at any time, for you or
+for everyone, by notice to you or by a notice in the repository the Software
+is published in. A further licence under section 4 ends as its grant states,
+and in any case when you breach the grant or this licence.
+
+When your licence ends you must stop using the Software and delete every
+copy you hold. Sections 1, 3, 5 and 8 to 11 continue to apply.
+
+8. Third-party components
+
+Third-party components distributed with or depended upon by the Software
+remain subject to their own licences. Nothing in this licence limits the
+rights those licences give you in those components.
+
+9. No warranty, limited liability
+
+The Software is provided free of charge and as it is. You run it at your own
+risk, and you alone are responsible for what you run it against, for its
+results, and for any decision you base on them. The Licensor gives no
+guarantee and makes no promise that the Software is free of defects, fit for
+any purpose, or free of third-party rights.
+
+The Licensor is liable only for intent and gross negligence, and for defects
+of the Software or of title only where the Licensor concealed them
+fraudulently. Liability for injury to life, body or health, and liability
+under the German Product Liability Act (Produkthaftungsgesetz), remain
+unaffected. All other liability is excluded. This applies to every use of
+the Software, with or without a further licence under section 4.
+
+Where a further licence is granted for a fee, the Licensor is in addition
+liable for a slightly negligent breach of an obligation that is essential to
+that licence, limited to the damage that is typical and foreseeable for it,
+unless the grant states otherwise.
+
+10. Support
+
+The Licensor owes no support, maintenance, updates, fixes or answers, and is
+under no obligation to keep the Software or any version of it available.
+The Licensor may help in an individual case, as an exception. Doing so
+creates no obligation to continue, to do the same again, or to help anyone
+else. Support is owed only where the Licensor has agreed to it in writing.
+
+11. Governing law and general
+
+This licence is governed by the law of the Federal Republic of Germany,
+excluding its conflict-of-law rules and the United Nations Convention on
+Contracts for the International Sale of Goods. If you are a consumer, the
+mandatory consumer protection provisions of the country you live in remain
+unaffected.
+
+If you are a merchant, a legal entity under public law or a special fund
+under public law, or have no general place of jurisdiction in Germany, the
+courts at the Licensor's place of residence have exclusive jurisdiction over
+all disputes arising from this licence.
+
+"In writing" means a statement by the Licensor in text form that names you,
+such as an e-mail. No right or licence arises by implication, from
+possession of a copy of the Software, or from the Licensor not enforcing
+this licence in a particular case. Only a statement by the Licensor in
+writing can grant further rights or change these terms.
+
+If a provision of this licence is invalid, the other provisions stay in
+force. In no case does the invalidity of a provision give you a wider
+licence than section 2 and any grant you hold under section 4.

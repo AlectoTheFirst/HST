@@ -1,0 +1,226 @@
+{{- include "hst.validate" . -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "hst.fullname" . }}
+  labels: {{- include "hst.labels" . | nindent 4 }}
+    app.kubernetes.io/component: app
+spec:
+  replicas: {{ .Values.app.replicaCount }}
+  # The data PVC is ReadWriteOnce by default. A surge pod on another node cannot
+  # attach it, so the strategy is Recreate.
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels: {{- include "hst.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: app
+  template:
+    metadata:
+      labels: {{- include "hst.labels" . | nindent 8 }}
+        app.kubernetes.io/component: app
+      annotations:
+        # A change of the chart-rendered Secret changes this hash and rolls the pods.
+        # With secrets.existingSecret the hash is constant, and secrets.rotationStamp
+        # rolls the pods.
+        checksum/secret: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
+        {{- with .Values.secrets.rotationStamp }}
+        hst/secret-rotation: {{ . | quote }}
+        {{- end }}
+        {{- with .Values.app.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets: {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "hst.serviceAccountName" . }}
+      automountServiceAccountToken: false
+      securityContext:
+        # The app, the worker and the backup CronJob take the uid and the gid from
+        # .Values.podSecurityContext. The backup reads the 0700 raw-snapshot
+        # directories as that uid.
+        fsGroup: {{ .Values.podSecurityContext.fsGroup }}  # the group of the mounted data volume
+        seccompProfile: { type: RuntimeDefault }
+      # A collection run executes in this process. The value equals stop_grace_period
+      # of the app in compose.yaml.
+      terminationGracePeriodSeconds: 60
+      initContainers:
+        {{- if .Values.migrations.enabled }}
+        {{- include "hst.waitForMigrations" . | nindent 8 }}
+        {{- end }}
+      containers:
+        - name: app
+          image: {{ include "hst.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args: ["hst", "serve", "--host", "0.0.0.0", "--port", "8787"]
+          env:
+            {{- $analysis := index .Values.analysis.profiles .Values.analysis.profile }}
+            - name: ANALYSIS_ENGINE
+              value: {{ $analysis.engine | quote }}
+            - name: ANALYSIS_MEMORY_MB
+              value: {{ $analysis.memoryMb | quote }}
+            - name: ANALYSIS_TIMEOUT_S
+              value: {{ $analysis.timeoutSeconds | quote }}
+            - name: ANALYSIS_CACHE_MB
+              value: {{ $analysis.cacheMb | quote }}
+            - name: ANALYSIS_RESULT_MB
+              value: {{ $analysis.resultMb | quote }}
+            {{- include "hst.env" . | nindent 12 }}
+            # With migrations.enabled the migration Job applies the schema, and no pod
+            # migrates.
+            - name: HST_RUN_MIGRATIONS
+              value: {{ (not .Values.migrations.enabled) | quote }}
+            - name: COOKIE_SECURE
+              value: {{ .Values.auth.cookieSecure | quote }}
+            - name: SESSION_TTL_HOURS
+              value: {{ .Values.auth.sessionTtlHours | quote }}
+            - name: LOGIN_RATE_LIMIT
+              value: {{ .Values.auth.loginRateLimit | quote }}
+            - name: LOGIN_RATE_WINDOW_S
+              value: {{ .Values.auth.loginRateWindowSeconds | quote }}
+            {{- with (include "hst.forwardedAllowIps" .) }}
+            - name: HST_FORWARDED_ALLOW_IPS
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.demo.fixtures }}
+            - name: HST_DEMO_FIXTURES
+              value: {{ . | quote }}
+            {{- end }}
+            {{- if .Values.worker.enabled }}
+            # The worker Deployment (deployment-worker.yaml) runs the scheduler, the
+            # executor and every collection run. This process serves requests and
+            # queues the runs an operator triggers.
+            - name: SCHEDULER_ENABLED
+              value: "false"
+            - name: RUN_EXECUTION
+              value: "queue"
+            {{- end }}
+            # app.extraEnv is last, so its entries override the entries above.
+            {{- with .Values.app.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          {{- with .Values.app.envFrom }}
+          envFrom: {{- toYaml . | nindent 12 }}
+          {{- end }}
+          ports:
+            - name: http
+              containerPort: 8787
+          # /api/livez checks no backend. /api/readyz checks Postgres and takes the pod
+          # out of the Service.
+          livenessProbe:
+            httpGet: { path: /api/livez, port: http }
+            initialDelaySeconds: 10
+            periodSeconds: 15
+            failureThreshold: 5
+          readinessProbe:
+            httpGet: { path: /api/readyz, port: http }
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          startupProbe:
+            # The liveness probe starts after this probe passes. The bound is 150 s.
+            httpGet: { path: /api/livez, port: http }
+            periodSeconds: 5
+            failureThreshold: 30
+          {{- /*
+          The resources of the analysis profile override app.resources. For the memory
+          limit the larger of the 2 values applies.
+          */}}
+          {{- $own := deepCopy (default dict .Values.app.resources) }}
+          {{- $profile := deepCopy (default dict $analysis.resources) }}
+          {{- $resources := mergeOverwrite (deepCopy $own) $profile }}
+          {{- $ownLimit := dig "limits" "memory" "" $own }}
+          {{- $profileLimit := dig "limits" "memory" "" $profile }}
+          {{- if and $ownLimit $profileLimit }}
+          {{- if gt (float64 (include "hst.memoryBytes" $ownLimit)) (float64 (include "hst.memoryBytes" $profileLimit)) }}
+          {{- $_ := set $resources.limits "memory" $ownLimit }}
+          {{- end }}
+          {{- end }}
+          resources: {{- toYaml $resources | nindent 12 }}
+          {{- /*
+          `merge` keeps the keys of its first argument, so runAsUser and runAsGroup come
+          from .Values.podSecurityContext and the other keys from
+          .Values.app.securityContext.
+          */}}
+          securityContext:
+            {{- $identity := dict "runAsUser" .Values.podSecurityContext.runAsUser "runAsGroup" .Values.podSecurityContext.runAsGroup }}
+            {{- toYaml (merge $identity .Values.app.securityContext) | nindent 12 }}
+          volumeMounts:
+            - name: data
+              mountPath: /srv/data
+            - name: secret-key
+              mountPath: /etc/hst
+              readOnly: true
+            # The root filesystem is read-only. The process writes temporary files to /tmp.
+            - name: tmp
+              mountPath: /tmp
+            {{- if .Values.neo4j.tls.enabled }}
+            {{- include "hst.neo4jCaVolumeMount" . | nindent 12 }}
+            {{- end }}
+            {{- if .Values.postgres.tls.enabled }}
+            {{- include "hst.postgresCaVolumeMount" . | nindent 12 }}
+            {{- end }}
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        - name: secret-key
+          secret:
+            secretName: {{ include "hst.secretName" . }}
+            items:
+              - key: secret-key
+                path: secret-key
+        {{- if .Values.neo4j.tls.enabled }}
+        {{- include "hst.neo4jCaVolume" . | nindent 8 }}
+        {{- end }}
+        {{- if .Values.postgres.tls.enabled }}
+        {{- include "hst.postgresCaVolume" . | nindent 8 }}
+        {{- end }}
+        - name: data
+          {{- if .Values.app.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ include "hst.fullname" . }}-data
+          {{- else }}
+          # An emptyDir loses the raw snapshots when the pod is replaced. The collectors
+          # cannot rebuild them.
+          emptyDir: {}
+          {{- end }}
+      {{- with .Values.app.nodeSelector }}
+      nodeSelector: {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.app.tolerations }}
+      tolerations: {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if .Values.app.affinity }}
+      affinity: {{- toYaml .Values.app.affinity | nindent 8 }}
+      {{- else if and .Values.worker.enabled (ne .Values.app.persistence.accessMode "ReadWriteMany") }}
+      # The worker mounts the same ReadWriteOnce volume, so the app pod prefers the
+      # worker's node.
+      affinity:
+        podAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchLabels: {{- include "hst.selectorLabels" . | nindent 20 }}
+                    app.kubernetes.io/component: worker
+                topologyKey: kubernetes.io/hostname
+      {{- end }}
+{{- if .Values.app.persistence.enabled }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "hst.fullname" . }}-data
+  labels: {{- include "hst.labels" . | nindent 4 }}
+  annotations:
+    # The PVC survives `helm uninstall`. It holds the raw snapshots, which the
+    # collectors cannot rebuild.
+    helm.sh/resource-policy: keep
+spec:
+  accessModes: [{{ .Values.app.persistence.accessMode }}]
+  {{- with .Values.app.persistence.storageClass }}
+  storageClassName: {{ . | quote }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.app.persistence.size }}
+{{- end }}

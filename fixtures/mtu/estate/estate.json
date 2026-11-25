@@ -1,0 +1,263 @@
+{
+  "format_version": 1,
+  "reviewed_on": "2026-09-10",
+  "provenance": "hand_written_synthetic_not_device_capture",
+  "snapshot": 42,
+  "other_snapshot": 41,
+  "devices": {
+    "access": {
+      "family": "iosxe",
+      "serial": "ESTATE-XE-ACCESS-1",
+      "hostname": "access-1",
+      "model": "C9300-24T",
+      "os_version": "17.3.4a"
+    },
+    "core": {
+      "family": "iosxr",
+      "serial": "ESTATE-XR-CORE-1",
+      "hostname": "core-1",
+      "model": "R-IOSXRV9000-CC",
+      "os_version": "7.3.2"
+    },
+    "proxy": {"uid": "dev:estate-proxy-1", "hostname": "proxy-1"},
+    "aci": {"fabric": "estate", "leaf_serial": "ESTATE-ACI-LEAF-101", "hostname": "leaf-101"},
+    "host": {"serial": "ESTATE-VYOS-HOST-1", "hostname": "host-1"}
+  },
+  "addresses": {
+    "client": "192.0.2.10",
+    "client_prefix": "192.0.2.0/25",
+    "client_gateway": "192.0.2.1",
+    "access_core_link": "198.51.100.0/30",
+    "access_core_next_hop": "198.51.100.2",
+    "core_proxy_link": "198.51.100.4/30",
+    "core_proxy_next_hop": "198.51.100.6",
+    "proxy_aci_link": "198.51.100.8/30",
+    "proxy_aci_next_hop": "198.51.100.10",
+    "server_prefix": "198.51.100.128/25",
+    "server": "198.51.100.130",
+    "vip_prefix": "198.51.100.192/26",
+    "vip": "198.51.100.200",
+    "vxlan_underlay": "203.0.113.0/30",
+    "vxlan_local": "203.0.113.1",
+    "vxlan_peer": "203.0.113.2",
+    "remote_prefix": "203.0.113.128/25",
+    "remote_host": "203.0.113.130",
+    "ipv6_client": "2001:db8:1::10",
+    "ipv6_server": "2001:db8:2::10",
+    "reverse_next_hops": {
+      "core_to_access": "198.51.100.1",
+      "proxy_to_core": "198.51.100.5",
+      "aci_to_proxy": "198.51.100.9"
+    }
+  },
+  "cisco": {
+    "iosxe": {
+      "intermediate": {
+        "device": {
+          "hostname": "access-1",
+          "serial": "ESTATE-XE-ACCESS-1",
+          "platform": "iosxe",
+          "model": "C9300-24T",
+          "os_version": "17.3.4a"
+        },
+        "interfaces": [
+          {"name": "Vlan10", "kind": "svi"},
+          {"name": "Port-channel1", "kind": "lag"},
+          {"name": "GigabitEthernet1/0/1", "kind": "phys"},
+          {"name": "GigabitEthernet1/0/2", "kind": "phys"},
+          {"name": "GigabitEthernet1/0/3", "kind": "phys"},
+          {"name": "GigabitEthernet1/0/10", "kind": "phys"}
+        ]
+      },
+      "raw": {
+        "show ip interface": "Vlan10 is up, line protocol is up\n  MTU is 1500 bytes\nPort-channel1 is up, line protocol is up\n  MTU is 1500 bytes\nGigabitEthernet1/0/1 is up, line protocol is up\n  MTU is 9000 bytes\nGigabitEthernet1/0/2 is up, line protocol is up\n  MTU is 1500 bytes\nGigabitEthernet1/0/3 is down, line protocol is down\n  MTU is 1400 bytes\n",
+        "show ipv6 interface": "",
+        "show system mtu": "System MTU size is 1500 bytes\n",
+        "show etherchannel summary": "Flags: D - down P - bundled in port-channel\nGroup Port-channel Protocol Ports\n1 Po1(SU) LACP Gi1/0/1(P) Gi1/0/2(P) Gi1/0/3(D)\n",
+        "show running-config | section ^interface": "interface Port-channel1\n ip mtu 1500\n!\ninterface GigabitEthernet1/0/1\n channel-group 1 mode active\n!\ninterface GigabitEthernet1/0/2\n channel-group 1 mode active\n!\ninterface GigabitEthernet1/0/3\n channel-group 1 mode active\n!\ninterface Vlan10\n ip mtu 1500\n!\n"
+      }
+    },
+    "iosxr": {
+      "intermediate": {
+        "device": {
+          "hostname": "core-1",
+          "serial": "ESTATE-XR-CORE-1",
+          "platform": "iosxr",
+          "model": "R-IOSXRV9000-CC",
+          "os_version": "7.3.2"
+        },
+        "interfaces": [
+          {
+            "name": "GigabitEthernet0/0/0/0",
+            "kind": "phys",
+            "media_mtu": "1514",
+            "hardware_type": "GigabitEthernet",
+            "encapsulation": "ARPA"
+          },
+          {"name": "GigabitEthernet0/0/0/0.20", "kind": "subif"},
+          {
+            "name": "GigabitEthernet0/0/0/1",
+            "kind": "phys",
+            "media_mtu": "1514",
+            "hardware_type": "GigabitEthernet",
+            "encapsulation": "ARPA"
+          },
+          {
+            "name": "GigabitEthernet0/0/0/2",
+            "kind": "phys",
+            "media_mtu": "1514",
+            "hardware_type": "GigabitEthernet",
+            "encapsulation": "ARPA"
+          },
+          {"name": "nve1", "kind": "tunnel"}
+        ]
+      },
+      "raw": {
+        "show interfaces": "synthetic present",
+        "show ipv4 interface": "GigabitEthernet0/0/0/0 is Up, ipv4 protocol is Up\n  MTU is 1514 (1500 is available to IP)\nGigabitEthernet0/0/0/0.20 is Up, ipv4 protocol is Up\n  MTU is 1518 (1500 is available to IP)\nGigabitEthernet0/0/0/1 is Up, ipv4 protocol is Up\n  MTU is 1514 (1500 is available to IP)\nGigabitEthernet0/0/0/2 is Up, ipv4 protocol is Up\n  MTU is 1514 (1500 is available to IP)\n",
+        "show ipv6 interface": "GigabitEthernet0/0/0/0 is Up, ipv6 protocol is Up\n  MTU is 1514 (1500 is available to IPv6)\n",
+        "show running-config interface": "interface GigabitEthernet0/0/0/0\n mtu 1514\n!\ninterface GigabitEthernet0/0/0/0.20\n encapsulation dot1q 20\n ipv4 mtu 1450\n!\ninterface GigabitEthernet0/0/0/1\n mtu 1514\n!\ninterface GigabitEthernet0/0/0/2\n mtu 1514\n!\n",
+        "show bundle": ""
+      }
+    }
+  },
+  "vyos": {
+    "fixture_provenance": "hand_written_synthetic_not_device_capture",
+    "version_text": "Version: VyOS 1.5-rolling-synthetic\nHardware S/N: ESTATE-VYOS-HOST-1\n",
+    "config": {
+      "system": {"host-name": "host-1"},
+      "interfaces": {"ethernet": {"eth0": {"mtu": "9000"}}}
+    },
+    "links": [
+      {"ifname": "eth0", "ifindex": 2, "mtu": 1500, "operstate": "UP", "link_type": "ether"}
+    ]
+  },
+  "apic": {
+    "fabricNode": [
+      {"fabricNode": {"attributes": {"dn": "topology/pod-1/node-101", "serial": "ESTATE-ACI-LEAF-101", "name": "leaf-101", "role": "leaf", "version": "synthetic"}}}
+    ],
+    "l1PhysIf": [
+      {"l1PhysIf": {"attributes": {"dn": "topology/pod-1/node-101/sys/phys-[eth1/1]", "id": "eth1/1", "mtu": "9000"}}},
+      {"l1PhysIf": {"attributes": {"dn": "topology/pod-1/node-101/sys/phys-[eth1/2]", "id": "eth1/2", "mtu": "1500"}}}
+    ],
+    "l2InstPol": [
+      {"l2InstPol": {"attributes": {"dn": "uni/fabric/l2pol-default", "fabricMtu": "9000"}}}
+    ],
+    "fvTenant": [
+      {"fvTenant": {"attributes": {"dn": "uni/tn-estate", "name": "estate"}}}
+    ],
+    "l3extOut": [
+      {"l3extOut": {"attributes": {"dn": "uni/tn-estate/out-core", "name": "core"}}}
+    ],
+    "l3extRsPathL3OutAtt": [
+      {"l3extRsPathL3OutAtt": {"attributes": {"dn": "uni/tn-estate/out-core/lnodep-leaf/lifp-direct/rspathL3OutAtt-[topology/pod-1/paths-101/pathep-[eth1/2]]", "tDn": "topology/pod-1/paths-101/pathep-[eth1/2]", "ifInstT": "l3-port", "addr": "198.51.100.10/30", "mtu": "1500"}}}
+    ]
+  },
+  "import": {
+    "version": 1,
+    "observations": [
+      {
+        "subject_label": "Endpoint",
+        "subject_uid": "ep:estate:client-a",
+        "source": "host-agent-report",
+        "evidence_ref": "hand-written synthetic client report",
+        "observed_at_ms": 1788900000000,
+        "raw_value": 1500,
+        "basis": "ip_packet",
+        "metric": "ipv4_mtu_bytes",
+        "direction": "tx",
+        "bound_kind": "ceiling",
+        "authority": "operational"
+      },
+      {
+        "subject_label": "Endpoint",
+        "subject_uid": "ep:estate:client-a",
+        "source": "host-agent-report",
+        "evidence_ref": "hand-written synthetic client report",
+        "observed_at_ms": 1788900000000,
+        "raw_value": 1500,
+        "basis": "ip_packet",
+        "metric": "ipv4_mtu_bytes",
+        "direction": "rx",
+        "bound_kind": "acceptance_lower_bound",
+        "authority": "operational"
+      }
+    ]
+  },
+  "synthetic": {
+    "access_member_ports": [
+      {"port": "GigabitEthernet1/0/1", "ip_payload_bytes": 9000},
+      {"port": "GigabitEthernet1/0/2", "ip_payload_bytes": 1500},
+      {"port": "GigabitEthernet1/0/3", "ip_payload_bytes": 1400}
+    ],
+    "proxy_interfaces": [
+      {"name": "eth0", "ip_bytes": 1500},
+      {"name": "eth1", "ip_bytes": 1500},
+      {"name": "eth2", "ip_bytes": 1500}
+    ],
+    "class_alternatives": {
+      "subject": "GigabitEthernet1/0/1",
+      "system_default_bytes": 1500,
+      "port_override_bytes": 9000,
+      "classes": {"default": 1500, "storage": 9000}
+    }
+  },
+  "topology": {
+    "access_lag": {
+      "interface": "Port-channel1",
+      "members": [
+        {"port": "GigabitEthernet1/0/1", "eligible": true},
+        {"port": "GigabitEthernet1/0/2", "eligible": true},
+        {"port": "GigabitEthernet1/0/3", "eligible": false}
+      ]
+    },
+    "realized_ports": ["GigabitEthernet0/0/0/0", "GigabitEthernet0/0/0/1", "GigabitEthernet0/0/0/2"],
+    "aci_l3out_properties": {"ip_fragmentation": "unsupported", "ip_fragmentation_basis": "documented-aci"},
+    "stretch_without_evidence": {
+      "aci_bridge_domain_interface": "aci:estate:uni/tn-estate/BD-server",
+      "decoy_other_snapshot_bytes": 9000,
+      "decoy_retired_bytes": 1500
+    }
+  },
+  "encapsulation": {
+    "vxlan_outer_ipv4": {
+      "kind": "vxlan",
+      "outer_af": 4,
+      "parameters": {"outer_header_bytes": 20, "retained_inner_tags": 0, "inner_min_frame_bytes": 0},
+      "outer_ip_budget": 1500,
+      "original_ip_budget": 1450
+    },
+    "vxlan_outer_ipv6_tagged": {
+      "kind": "vxlan",
+      "outer_af": 6,
+      "parameters": {"outer_header_bytes": 40, "retained_inner_tags": 1, "inner_min_frame_bytes": 0},
+      "outer_ip_budget": 1500,
+      "original_ip_budget": 1426
+    },
+    "esp_gcm_tunnel": {
+      "kind": "ipsec",
+      "outer_af": 4,
+      "parameters": {"outer_header_bytes": 20, "mode": "tunnel", "cipher": "aes_gcm", "iv_bytes": 8, "icv_bytes": 16, "nat_t": false, "tfc_padding_bytes": 0},
+      "outer_ip_budget": 1500,
+      "original_ip_budget": 1446
+    }
+  },
+  "trace": {
+    "vip_service": {
+      "uid": "ns:estate-proxy-1:lbvs:web-443",
+      "name": "web-443",
+      "port": 443,
+      "proto": "tcp",
+      "member_uid": "ns:estate-proxy-1:sg:web/198.51.100.130:8443",
+      "member_port": 8443,
+      "pool_uid": "ns:estate-proxy-1:sg:web"
+    },
+    "vxlan_tunnel": {
+      "uid": "tun:estate:vxlan-100",
+      "name": "vxlan-100",
+      "encap": "vxlan",
+      "endpoint_port": "4789",
+      "carrier_proto": "udp"
+    }
+  }
+}

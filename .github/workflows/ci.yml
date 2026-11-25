@@ -1,0 +1,451 @@
+name: ci
+
+on:
+  pull_request:
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  # The path groups of the files that a pull request changes, and the images of the
+  # service containers of test-integration.
+  paths:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      code: ${{ steps.paths.outputs.code }}
+      web: ${{ steps.paths.outputs.web }}
+      labels: ${{ steps.paths.outputs.labels }}
+      webinfra: ${{ steps.paths.outputs.webinfra }}
+      image: ${{ steps.paths.outputs.image }}
+      postgres_image: ${{ steps.services.outputs.postgres }}
+      neo4j_image: ${{ steps.services.outputs.neo4j }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Determine changed path groups
+        id: paths
+        run: |
+          if [ "${{ github.event_name }}" != "pull_request" ]; then
+            echo "explicit validation: running every step"
+            for g in code web labels webinfra image; do echo "$g=true" >> "$GITHUB_OUTPUT"; done
+            exit 0
+          fi
+          base="${{ github.event.pull_request.base.sha }}"
+          if [ -z "$base" ]; then
+            echo "no base sha reported by the pull_request event: running every step"
+            for g in code web labels webinfra image; do echo "$g=true" >> "$GITHUB_OUTPUT"; done
+            exit 0
+          fi
+          if ! git cat-file -e "${base}^{commit}" 2>/dev/null; then
+            git fetch --no-tags --depth=1 origin "$base" || true
+          fi
+          if ! git cat-file -e "${base}^{commit}" 2>/dev/null; then
+            echo "could not fetch base sha $base: running every step"
+            for g in code web labels webinfra image; do echo "$g=true" >> "$GITHUB_OUTPUT"; done
+            exit 0
+          fi
+          code=false; web=false; labels=false; webinfra=false; image=false
+          while IFS= read -r f; do
+            [ -z "$f" ] && continue
+            case "$f" in
+              # The docs files that tests read. tests/test_ci_workflows.py checks the list.
+              docs/examples/*)
+                code=true ;;
+              README.md|CONTRIBUTING.md|SECURITY.md|docs/*)
+                ;;
+              # The web files that Python tests read. tests/test_ci_workflows.py checks the list.
+              web/src/api/inventory.ts|web/src/results/words.ts|web/src/settings/schema.fixtures.json)
+                code=true; web=true ;;
+              web/*)
+                web=true ;;
+              *)
+                code=true
+                case "$f" in
+                  Makefile|.github/*) webinfra=true ;;
+                esac
+                ;;
+            esac
+            [ "$f" = "src/hst/core/labels.py" ] && labels=true
+            # The inputs of deploy/Containerfile outside src/ and web/. tests/test_ci_workflows.py
+            # checks the list.
+            case "$f" in
+              deploy/Containerfile|.dockerignore|uv.lock|web/package-lock.json|.github/workflows/*) image=true ;;
+              pyproject.toml|tools/smoke_image.py|tools/build_symbolic_wheels.py) image=true ;;
+              third_party/symbolic/*|fixtures/demo-enterprise/*) image=true ;;
+            esac
+          done <<< "$(git diff --name-only "$base"...HEAD)"
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+          echo "web=$web" >> "$GITHUB_OUTPUT"
+          echo "labels=$labels" >> "$GITHUB_OUTPUT"
+          echo "webinfra=$webinfra" >> "$GITHUB_OUTPUT"
+          echo "image=$image" >> "$GITHUB_OUTPUT"
+      # Dependabot updates the images in .github/ci-services/compose.yaml.
+      - name: Service images
+        id: services
+        run: |
+          for service in postgres neo4j; do
+            image=$(awk -v key="$service:" '$1 == key { found = 1; next } found && $1 == "image:" { print $2; exit }' .github/ci-services/compose.yaml)
+            [[ "$image" =~ @sha256:[0-9a-f]{64}$ ]] || { echo "No digest for the service $service in .github/ci-services/compose.yaml"; exit 1; }
+            echo "$service=$image" >> "$GITHUB_OUTPUT"
+          done
+
+  python-checks:
+    needs: [paths]
+    if: needs.paths.outputs.code == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2
+        with:
+          enable-cache: true
+          version: "0.12.0"
+      - name: Install Python 3.13
+        run: |
+          uv python install 3.13
+          echo "UV_PYTHON=3.13" >> "$GITHUB_ENV"
+      - uses: azure/setup-helm@2f5e7bc67f1f9972ab16657bb795f36d8f04de0e
+        with:
+          version: v3.16.4
+      - run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q --no-install-recommends make xmlsec1
+      - name: Install
+        run: make py-install
+      - name: Lock check
+        run: make lock-check
+      - name: Lint
+        run: make lint
+      - name: Typecheck
+        run: make typecheck
+      - name: Helm check
+        run: make helm-check
+      - name: Validate workflow syntax
+        # Each checksum is from the checksums file of the actionlint release.
+        run: |
+          case "$(uname -m)" in
+            aarch64|arm64) arch=arm64; sum=325e971b6ba9bfa504672e29be93c24981eeb1c07576d730e9f7c8805afff0c6 ;;
+            *) arch=amd64; sum=8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8 ;;
+          esac
+          curl --fail --silent --show-error --location \
+            "https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_linux_${arch}.tar.gz" \
+            -o "$RUNNER_TEMP/actionlint.tar.gz"
+          echo "$sum  $RUNNER_TEMP/actionlint.tar.gz" | sha256sum -c -
+          tar -xzf "$RUNNER_TEMP/actionlint.tar.gz" -C "$RUNNER_TEMP" actionlint
+          "$RUNNER_TEMP/actionlint" -shellcheck= -pyflakes=
+      - name: Fail if deploy/helm changed without a Chart.yaml version bump
+        run: |
+          base="${{ github.event.pull_request.base.sha || 'HEAD~1' }}"
+          if ! git diff --quiet "$base" -- deploy/helm/hst; then
+            if git diff --quiet "$base" -- deploy/helm/hst/Chart.yaml; then
+              echo "deploy/helm changed and Chart.yaml did not"; exit 1
+            fi
+            old=$(git show "$base:deploy/helm/hst/Chart.yaml" | awk -F'"| ' '/^version:/ {print $2}')
+            new=$(awk -F'"| ' '/^version:/ {print $2}' deploy/helm/hst/Chart.yaml)
+            [ "$old" != "$new" ] || { echo "Chart.yaml changed and its version is still $old"; exit 1; }
+            echo "Chart.yaml version changed from $old to $new"
+          else
+            echo "deploy/helm unchanged"
+          fi
+
+  # Python 3.14 is the Python of the image.
+  test-python:
+    needs: [paths]
+    if: needs.paths.outputs.code == 'true'
+    runs-on: ubuntu-latest
+    # The unit suite takes about 31 minutes on a hosted runner.
+    timeout-minutes: 60
+    env:
+      UV_PYTHON: "3.14"
+      HST_SYMBOLIC_REQUIRE: "1"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2
+        with:
+          enable-cache: true
+          version: "0.12.0"
+      - name: Install Python 3.14
+        run: uv python install 3.14
+      - run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q --no-install-recommends build-essential make patch xmlsec1
+      - name: Identify native build environment
+        id: native-env
+        run: |
+          fingerprint=$({ cat /etc/os-release; "$(uv python find 3.14)" -VV; cc --version; ldd --version; } | sha256sum | cut -d ' ' -f 1)
+          echo "fingerprint=$fingerprint" >> "$GITHUB_OUTPUT"
+      - name: Cache native wheel
+        id: native-cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: dist/symbolic
+          key: symbolic-v2-${{ runner.os }}-${{ runner.arch }}-${{ steps.native-env.outputs.fingerprint }}-${{ hashFiles('tools/build_symbolic_wheels.py', 'third_party/symbolic/**') }}
+      - name: Build locked native wheel
+        if: steps.native-cache.outputs.cache-hit != 'true'
+        run: |
+          python=$(uv python find 3.14)
+          "$python" tools/build_symbolic_wheels.py --python "$python" --out-dir dist/symbolic
+      - name: Install and verify native backend
+        run: |
+          wheel=$(find dist/symbolic -maxdepth 1 -name 'dd-0.6.0-*.whl' -print -quit)
+          test -n "$wheel"
+          uv sync --frozen --extra dev --extra mcp --extra app --extra sidestore --extra agent --extra symbolic
+          uv pip install --python .venv/bin/python --no-deps --no-index --force-reinstall "$wheel"
+          uv run --frozen --no-sync python tools/check_symbolic_licenses.py --wheel "$wheel"
+          uv run --frozen --no-sync python -c 'from hst.symbolic.manager import backend_available; assert backend_available()'
+      - name: Unit tests (including symbolic analysis)
+        run: make test RUN="uv run --frozen --no-sync"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: symbolic-linux-${{ runner.arch }}-cp3.14
+          path: |
+            dist/symbolic/*.whl
+            dist/symbolic/symbolic-artifacts.json
+          if-no-files-found: error
+
+  # The database suites truncate the tables and delete every node. Postgres and Neo4j
+  # are service containers of this job. `make test-stack` and `make check-db` use the
+  # same credentials and host ports.
+  test-integration:
+    needs: [paths]
+    if: needs.paths.outputs.code == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: ${{ needs.paths.outputs.postgres_image }}
+        env:
+          POSTGRES_USER: hst
+          POSTGRES_PASSWORD: citest
+          POSTGRES_DB: hst_test
+        ports: ["5544:5432"]
+        options: >-
+          --health-cmd "pg_isready -U hst -d hst_test"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+      neo4j:
+        image: ${{ needs.paths.outputs.neo4j_image }}
+        env:
+          NEO4J_AUTH: neo4j/citest-password
+          NEO4J_server_memory_heap_max__size: 512m
+          NEO4J_server_memory_pagecache_size: 256m
+        ports: ["7699:7687", "7477:7474"]
+        options: >-
+          --health-cmd "wget -q --spider http://localhost:7474"
+          --health-interval 5s --health-timeout 5s --health-retries 30
+    env:
+      CI: "1"
+      UV_PYTHON: "3.14"
+      HST_SYMBOLIC_REQUIRE: "1"
+      # uv in the Make targets runs without a sync and keeps the installed native wheel.
+      UV_NO_SYNC: "1"
+      # The key encrypts the graph archives of the test data.
+      HST_SECRET_KEY: ci-only-graph-archive-key-32-bytes-minimum
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2
+        with:
+          enable-cache: true
+          version: "0.12.0"
+      - name: Install Python 3.14
+        run: uv python install 3.14
+      - run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q --no-install-recommends build-essential make patch xmlsec1
+      - name: Install
+        run: uv sync --frozen --extra dev --extra mcp --extra app --extra sidestore --extra agent --extra symbolic
+      - name: Identify native build environment
+        id: native-env
+        run: |
+          fingerprint=$({ cat /etc/os-release; "$(uv python find 3.14)" -VV; cc --version; ldd --version; } | sha256sum | cut -d ' ' -f 1)
+          echo "fingerprint=$fingerprint" >> "$GITHUB_OUTPUT"
+      - name: Cache native wheel
+        id: native-cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: dist/symbolic
+          key: symbolic-v2-${{ runner.os }}-${{ runner.arch }}-${{ steps.native-env.outputs.fingerprint }}-${{ hashFiles('tools/build_symbolic_wheels.py', 'third_party/symbolic/**') }}
+      - name: Build locked native wheel
+        if: steps.native-cache.outputs.cache-hit != 'true'
+        run: |
+          python=$(uv python find 3.14)
+          "$python" tools/build_symbolic_wheels.py --python "$python" --out-dir dist/symbolic
+      - name: Install native backend
+        run: |
+          wheel=$(find dist/symbolic -maxdepth 1 -name 'dd-0.6.0-*.whl' -print -quit)
+          test -n "$wheel"
+          uv pip install --python .venv/bin/python --no-deps --no-index --force-reinstall "$wheel"
+          uv run --frozen --no-sync python tools/check_symbolic_licenses.py --wheel "$wheel"
+          uv run --frozen --no-sync python -c 'from hst.symbolic.manager import backend_available; assert backend_available()'
+      - name: Store tests (PgStore against the scratch Postgres)
+        env:
+          HST_TEST_PG_DSN: postgresql+asyncpg://hst:citest@localhost:5544/hst_test
+        run: make test-pg
+      - name: Integration tests (lifecycle against the scratch Neo4j)
+        env:
+          NEO4J_TEST_URI: bolt://localhost:7699
+          NEO4J_TEST_PASSWORD: citest-password
+          # The MTU graph tests run against an approved Neo4j only.
+          HST_MTU_TEST_NEO4J_APPROVED: "1"
+        run: make test-db
+      # test_integration_db.py refuses to run when NEO4J_TEST_URI equals NEO4J_URI,
+      # so NEO4J_URI is set per step.
+      - name: Load fixtures and validate scenarios
+        env:
+          NEO4J_URI: bolt://localhost:7699
+          NEO4J_PASSWORD: citest-password
+        run: make e2e
+      - name: Application startup and readiness
+        env:
+          POSTGRES_DSN: postgresql+asyncpg://hst:citest@localhost:5544/hst_smoke
+          NEO4J_URI: bolt://localhost:7699
+          NEO4J_PASSWORD: citest-password
+          SCHEDULER_ENABLED: "false"
+          ANALYSIS_ENABLED: "false"
+        run: |
+          uv run --frozen --no-sync python - <<'PYTHON'
+          import asyncio, asyncpg
+          async def create():
+              conn = await asyncpg.connect("postgresql://hst:citest@localhost:5544/hst_test")
+              try:
+                  await conn.execute("CREATE DATABASE hst_smoke")
+              finally:
+                  await conn.close()
+          asyncio.run(create())
+          PYTHON
+          uv run --frozen --no-sync python tools/check_app_startup.py
+      # Runs `hst worker` through the migrations, the inventory startup and both loops,
+      # and checks the exit on SIGTERM.
+      - name: Worker startup and shutdown
+        env:
+          POSTGRES_DSN: postgresql+asyncpg://hst:citest@localhost:5544/hst_worker_smoke
+          NEO4J_URI: bolt://localhost:7699
+          NEO4J_PASSWORD: citest-password
+          ANALYSIS_ENABLED: "false"
+        run: |
+          uv run --frozen --no-sync python - <<'PYTHON'
+          import asyncio, asyncpg
+          async def create():
+              conn = await asyncpg.connect("postgresql://hst:citest@localhost:5544/hst_test")
+              try:
+                  await conn.execute("CREATE DATABASE hst_worker_smoke")
+              finally:
+                  await conn.close()
+          asyncio.run(create())
+          PYTHON
+          uv run --frozen --no-sync python tools/check_worker_startup.py
+
+  # web/src/flowdesk/strata/layers.test.ts reads src/hst/core/labels.py.
+  test-web:
+    needs: [paths]
+    if: needs.paths.outputs.web == 'true' || needs.paths.outputs.labels == 'true' || needs.paths.outputs.webinfra == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: "26"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Install
+        run: make web-install
+      - name: Check
+        run: make web-check
+
+  image:
+    needs: [paths]
+    if: needs.paths.outputs.image == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069
+      - name: Build without a push
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc
+        with:
+          context: .
+          file: deploy/Containerfile
+          platforms: linux/amd64
+          push: false
+          build-args: |
+            VCS_REF=${{ github.sha }}
+
+  secrets:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Scan tracked files for run data and secrets
+        run: python3 tools/check_no_run_data.py
+      # Each checksum is the SHA-256 of the archive in the gitleaks release. A pull
+      # request run scans the commits from the base commit to HEAD. Every other run
+      # scans the history of every fetched ref.
+      - name: Scan commits for secrets
+        env:
+          GITLEAKS_VERSION: "8.30.1"
+          BASE: ${{ github.event.pull_request.base.sha }}
+        run: |
+          case "$(uname -m)" in
+            aarch64|arm64) arch=arm64; sum=e4a487ee7ccd7d3a7f7ec08657610aa3606637dab924210b3aee62570fb4b080 ;;
+            *) arch=x64; sum=551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb ;;
+          esac
+          curl --fail --silent --show-error --location \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_${arch}.tar.gz" \
+            -o "$RUNNER_TEMP/gitleaks.tar.gz"
+          echo "$sum  $RUNNER_TEMP/gitleaks.tar.gz" | sha256sum -c -
+          tar -xzf "$RUNNER_TEMP/gitleaks.tar.gz" -C "$RUNNER_TEMP" gitleaks
+          if [ -n "$BASE" ]; then
+            "$RUNNER_TEMP/gitleaks" git --config .gitleaks.toml --redact --no-banner --log-opts="$BASE..HEAD"
+          else
+            "$RUNNER_TEMP/gitleaks" git --config .gitleaks.toml --redact --no-banner
+          fi
+
+  # `python` is a required status check of the ruleset for main. It fails when a job
+  # failed, when a job was cancelled, or when a job that the path groups select did
+  # not run.
+  python:
+    needs: [paths, python-checks, test-python, test-integration, test-web, image, secrets]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Required checks
+        env:
+          NEEDS: ${{ toJSON(needs) }}
+        run: |
+          python3 - <<'PYTHON'
+          import json, os
+          needs = json.loads(os.environ["NEEDS"])
+          assert needs["paths"]["result"] == "success", needs
+          assert needs["secrets"]["result"] == "success", needs
+          assert all(j["result"] in ("success", "skipped") for j in needs.values()), needs
+          if needs["paths"]["outputs"]["code"] == "true":
+              assert all(needs[n]["result"] == "success" for n in ("python-checks", "test-python", "test-integration")), needs
+          if any(needs["paths"]["outputs"][k] == "true" for k in ("web", "labels", "webinfra")):
+              assert needs["test-web"]["result"] == "success", needs
+          if needs["paths"]["outputs"]["image"] == "true":
+              assert needs["image"]["result"] == "success", needs
+          PYTHON

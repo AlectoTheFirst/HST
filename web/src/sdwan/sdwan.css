@@ -1,0 +1,20 @@
+/* The SD-WAN pane. Moved from theme.css; this view loads lazily. */
+
+/* ---- the SD-WAN pane (sdwan/SdwanPage.tsx) ----
+   The canvas and panel of the device map. A tunnel is a dashed line, so it
+   reads as overlay and not as a cable; a tunnel to a cloud gateway has the
+   muted colour. */
+.sdwan-picker {
+  width: 260px;
+  font: 500 12px var(--ui);
+  color: var(--text);
+  background: var(--field);
+  border: 1px solid var(--fieldb);
+  border-radius: 6px;
+  padding: 5px 9px;
+  outline: none;
+}
+
+.sdwan-picker:focus-visible {
+  border-color: var(--accent);
+}

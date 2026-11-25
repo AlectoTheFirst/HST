@@ -1,0 +1,5 @@
+BGP router identifier 10.255.0.1, local AS number 65001
+Neighbor        Spk    AS MsgRcvd MsgSent TblVer InQ OutQ Up/Down State/PfxRcd
+10.252.32.10 4 65099 10 10 1 0 0 00:01:00 1
+10.252.33.20 4 65099 10 10 1 0 0 00:01:00 Idle
+192.0.2.99 4 65099 10 10 1 0 0 00:01:00 1

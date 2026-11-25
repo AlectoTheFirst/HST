@@ -1,0 +1,338 @@
+{
+  "$defs": {
+    "BridgeGroup": {
+      "additionalProperties": false,
+      "properties": {
+        "vsid": {
+          "minimum": 0,
+          "title": "Vsid",
+          "type": "integer"
+        },
+        "name": {
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "interfaces": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 2,
+          "title": "Interfaces",
+          "type": "array"
+        },
+        "evidence_uid": {
+          "minLength": 1,
+          "title": "Evidence Uid",
+          "type": "string"
+        }
+      },
+      "required": [
+        "vsid",
+        "name",
+        "interfaces",
+        "evidence_uid"
+      ],
+      "title": "BridgeGroup",
+      "type": "object"
+    },
+    "Installation": {
+      "additionalProperties": false,
+      "properties": {
+        "vsid": {
+          "minimum": 0,
+          "title": "Vsid",
+          "type": "integer"
+        },
+        "gateway_object_uid": {
+          "minLength": 1,
+          "title": "Gateway Object Uid",
+          "type": "string"
+        },
+        "authority": {
+          "minLength": 1,
+          "title": "Authority",
+          "type": "string"
+        },
+        "rulebase_uid": {
+          "minLength": 1,
+          "title": "Rulebase Uid",
+          "type": "string"
+        },
+        "configured_revision": {
+          "minLength": 1,
+          "title": "Configured Revision",
+          "type": "string"
+        },
+        "installed_revision": {
+          "minLength": 1,
+          "title": "Installed Revision",
+          "type": "string"
+        },
+        "complete": {
+          "title": "Complete",
+          "type": "boolean"
+        },
+        "policy_name": {
+          "minLength": 1,
+          "title": "Policy Name",
+          "type": "string"
+        },
+        "installed_at_raw": {
+          "minLength": 1,
+          "title": "Installed At Raw",
+          "type": "string"
+        },
+        "evidence_uid": {
+          "minLength": 1,
+          "title": "Evidence Uid",
+          "type": "string"
+        },
+        "address_family": {
+          "enum": [
+            4,
+            6
+          ],
+          "title": "Address Family",
+          "type": "integer"
+        },
+        "ingress_interface": {
+          "title": "Ingress Interface",
+          "type": "string"
+        },
+        "egress_interface": {
+          "title": "Egress Interface",
+          "type": "string"
+        }
+      },
+      "required": [
+        "vsid",
+        "gateway_object_uid",
+        "authority",
+        "rulebase_uid",
+        "configured_revision",
+        "installed_revision",
+        "complete",
+        "policy_name",
+        "installed_at_raw",
+        "evidence_uid",
+        "address_family",
+        "ingress_interface",
+        "egress_interface"
+      ],
+      "title": "Installation",
+      "type": "object"
+    },
+    "InterfaceRef": {
+      "additionalProperties": false,
+      "properties": {
+        "vsid": {
+          "minimum": 0,
+          "title": "Vsid",
+          "type": "integer"
+        },
+        "interface": {
+          "minLength": 1,
+          "title": "Interface",
+          "type": "string"
+        }
+      },
+      "required": [
+        "vsid",
+        "interface"
+      ],
+      "title": "InterfaceRef",
+      "type": "object"
+    },
+    "Session": {
+      "additionalProperties": false,
+      "properties": {
+        "vsid": {
+          "minimum": 0,
+          "title": "Vsid",
+          "type": "integer"
+        },
+        "binding_uid": {
+          "minLength": 1,
+          "title": "Binding Uid",
+          "type": "string"
+        },
+        "protocol": {
+          "enum": [
+            "tcp",
+            "udp",
+            "icmp",
+            "icmpv6"
+          ],
+          "title": "Protocol",
+          "type": "string"
+        },
+        "observed_at": {
+          "format": "date-time",
+          "title": "Observed At",
+          "type": "string"
+        },
+        "expires_at": {
+          "format": "date-time",
+          "title": "Expires At",
+          "type": "string"
+        },
+        "original_source": {
+          "format": "ipvanyaddress",
+          "title": "Original Source",
+          "type": "string"
+        },
+        "original_destination": {
+          "format": "ipvanyaddress",
+          "title": "Original Destination",
+          "type": "string"
+        },
+        "translated_source": {
+          "format": "ipvanyaddress",
+          "title": "Translated Source",
+          "type": "string"
+        },
+        "translated_destination": {
+          "format": "ipvanyaddress",
+          "title": "Translated Destination",
+          "type": "string"
+        },
+        "original_source_port": {
+          "maximum": 65535,
+          "minimum": 0,
+          "title": "Original Source Port",
+          "type": "integer"
+        },
+        "original_destination_port": {
+          "maximum": 65535,
+          "minimum": 0,
+          "title": "Original Destination Port",
+          "type": "integer"
+        },
+        "translated_source_port": {
+          "maximum": 65535,
+          "minimum": 0,
+          "title": "Translated Source Port",
+          "type": "integer"
+        },
+        "translated_destination_port": {
+          "maximum": 65535,
+          "minimum": 0,
+          "title": "Translated Destination Port",
+          "type": "integer"
+        },
+        "evidence_uid": {
+          "minLength": 1,
+          "title": "Evidence Uid",
+          "type": "string"
+        },
+        "synchronized_members": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Synchronized Members",
+          "type": "array"
+        }
+      },
+      "required": [
+        "vsid",
+        "binding_uid",
+        "protocol",
+        "observed_at",
+        "expires_at",
+        "original_source",
+        "original_destination",
+        "translated_source",
+        "translated_destination",
+        "original_source_port",
+        "original_destination_port",
+        "translated_source_port",
+        "translated_destination_port",
+        "evidence_uid"
+      ],
+      "title": "Session",
+      "type": "object"
+    },
+    "WarpLink": {
+      "additionalProperties": false,
+      "properties": {
+        "a": {
+          "$ref": "#/$defs/InterfaceRef"
+        },
+        "b": {
+          "$ref": "#/$defs/InterfaceRef"
+        },
+        "evidence_uid": {
+          "minLength": 1,
+          "title": "Evidence Uid",
+          "type": "string"
+        }
+      },
+      "required": [
+        "a",
+        "b",
+        "evidence_uid"
+      ],
+      "title": "WarpLink",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "const": 1,
+      "title": "Version",
+      "type": "integer"
+    },
+    "appliance_uid": {
+      "minLength": 1,
+      "title": "Appliance Uid",
+      "type": "string"
+    },
+    "observation_uid": {
+      "minLength": 1,
+      "title": "Observation Uid",
+      "type": "string"
+    },
+    "warp_links": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/WarpLink"
+      },
+      "title": "Warp Links",
+      "type": "array"
+    },
+    "bridge_groups": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/BridgeGroup"
+      },
+      "title": "Bridge Groups",
+      "type": "array"
+    },
+    "installations": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/Installation"
+      },
+      "title": "Installations",
+      "type": "array"
+    },
+    "sessions": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/Session"
+      },
+      "title": "Sessions",
+      "type": "array"
+    }
+  },
+  "required": [
+    "version",
+    "appliance_uid",
+    "observation_uid"
+  ],
+  "title": "VsxEvidence",
+  "type": "object"
+}

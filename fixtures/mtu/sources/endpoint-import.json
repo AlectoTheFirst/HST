@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "observations": [
+    {
+      "subject_label": "Interface",
+      "subject_uid": "dev:synthetic-host/if/eth0",
+      "source": "synthetic-host-report",
+      "evidence_ref": "hand-written-example",
+      "observed_at_ms": 1788900000000,
+      "raw_value": 1500,
+      "basis": "ip_packet",
+      "metric": "ipv4_mtu_bytes",
+      "direction": "rx",
+      "bound_kind": "acceptance_lower_bound",
+      "authority": "intent"
+    }
+  ]
+}

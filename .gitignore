@@ -1,0 +1,51 @@
+# python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# local runtime
+.env
+compose.override.yaml
+/data/
+backups/
+
+# Run output
+snapshots/
+dumps/
+captures/
+*.dump
+*.pcap
+*.pcapng
+*.parquet
+*.jsonl
+tools/sample_*.json
+
+# local files
+raw/
+output/
+.archive/
+docs/archive/
+cluster-config/
+tools/*.md
+
+# editors / os
+.idea/
+.vscode/
+*.swp
+.DS_Store
+
+# claude code local settings
+.claude/settings.local.json
+
+# node
+node_modules/

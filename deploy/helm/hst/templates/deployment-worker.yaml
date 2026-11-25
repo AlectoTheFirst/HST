@@ -1,0 +1,125 @@
+{{- if .Values.worker.enabled }}
+{{- /*
+`hst worker` runs the scheduler, the job executor and every collection run. The process
+listens on no port, so the pod has no Service and no probes. The kubelet restarts the
+container when the process exits.
+*/}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "hst.fullname" . }}-worker
+  labels: {{- include "hst.labels" . | nindent 4 }}
+    app.kubernetes.io/component: worker
+spec:
+  replicas: {{ .Values.worker.replicaCount }}
+  # The data PVC is ReadWriteOnce by default, so the strategy is Recreate.
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels: {{- include "hst.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: worker
+  template:
+    metadata:
+      labels: {{- include "hst.labels" . | nindent 8 }}
+        app.kubernetes.io/component: worker
+      annotations:
+        checksum/secret: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
+        {{- with .Values.secrets.rotationStamp }}
+        hst/secret-rotation: {{ . | quote }}
+        {{- end }}
+        {{- with .Values.worker.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets: {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "hst.serviceAccountName" . }}
+      automountServiceAccountToken: false
+      securityContext:
+        fsGroup: {{ .Values.podSecurityContext.fsGroup }}
+        seccompProfile: { type: RuntimeDefault }
+      terminationGracePeriodSeconds: {{ .Values.worker.terminationGracePeriodSeconds }}
+      {{- if .Values.migrations.enabled }}
+      initContainers:
+        {{- include "hst.waitForMigrations" . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: worker
+          image: {{ include "hst.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args: ["hst", "worker"]
+          env:
+            {{- include "hst.env" . | nindent 12 }}
+            - name: HST_RUN_MIGRATIONS
+              value: {{ (not .Values.migrations.enabled) | quote }}
+            {{- with .Values.demo.fixtures }}
+            - name: HST_DEMO_FIXTURES
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.app.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- with .Values.worker.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          {{- $envFrom := concat (.Values.app.envFrom | default list) (.Values.worker.envFrom | default list) }}
+          {{- with $envFrom }}
+          envFrom: {{- toYaml . | nindent 12 }}
+          {{- end }}
+          resources: {{- toYaml .Values.worker.resources | nindent 12 }}
+          securityContext:
+            {{- $identity := dict "runAsUser" .Values.podSecurityContext.runAsUser "runAsGroup" .Values.podSecurityContext.runAsGroup }}
+            {{- toYaml (merge $identity (deepCopy .Values.app.securityContext)) | nindent 12 }}
+          volumeMounts:
+            - name: data
+              mountPath: /srv/data
+            - name: secret-key
+              mountPath: /etc/hst
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+            {{- if .Values.neo4j.tls.enabled }}
+            {{- include "hst.neo4jCaVolumeMount" . | nindent 12 }}
+            {{- end }}
+            {{- if .Values.postgres.tls.enabled }}
+            {{- include "hst.postgresCaVolumeMount" . | nindent 12 }}
+            {{- end }}
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        - name: secret-key
+          secret:
+            secretName: {{ include "hst.secretName" . }}
+            items:
+              - key: secret-key
+                path: secret-key
+        {{- if .Values.neo4j.tls.enabled }}
+        {{- include "hst.neo4jCaVolume" . | nindent 8 }}
+        {{- end }}
+        {{- if .Values.postgres.tls.enabled }}
+        {{- include "hst.postgresCaVolume" . | nindent 8 }}
+        {{- end }}
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ include "hst.fullname" . }}-data
+      {{- if .Values.worker.affinity }}
+      affinity: {{- toYaml .Values.worker.affinity | nindent 8 }}
+      {{- else if ne .Values.app.persistence.accessMode "ReadWriteMany" }}
+      # A ReadWriteOnce volume attaches to 1 node, so the worker runs on the app pod's node.
+      affinity:
+        podAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels: {{- include "hst.selectorLabels" . | nindent 18 }}
+                  app.kubernetes.io/component: app
+              topologyKey: kubernetes.io/hostname
+      {{- end }}
+      {{- with .Values.worker.nodeSelector }}
+      nodeSelector: {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- /* With worker.tolerations empty the worker takes app.tolerations. */}}
+      {{- with (.Values.worker.tolerations | default .Values.app.tolerations) }}
+      tolerations: {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

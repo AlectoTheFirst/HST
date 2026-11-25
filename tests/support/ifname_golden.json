@@ -1,0 +1,37 @@
+{
+  "cases": {
+    "iosxe/fixture/no_trailing_newline": {
+      "inter": "c0612fc743c765a6177467abaeea5b75aa8024ef9dfa402271d4737e329f41ca"
+    },
+    "iosxe/fixture/plain": {
+      "inter": "c0612fc743c765a6177467abaeea5b75aa8024ef9dfa402271d4737e329f41ca"
+    },
+    "iosxe/fixture/unicode": {
+      "inter": "51c57511cd8811707453496e332039d9dc22a4828161dcc29cb2f92f8f0f304a"
+    },
+    "iosxe/medium/no_trailing_newline": {
+      "inter": "b65fb4b41b3744d153b41c9e0bdc1cbe05f30afab9e6dede13d9dd5cf50e173c"
+    },
+    "iosxe/medium/plain": {
+      "inter": "b65fb4b41b3744d153b41c9e0bdc1cbe05f30afab9e6dede13d9dd5cf50e173c"
+    },
+    "iosxe/medium/unicode": {
+      "inter": "9db1aef72be357054696199600dcfdfd0f9af4158a89808b4c9c91c215c816fa"
+    },
+    "iosxe/small/no_trailing_newline": {
+      "inter": "687d1a71d76aa966383659d19fabba68030ddf82874f35cdc6b021f49cf2902c"
+    },
+    "iosxe/small/plain": {
+      "inter": "687d1a71d76aa966383659d19fabba68030ddf82874f35cdc6b021f49cf2902c"
+    },
+    "iosxe/small/unicode": {
+      "inter": "6b6c3d2bbd70b13db749246b4651fe6774fdb4b0599e2a9e5dff300c521bfc94"
+    },
+    "iosxe/tenth/plain": {
+      "inter": "897b7623cd73d9df8560be456c5274f1fc113b7a7f0a47de4744d0a3d40d3ee2"
+    }
+  },
+  "fields": [
+    "inter"
+  ]
+}

@@ -1,0 +1,902 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://strata.invalid/schemas/business-application/v2.schema.json",
+  "$defs": {
+    "ApplicationService": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[a-z][a-z0-9-]{0,62}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "name": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "description": {
+          "anyOf": [
+            {
+              "maxLength": 2000,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Description"
+        },
+        "connection_ids": {
+          "items": {
+            "pattern": "^[a-z][a-z0-9-]{0,62}$",
+            "type": "string"
+          },
+          "maxItems": 1000,
+          "title": "Connection Ids",
+          "type": "array"
+        },
+        "component_roles": {
+          "items": {
+            "$ref": "#/$defs/ServiceComponentRole"
+          },
+          "maxItems": 1000,
+          "title": "Component Roles",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "name"
+      ],
+      "title": "ApplicationService",
+      "type": "object"
+    },
+    "ComponentGroup": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[a-z][a-z0-9-]{0,62}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "name": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "description": {
+          "anyOf": [
+            {
+              "maxLength": 2000,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Description"
+        },
+        "members": {
+          "items": {
+            "$ref": "#/$defs/GroupMember"
+          },
+          "maxItems": 2000,
+          "title": "Members",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "name"
+      ],
+      "title": "ComponentGroup",
+      "type": "object"
+    },
+    "Connection": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[a-z][a-z0-9-]{0,62}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "name": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "description": {
+          "anyOf": [
+            {
+              "maxLength": 2000,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Description"
+        },
+        "source": {
+          "pattern": "^[a-z][a-z0-9-]{0,62}$",
+          "title": "Source",
+          "type": "string"
+        },
+        "destination": {
+          "pattern": "^[a-z][a-z0-9-]{0,62}$",
+          "title": "Destination",
+          "type": "string"
+        },
+        "protocol": {
+          "anyOf": [
+            {
+              "maxLength": 50,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Protocol"
+        },
+        "destination_ports": {
+          "anyOf": [
+            {
+              "items": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "pattern": "^[0-9]{1,5}(?:-[0-9]{1,5})?$",
+                    "type": "string"
+                  }
+                ]
+              },
+              "maxItems": 100,
+              "minItems": 1,
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Destination Ports"
+        },
+        "source_ports": {
+          "anyOf": [
+            {
+              "items": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "pattern": "^[0-9]{1,5}(?:-[0-9]{1,5})?$",
+                    "type": "string"
+                  }
+                ]
+              },
+              "maxItems": 100,
+              "minItems": 1,
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source Ports"
+        },
+        "success": {
+          "default": "forward",
+          "enum": [
+            "forward",
+            "round-trip",
+            "session"
+          ],
+          "title": "Success",
+          "type": "string"
+        },
+        "destination_condition": {
+          "$ref": "#/$defs/DestinationCondition"
+        },
+        "source_context": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/EndpointContext"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "destination_context": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/EndpointContext"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "header_constraints": {
+          "additionalProperties": {
+            "items": {
+              "maxItems": 2,
+              "minItems": 2,
+              "prefixItems": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "integer"
+                }
+              ],
+              "type": "array"
+            },
+            "type": "array"
+          },
+          "maxProperties": 7,
+          "title": "Header Constraints",
+          "type": "object"
+        },
+        "mtu": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/MtuRequest"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "provenance": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TraceProvenance"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "source",
+        "destination",
+        "destination_condition"
+      ],
+      "title": "Connection",
+      "type": "object"
+    },
+    "DestinationCondition": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "enum": [
+            "member",
+            "and",
+            "or",
+            "threshold"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "member": {
+          "anyOf": [
+            {
+              "pattern": "^[a-z][a-z0-9-]{0,62}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Member"
+        },
+        "n": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "N"
+        },
+        "parts": {
+          "items": {
+            "$ref": "#/$defs/DestinationCondition"
+          },
+          "maxItems": 100,
+          "title": "Parts",
+          "type": "array"
+        }
+      },
+      "required": [
+        "kind"
+      ],
+      "title": "DestinationCondition",
+      "type": "object"
+    },
+    "EndpointContext": {
+      "additionalProperties": false,
+      "properties": {
+        "vrf": {
+          "anyOf": [
+            {
+              "maxLength": 500,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Vrf"
+        },
+        "device_uid": {
+          "anyOf": [
+            {
+              "maxLength": 500,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Device Uid"
+        },
+        "identity_uid": {
+          "anyOf": [
+            {
+              "maxLength": 500,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Identity Uid"
+        },
+        "segment_uid": {
+          "anyOf": [
+            {
+              "maxLength": 500,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Segment Uid"
+        },
+        "ingress_interface_uid": {
+          "anyOf": [
+            {
+              "maxLength": 500,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Ingress Interface Uid"
+        }
+      },
+      "title": "EndpointContext",
+      "type": "object"
+    },
+    "GroupMember": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[a-z][a-z0-9-]{0,62}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "name": {
+          "anyOf": [
+            {
+              "maxLength": 200,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Name"
+        },
+        "address": {
+          "anyOf": [
+            {
+              "maxLength": 200,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Address"
+        },
+        "inventory": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/InventoryReference"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "context": {
+          "anyOf": [
+            {
+              "maxLength": 500,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Context"
+        },
+        "placeholder": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Placeholder"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "title": "GroupMember",
+      "type": "object"
+    },
+    "InventoryReference": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "enum": [
+            "device",
+            "interface",
+            "ip",
+            "network",
+            "dns",
+            "service_requirement",
+            "vrf",
+            "identity",
+            "segment"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "uid": {
+          "maxLength": 500,
+          "minLength": 1,
+          "title": "Uid",
+          "type": "string"
+        },
+        "role": {
+          "default": "component",
+          "enum": [
+            "source",
+            "destination",
+            "component",
+            "shared"
+          ],
+          "title": "Role",
+          "type": "string"
+        },
+        "context": {
+          "anyOf": [
+            {
+              "maxLength": 500,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Context"
+        }
+      },
+      "required": [
+        "kind",
+        "uid"
+      ],
+      "title": "InventoryReference",
+      "type": "object"
+    },
+    "MtuRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "mode": {
+          "default": "off",
+          "enum": [
+            "off",
+            "inventory",
+            "unfragmented",
+            "packet"
+          ],
+          "title": "Mode",
+          "type": "string"
+        },
+        "ip_packet_bytes": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Ip Packet Bytes"
+        },
+        "ipv4_df": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Ipv4 Df"
+        },
+        "reply_ip_packet_bytes": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reply Ip Packet Bytes"
+        },
+        "traffic_class": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Traffic Class"
+        }
+      },
+      "title": "MtuRequest",
+      "type": "object"
+    },
+    "Placeholder": {
+      "additionalProperties": false,
+      "description": "Schema version 2. A described object that is not bound to inventory yet.",
+      "properties": {
+        "text": {
+          "maxLength": 500,
+          "minLength": 1,
+          "title": "Text",
+          "type": "string"
+        },
+        "expected_kind": {
+          "anyOf": [
+            {
+              "enum": [
+                "device",
+                "interface",
+                "ip",
+                "network",
+                "dns",
+                "service_requirement",
+                "vrf",
+                "identity",
+                "segment"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Expected Kind"
+        },
+        "status": {
+          "default": "unresolved",
+          "enum": [
+            "unresolved",
+            "ambiguous"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "candidates": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 20,
+          "title": "Candidates",
+          "type": "array"
+        },
+        "note": {
+          "anyOf": [
+            {
+              "maxLength": 1000,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Note"
+        }
+      },
+      "required": [
+        "text"
+      ],
+      "title": "Placeholder",
+      "type": "object"
+    },
+    "ServiceComponentRole": {
+      "additionalProperties": false,
+      "properties": {
+        "group_id": {
+          "pattern": "^[a-z][a-z0-9-]{0,62}$",
+          "title": "Group Id",
+          "type": "string"
+        },
+        "role": {
+          "enum": [
+            "client",
+            "endpoint",
+            "dependency",
+            "component"
+          ],
+          "title": "Role",
+          "type": "string"
+        }
+      },
+      "required": [
+        "group_id",
+        "role"
+      ],
+      "title": "ServiceComponentRole",
+      "type": "object"
+    },
+    "TraceProvenance": {
+      "additionalProperties": false,
+      "properties": {
+        "trace_id": {
+          "maxLength": 500,
+          "minLength": 1,
+          "title": "Trace Id",
+          "type": "string"
+        },
+        "snapshot": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Snapshot",
+          "type": "string"
+        },
+        "captured_fields": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 50,
+          "minItems": 1,
+          "title": "Captured Fields",
+          "type": "array"
+        }
+      },
+      "required": [
+        "trace_id",
+        "snapshot",
+        "captured_fields"
+      ],
+      "title": "TraceProvenance",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "if": {
+    "properties": {
+      "groups": {
+        "contains": {
+          "properties": {
+            "members": {
+              "contains": {
+                "properties": {
+                  "placeholder": {
+                    "type": "object"
+                  }
+                },
+                "required": [
+                  "placeholder"
+                ]
+              }
+            }
+          },
+          "required": [
+            "members"
+          ]
+        }
+      }
+    },
+    "required": [
+      "groups"
+    ]
+  },
+  "properties": {
+    "schema_version": {
+      "default": 1,
+      "enum": [
+        1,
+        2
+      ],
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "kind": {
+      "const": "BusinessApplication",
+      "default": "BusinessApplication",
+      "title": "Kind",
+      "type": "string"
+    },
+    "id": {
+      "pattern": "^[a-z][a-z0-9-]{0,62}$",
+      "title": "Id",
+      "type": "string"
+    },
+    "name": {
+      "maxLength": 200,
+      "minLength": 1,
+      "title": "Name",
+      "type": "string"
+    },
+    "description": {
+      "anyOf": [
+        {
+          "maxLength": 4000,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Description"
+    },
+    "owner": {
+      "anyOf": [
+        {
+          "maxLength": 500,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Owner"
+    },
+    "environment": {
+      "anyOf": [
+        {
+          "maxLength": 200,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Environment"
+    },
+    "state": {
+      "default": "draft",
+      "enum": [
+        "draft",
+        "ready"
+      ],
+      "title": "State",
+      "type": "string"
+    },
+    "services": {
+      "items": {
+        "$ref": "#/$defs/ApplicationService"
+      },
+      "maxItems": 200,
+      "title": "Services",
+      "type": "array"
+    },
+    "groups": {
+      "items": {
+        "$ref": "#/$defs/ComponentGroup"
+      },
+      "maxItems": 500,
+      "title": "Groups",
+      "type": "array"
+    },
+    "connections": {
+      "items": {
+        "$ref": "#/$defs/Connection"
+      },
+      "maxItems": 1000,
+      "title": "Connections",
+      "type": "array"
+    }
+  },
+  "required": [
+    "id",
+    "name"
+  ],
+  "then": {
+    "properties": {
+      "schema_version": {
+        "const": 2
+      },
+      "state": {
+        "const": "draft"
+      }
+    },
+    "required": [
+      "schema_version"
+    ]
+  },
+  "title": "BusinessApplicationDefinition",
+  "type": "object"
+}

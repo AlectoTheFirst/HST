@@ -1,0 +1,31 @@
+{
+  "cases": {
+    "iosxr/fixture/plain": {
+      "inter": "8ed9441980358a060d84fb26cd64b016e1413335f7cdd7402095848577851297"
+    },
+    "iosxr/fixture/no_trailing_newline": {
+      "inter": "8ed9441980358a060d84fb26cd64b016e1413335f7cdd7402095848577851297"
+    },
+    "iosxr/fixture/unicode": {
+      "inter": "564da63988d03a389b345779b18b23283834156be2acfdeb8e2793c65fb28878"
+    },
+    "iosxr/small/plain": {
+      "inter": "c233f5cf1cc065002bf7aba98e55bd963f916a97e1e1fc9987842350857437fc"
+    },
+    "iosxr/small/no_trailing_newline": {
+      "inter": "c233f5cf1cc065002bf7aba98e55bd963f916a97e1e1fc9987842350857437fc"
+    },
+    "iosxr/small/unicode": {
+      "inter": "130d95a0fe4731529e818f01778ba751999f60b2ea8811ec10e547f541a77d52"
+    },
+    "iosxr/medium/plain": {
+      "inter": "83f8d0a74d28f95d40a01dbcc32649a3a0fbcbeb0a1ea25ac224a3d35c079959"
+    },
+    "iosxr/medium/no_trailing_newline": {
+      "inter": "83f8d0a74d28f95d40a01dbcc32649a3a0fbcbeb0a1ea25ac224a3d35c079959"
+    },
+    "iosxr/medium/unicode": {
+      "inter": "ff4b37b6c5a4b68c34ce1cb99e6de02ecb850defc442693ef494a737312ced72"
+    }
+  }
+}

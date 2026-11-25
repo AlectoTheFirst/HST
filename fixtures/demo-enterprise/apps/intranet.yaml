@@ -1,0 +1,78 @@
+schema_version: 1
+kind: BusinessApplication
+id: intranet-production
+name: Intranet
+description: Employee intranet in Munich with the search index in Azure.
+environment: production
+state: draft
+services:
+  - id: intranet-service
+    name: Intranet service
+    connection_ids:
+      - employees-to-vip
+      - web-to-db
+      - web-to-search
+    component_roles:
+      - group_id: frontend
+        role: endpoint
+groups:
+  - id: employees
+    name: Employees
+    members:
+      - id: vienna-users
+        address: 10.11.10.0/24
+      - id: warsaw-users
+        address: 10.13.10.0/24
+      - id: zurich-users
+        address: 10.16.10.0/24
+  - id: frontend
+    name: Intranet VIP
+    members:
+      - id: intranet-vip
+        address: 10.2.30.12
+  - id: db
+    name: MariaDB
+    members:
+      - id: intranet-db-01
+        address: 10.2.15.11
+      - id: intranet-db-02
+        address: 10.2.15.12
+  - id: search
+    name: Azure search
+    members:
+      - id: intranet-search
+        address: 10.80.2.10
+connections:
+  - id: employees-to-vip
+    name: Employees to VIP
+    source: employees
+    destination: frontend
+    protocol: tcp
+    destination_ports:
+      - 443
+    success: session
+    destination_condition:
+      kind: member
+      member: intranet-vip
+  - id: web-to-db
+    name: Web to MariaDB
+    source: frontend
+    destination: db
+    protocol: tcp
+    destination_ports:
+      - 3306
+    success: session
+    destination_condition:
+      kind: member
+      member: intranet-db-01
+  - id: web-to-search
+    name: Web to Azure search
+    source: frontend
+    destination: search
+    protocol: tcp
+    destination_ports:
+      - 443
+    success: round-trip
+    destination_condition:
+      kind: member
+      member: intranet-search

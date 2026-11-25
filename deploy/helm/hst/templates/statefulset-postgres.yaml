@@ -1,0 +1,138 @@
+{{- if .Values.postgres.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "hst.postgresHost" . }}
+  labels: {{- include "hst.labels" . | nindent 4 }}
+spec:
+  # The governing Service of a StatefulSet is headless.
+  clusterIP: None
+  ports:
+    - port: 5432
+      targetPort: postgres
+      name: postgres
+  selector: {{- include "hst.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: postgres
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "hst.postgresHost" . }}
+  labels: {{- include "hst.labels" . | nindent 4 }}
+spec:
+  serviceName: {{ include "hst.postgresHost" . }}
+  # The count is fixed. A second replica is a separate server with its own volume.
+  replicas: 1
+  selector:
+    matchLabels: {{- include "hst.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: postgres
+  template:
+    metadata:
+      labels: {{- include "hst.labels" . | nindent 8 }}
+        app.kubernetes.io/component: postgres
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets: {{- toYaml . | nindent 8 }}
+      {{- end }}
+      automountServiceAccountToken: false
+      securityContext:
+        fsGroup: 999          # the postgres uid in the official image
+        seccompProfile: { type: RuntimeDefault }
+      containers:
+        - name: postgres
+          image: {{ .Values.postgres.image | quote }}
+          imagePullPolicy: IfNotPresent
+          # The root filesystem is read-only. The writable paths are the data volume with
+          # PGDATA, the socket directory /var/run/postgresql and /tmp.
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 999
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: ["ALL"] }
+          {{- if .Values.postgres.tls.serverSecret }}
+          # The TLS listener (postgres.tls.serverSecret). The app verifies the certificate
+          # against postgres.tls.caSecret and its name against this Service. pg_hba.conf,
+          # written when the volume was first initialised, still admits a client that
+          # does not ask for TLS.
+          args:
+            - postgres
+            - -c
+            - ssl=on
+            - -c
+            - ssl_cert_file=/ssl/postgres/tls.crt
+            - -c
+            - ssl_key_file=/ssl/postgres/tls.key
+          {{- end }}
+          env:
+            - name: POSTGRES_USER
+              value: {{ .Values.postgres.username | quote }}
+            - name: POSTGRES_DB
+              value: {{ .Values.postgres.database | quote }}
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "hst.secretName" . }}
+                  key: postgres-password
+            # initdb refuses a directory that is not empty, and some provisioners create
+            # lost+found in the PVC. PGDATA is a subdirectory of the mount.
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+          ports:
+            - name: postgres
+              containerPort: 5432
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", {{ .Values.postgres.username | quote }}, "-d", {{ .Values.postgres.database | quote }}]
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 5
+          livenessProbe:
+            exec:
+              command: ["pg_isready", "-U", {{ .Values.postgres.username | quote }}]
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            timeoutSeconds: 5
+          resources: {{- toYaml .Values.postgres.resources | nindent 12 }}
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+            - name: run
+              mountPath: /var/run/postgresql
+            - name: tmp
+              mountPath: /tmp
+            {{- if .Values.postgres.tls.serverSecret }}
+            - name: server-tls
+              mountPath: /ssl/postgres
+              readOnly: true
+            {{- end }}
+      volumes:
+        - name: run
+          emptyDir: {}
+        - name: tmp
+          emptyDir: {}
+        {{- if .Values.postgres.tls.serverSecret }}
+        - name: server-tls
+          secret:
+            secretName: {{ .Values.postgres.tls.serverSecret }}
+            # Postgres accepts a root-owned key file with mode 0640 or less. The kubelet
+            # writes the file as root, and the postgres group (fsGroup above) reads it.
+            defaultMode: 0440
+            items:
+              - key: tls.crt
+                path: tls.crt
+              - key: tls.key
+                path: tls.key
+        {{- end }}
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        {{- with .Values.postgres.persistence.storageClass }}
+        storageClassName: {{ . | quote }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.postgres.persistence.size }}
+{{- end }}

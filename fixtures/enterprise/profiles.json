@@ -1,0 +1,47 @@
+{
+  "profile_contract": "enterprise-symbolic-qualification",
+  "profile_version": "1.0",
+  "measurement_status": "requirements_only_no_measured_claim",
+  "seeds": [1209, 1210, 1211, 1212, 1213],
+  "backend": {
+    "production": "cudd",
+    "test_only": "autoref",
+    "header_schema_version": "1",
+    "result_schema_version": "2",
+    "semantic_version": "symbolic-v2",
+    "ordering_version": "1",
+    "address_families": ["ipv4", "ipv6"],
+    "manager_ownership": "one manager per address family per analysis child; handles never cross jobs or processes"
+  },
+  "workloads": {
+    "P0-conformance": {"shape": "small exhaustive models covering A01-A23; A24 is the aggregate acceptance gate", "required": true},
+    "P1-large-policy": {"enabled_rules": 100000, "ordered_layers": 3, "inline_layers": 20, "group_depth": 12, "distinct_objects": 100000, "membership_edges": 1000000, "negated_cell_fraction": 0.2, "overlap_fraction": 0.3},
+    "P2-path-depth": {"firewall_stages": 12, "rules_per_firewall": 20000, "router_acl_stages": 24, "entries_per_acl": 2000, "nat_firewalls": 4, "requires": ["ecmp_alternatives", "correlated_round_trips"]},
+    "P3-vsx-estate": {"appliances": 1000, "logical_firewall_instances": 10000, "packages": 500, "rules_per_package": 20000, "interfaces": 100000, "route_rows": 5000000},
+    "P4-incremental": {"changes": ["single_rule_action_or_position", "object_only", "route_withdrawal", "installation_change", "new_default", "new_matching_rule"]},
+    "P5-concurrency": {"concurrent_assessments": 4, "collection_jobs_continue": true},
+    "P6-adversarial": {"requires": ["cross_cut_header_dimensions", "distinct_rewrite_bindings", "fanout", "missing_evidence", "repeated_routing_states", "resource_limits", "malformed_artifacts"]}
+  },
+  "timing_requirements": {
+    "collection": {"target_seconds": 300, "alternative_seconds": 600, "meaning": "The collection target is five minutes; an explicitly selected alternative profile may allow ten minutes.", "status": "requirement_not_measurement"},
+    "existing_graph_rib_path_queries": {"target_seconds_exclusive": 5, "meaning": "Existing graph and RIB path queries remain on their current path and target under five seconds.", "status": "preserve_existing_contract"},
+    "simulations_and_assessments": {"timing": "may_take_minutes", "fixed_limit": null, "status": "no_fixed_timing_claim"}
+  },
+  "resource_requirements": {
+    "enterprise_child_memory_mb": 16384,
+    "analysis_timeout_seconds": 600,
+    "bdd_node_limit": 20000000,
+    "state_limit": 250000,
+    "explanation_limit": 10000,
+    "cache_max_gb": 100,
+    "routing_round_limits": {"outer": 256, "bgp": 256, "resolution": 256},
+    "status": "requirements_not_measurements"
+  },
+  "artifact_contract": {
+    "format": "analysis-artifact",
+    "version": 1,
+    "cache_key_fields": ["manifest_digest", "header_schema_version", "result_schema_version", "semantic_version", "ordering_version", "request_scope", "choice_scope", "knowledge_mask"],
+    "must_persist": ["exact_bounds", "units", "gap_references", "evidence_references", "completion_status"],
+    "bounded_display_may_omit_detail": true
+  }
+}

@@ -1,0 +1,3897 @@
+/*
+ * Base theme: the palettes, the node kind colors, the font stacks and the
+ * base styles.
+ *
+ * The `data-theme` attribute of the root element selects the palette.
+ * public/theme-init.js sets the attribute before the first paint, and
+ * shell/theme.ts maintains it.
+ *
+ * The status tokens have the suffix `bg` for the background, `b` for the
+ * border and `text` for the text (--okbg, --okb, --oktext).
+ */
+
+:root {
+  /* Light palette. Each other palette overrides these tokens in its
+     `data-theme` block. */
+  --bg: #f3f5f8;
+  --panel: #ffffff;
+  --panel2: #f9fafc;
+  --border: #e1e6ed;
+  --text: #1a2230;
+  --muted: #7c8794;
+  --muted2: #56626f;
+  --field: #fff;
+  --fieldb: #cfd6de;
+  --chipbg: #fff;
+  --accent: #2f6fe4;
+  --acctext: #2358c4;
+  --seg: #e6eaf0;
+  --segon: #fff;
+  --sel: #ecf1f9;
+  --line: #b8c4d0;
+  /* the accent at low opacity: the active rail item, the selected station */
+  --accent-soft: color-mix(in srgb, var(--accent) 12%, transparent);
+  /* one radius for cards and controls, deliberately small */
+  --radius: 6px;
+  --radius-sm: 4px;
+  --ok: #2e9e63;
+  --okbg: #e8f5ee;
+  --okb: #bfe3cf;
+  --oktext: #176a42;
+  --bad: #d64545;
+  --badbg: #faeaea;
+  --badb: #eec4c4;
+  --badtext: #8f2f2f;
+  --warnbg: #faf3e0;
+  --warnb: #e8d9ae;
+  --warntext: #7d641f;
+  /*
+   * The app loads no font file. The browser uses Archivo and JetBrains Mono
+   * when they are installed on the client, and the next font of the stack
+   * otherwise.
+   */
+  --ui: Archivo, system-ui, -apple-system, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+/*
+ * Dark palette. The preference "system" selects it when
+ * `prefers-color-scheme` is dark (shell/theme.ts).
+ *
+ * The contrast of --muted and of --muted2 on --bg is above 4.5:1. The
+ * emphasis order is --muted < --muted2 < --text.
+ */
+
+:root[data-theme="dark"] {
+  --bg: #10161d;
+  --panel: #141c25;
+  --panel2: #131a23;
+  --border: #1f2a36;
+  --text: #e8eef4;
+  --muted: #7d8d9d;
+  --muted2: #9fb0c0;
+  --field: #0d1319;
+  --fieldb: #2b3a4a;
+  --chipbg: #1a232e;
+  --accent: #4a6fa8;
+  --acctext: #7a9cc9;
+  --seg: #1c2733;
+  --segon: #2b3a4a;
+  --sel: #1c2733;
+  --line: #3a4b5c;
+  --ok: #3dbb78;
+  --okbg: #15251d;
+  --okb: #234a35;
+  --oktext: #7fd6a8;
+  --bad: #e05d5d;
+  --badbg: #2a1518;
+  --badb: #57262b;
+  --badtext: #f2a3a3;
+  --warnbg: #2a2415;
+  --warnb: #4d3f1c;
+  --warntext: #d6b96a;
+}
+
+/* Each named palette defines each variable of the light and dark palettes. */
+
+/* Dracula, draculatheme.com */
+:root[data-theme="dracula"] {
+  --bg: #282a36;
+  --panel: #2e303e;
+  --panel2: #2b2d3a;
+  --border: #44475a;
+  --text: #f8f8f2;
+  --muted: #8b93b8;
+  --muted2: #aab2d4;
+  --field: #21222c;
+  --fieldb: #44475a;
+  --chipbg: #343746;
+  --accent: #bd93f9;
+  --acctext: #cbaefb;
+  --seg: #343746;
+  --segon: #44475a;
+  --sel: #343746;
+  --line: #565b78;
+  --ok: #50fa7b;
+  --okbg: #1e2a22;
+  --okb: #2e4a35;
+  --oktext: #8af5a8;
+  --bad: #ff5555;
+  --badbg: #332025;
+  --badb: #5c2b31;
+  --badtext: #ff9e9e;
+  --warnbg: #33301c;
+  --warnb: #5c531f;
+  --warntext: #f1fa8c;
+}
+
+/* Catppuccin Mocha, catppuccin.com */
+:root[data-theme="catppuccin"] {
+  --bg: #1e1e2e;
+  --panel: #242438;
+  --panel2: #212132;
+  --border: #313244;
+  --text: #cdd6f4;
+  --muted: #8f97b3;
+  --muted2: #bac2de;
+  --field: #181825;
+  --fieldb: #45475a;
+  --chipbg: #2a2a40;
+  --accent: #cba6f7;
+  --acctext: #d5b8f9;
+  --seg: #2a2a40;
+  --segon: #45475a;
+  --sel: #2a2a40;
+  --line: #585b70;
+  --ok: #a6e3a1;
+  --okbg: #1f2b22;
+  --okb: #34503c;
+  --oktext: #c0eeb8;
+  --bad: #f38ba8;
+  --badbg: #2e1c26;
+  --badb: #552e3e;
+  --badtext: #f7b3c7;
+  --warnbg: #2e2a1c;
+  --warnb: #554c2a;
+  --warntext: #f9e2af;
+}
+
+/* Tokyo Night, github.com/tokyo-night */
+:root[data-theme="tokyo-night"] {
+  --bg: #1a1b26;
+  --panel: #1f2335;
+  --panel2: #1d2030;
+  --border: #292e42;
+  --text: #c0caf5;
+  --muted: #8189b3;
+  --muted2: #a9b1d6;
+  --field: #16161e;
+  --fieldb: #3b4261;
+  --chipbg: #24283b;
+  --accent: #7aa2f7;
+  --acctext: #96b6f9;
+  --seg: #24283b;
+  --segon: #3b4261;
+  --sel: #24283b;
+  --line: #414868;
+  --ok: #9ece6a;
+  --okbg: #1e2820;
+  --okb: #37502e;
+  --oktext: #bfe39a;
+  --bad: #f7768e;
+  --badbg: #2c1a21;
+  --badb: #542a38;
+  --badtext: #faa9b8;
+  --warnbg: #2c261a;
+  --warnb: #54462a;
+  --warntext: #e0af68;
+}
+
+/* Nord, nordtheme.com */
+:root[data-theme="nord"] {
+  --bg: #2e3440;
+  --panel: #353c4a;
+  --panel2: #323947;
+  --border: #434c5e;
+  --text: #eceff4;
+  --muted: #94a0b3;
+  --muted2: #b4c0d2;
+  --field: #292e39;
+  --fieldb: #4c566a;
+  --chipbg: #3b4252;
+  --accent: #88c0d0;
+  --acctext: #a3d0dd;
+  --seg: #3b4252;
+  --segon: #4c566a;
+  --sel: #3b4252;
+  --line: #566178;
+  --ok: #a3be8c;
+  --okbg: #2c332a;
+  --okb: #46543c;
+  --oktext: #c0d8ab;
+  --bad: #bf616a;
+  --badbg: #34272b;
+  --badb: #55343b;
+  --badtext: #dfa3aa;
+  --warnbg: #34301f;
+  --warnb: #57502e;
+  --warntext: #ebcb8b;
+}
+
+/*
+ * Node palette (kind -> color). Each kind has one custom property. A
+ * component reads `var(--kind-${hop.kind}, var(--kind-fallback))`.
+ */
+
+:root {
+  --kind-Device: #7291b4;
+  --kind-Port: #4f6b85;
+  --kind-Interface: #57a29b;
+  --kind-Endpoint: #8aa457;
+  --kind-IpAddress: #5b9bc0;
+  --kind-Prefix: #4a86a8;
+  --kind-L2Segment: #3f9187;
+  --kind-BridgeDomain: #3f9187;
+  --kind-VlanInstance: #66b0a8;
+  --kind-Ssid: #9d8ec9;
+  --kind-FwRule: #a3719f;
+  --kind-FwRulebase: #8d5f89;
+  --kind-NatRule: #b07a8e;
+  --kind-NetObject: #a58a6f;
+  --kind-SvcObject: #a58a6f;
+  --kind-Zone: #996f5c;
+  --kind-VrfInstance: #5f87c0;
+  --kind-L3Domain: #4a6fa8;
+  --kind-RoutingDomain: #4a6fa8;
+  --kind-Site: #8b8f96;
+  --kind-WanLink: #c08a54;
+  --kind-Tunnel: #c08a54;
+  --kind-PbrPolicy: #8d5f89;
+  --kind-NextHop: #4a86a8;
+  --kind-fallback: #8b8f96;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+#root {
+  display: flex;
+  flex-direction: column;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 13px/1.45 var(--ui);
+  display: flex;
+  flex-direction: column;
+}
+
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+  color: inherit;
+}
+
+.primary {
+  border: 0;
+  cursor: pointer;
+  background: var(--accent);
+  color: #fff;
+  font: 600 12.5px var(--ui);
+  border-radius: var(--radius);
+  padding: 8px 18px;
+  letter-spacing: 0.01em;
+}
+
+.primary:hover {
+  filter: brightness(1.08);
+}
+
+.primary:disabled {
+  cursor: default;
+  opacity: 0.6;
+  filter: none;
+}
+
+/* the quiet counterpart to .primary: a follow-up action, not the main one */
+.secondary {
+  cursor: pointer;
+  background: var(--panel);
+  border: 1px solid var(--fieldb);
+  color: var(--text);
+  font: 600 12px var(--ui);
+  border-radius: var(--radius);
+  padding: 6px 12px;
+}
+
+.secondary:hover {
+  background: var(--sel);
+}
+
+/*
+ * Top bar. `.segs` styles a <button> and an <a> (NavLink) alike.
+ */
+
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  height: 48px;
+  padding: 0 16px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  flex: none;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  color: inherit;
+  flex: none;
+}
+
+.brand-mark {
+  flex: none;
+  width: 22px;
+  height: 22px;
+}
+
+.brand b {
+  font: 700 15px var(--ui);
+  letter-spacing: 0.01em;
+}
+
+.brand span {
+  font: 400 12px var(--ui);
+  color: var(--muted);
+  padding-left: 8px;
+  border-left: 1px solid var(--border);
+}
+
+.right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  position: relative;
+}
+
+.conn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font: 500 11px var(--mono);
+  color: var(--muted2);
+  padding: 2px 4px;
+}
+
+.conn .dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--muted);
+  display: inline-block;
+}
+
+.conn .dot.ok {
+  background: var(--ok);
+}
+
+.conn .dot.part {
+  background: var(--warntext);
+}
+
+.conn .dot.err {
+  background: var(--bad);
+}
+
+.segs {
+  display: flex;
+  background: var(--seg);
+  border-radius: 6px;
+  padding: 2px;
+}
+
+.segs button,
+.segs a {
+  border: 0;
+  cursor: pointer;
+  font: 600 11.5px var(--ui);
+  color: var(--muted2);
+  background: transparent;
+  border-radius: 5px;
+  padding: 4px 14px;
+  text-decoration: none;
+  display: inline-block;
+}
+
+.segs button.on,
+.segs a.on {
+  color: var(--text);
+  background: var(--segon);
+  box-shadow: 0 1px 2px rgba(28, 39, 51, 0.12);
+}
+
+.workspace-switcher {
+  flex: none;
+}
+
+.workspace-switcher a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.app-topbar > .right {
+  margin-left: auto;
+}
+
+.app-topbar > .searchbtn {
+  min-width: 0;
+}
+
+@media (max-width: 1024px) {
+  .app-topbar {
+    height: auto;
+    min-height: 48px;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 8px 12px;
+  }
+
+  .app-topbar > .searchbtn {
+    order: 3;
+    flex-basis: 100%;
+    max-width: none;
+  }
+}
+
+@media (max-width: 600px) {
+  .app-topbar .brand span {
+    display: none;
+  }
+
+  .app-topbar > .right {
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .workspace-switcher {
+    order: 2;
+    flex-basis: 100%;
+    justify-content: center;
+  }
+}
+
+/* Theme toggle. It reuses `.segs` with a smaller type scale. */
+
+.theme-toggle button {
+  font: 600 10.5px var(--ui);
+  padding: 4px 10px;
+  letter-spacing: 0.02em;
+}
+
+/* user menu */
+
+.usermenu {
+  position: relative;
+}
+
+.usermenu-btn {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  cursor: pointer;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text);
+  font: 600 12px var(--ui);
+  border-radius: var(--radius);
+  padding: 3px 6px 3px 3px;
+}
+
+.usermenu-btn .icon {
+  color: var(--muted);
+}
+
+.avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--seg);
+  color: var(--muted2);
+  font: 700 10px var(--ui);
+  letter-spacing: 0.02em;
+}
+
+.usermenu-btn:hover {
+  background: var(--sel);
+}
+
+.usermenu-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 140px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18);
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  z-index: 10;
+}
+
+.usermenu-dropdown button,
+.usermenu-dropdown a {
+  text-align: left;
+  text-decoration: none;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  font: 500 12px var(--ui);
+  color: var(--text);
+  padding: 7px 10px;
+  border-radius: 5px;
+}
+
+.usermenu-dropdown button:hover,
+.usermenu-dropdown a:hover {
+  background: var(--sel);
+}
+
+.usermenu-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.usermenu-list button,
+.usermenu-list a {
+  display: block;
+  width: 100%;
+}
+
+.shell-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/*
+ * Shell body: the rail beside the routed page. A route outside AppShell's
+ * RAIL_ROUTES renders without the rail.
+ */
+
+.skip-link {
+  position: absolute;
+  left: 8px;
+  top: -40px;
+  z-index: 100;
+  padding: 6px 10px;
+  border-radius: 5px;
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid var(--border);
+  font: 500 12px var(--ui);
+}
+
+.skip-link:focus {
+  top: 8px;
+}
+
+.shell-content:focus {
+  outline: none;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.shell-body {
+  flex: 1;
+  display: flex;
+  align-items: stretch;
+  min-height: 0;
+}
+
+.shell-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.side-rail {
+  width: 216px;
+  flex: none;
+  background: var(--panel);
+  border-right: 1px solid var(--border);
+  padding: 10px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/*
+ * Collapsible groups. The catalog has many queries across many topics; rendered flat
+ * it is an undifferentiated wall in a 216px rail. The header is a real button
+ * with `aria-expanded` rather than a clickable div, and the list is `hidden`
+ * rather than `display:none`-by-class so it leaves the a11y tree too.
+ */
+
+.rail-group-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  border: 0;
+  cursor: pointer;
+  background: transparent;
+  text-align: left;
+  font: 500 12px var(--ui);
+  color: var(--muted2);
+  padding: 5px 8px;
+  border-radius: var(--radius-sm);
+}
+
+.rail-group-toggle:hover {
+  color: var(--text);
+  background: var(--sel);
+}
+
+.rail-chevron {
+  display: inline-flex;
+  line-height: 1;
+  color: var(--muted);
+  transition: transform 0.12s ease;
+}
+
+.rail-chevron.open {
+  transform: rotate(90deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rail-chevron {
+    transition: none;
+  }
+}
+
+/* count sits right-aligned so the topic names form a clean left column */
+.rail-count {
+  margin-left: auto;
+  font: 500 10px var(--mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+
+.rail-group-items {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding-left: 16px;
+}
+
+.rail-group-items[hidden] {
+  display: none;
+}
+
+/* pinned to the bottom of the rail by the wrapper's auto margin. */
+.rail-foot {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+
+.rail-version {
+  font: 400 11px var(--ui);
+  color: var(--muted);
+  padding-left: 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rail-reset {
+  justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 5px 8px;
+}
+
+.rail-reset:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.rail-reset:disabled:hover {
+  background: transparent;
+}
+
+.forbidden-shell {
+  min-height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.forbidden-card {
+  width: 100%;
+  max-width: 360px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px 26px;
+  text-align: center;
+}
+
+.forbidden-card b {
+  font: 700 15px var(--ui);
+}
+
+.forbidden-card p {
+  margin: 0;
+  font: 400 12.5px var(--ui);
+  color: var(--muted2);
+}
+
+.forbidden-link {
+  align-self: center;
+  margin-top: 6px;
+  font: 600 12px var(--ui);
+  color: var(--acctext);
+  text-decoration: none;
+}
+
+.forbidden-link:hover {
+  text-decoration: underline;
+}
+
+.login-shell {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  padding: 24px;
+}
+
+/* keeps the theme control subordinate to the card it sits under */
+.login-theme {
+  opacity: 0.85;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 340px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 28px 26px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
+}
+
+.login-brand {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.login-brand b {
+  font: 700 16px var(--ui);
+  letter-spacing: 0.02em;
+}
+
+.login-brand span {
+  font: 400 12px var(--ui);
+  color: var(--muted);
+}
+
+.login-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.login-field span {
+  font: 600 10px var(--ui);
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.login-field input {
+  font: 500 13px var(--mono);
+  color: var(--text);
+  background: var(--field);
+  border: 1px solid var(--fieldb);
+  border-radius: 6px;
+  padding: 9px 12px;
+  outline: none;
+}
+
+.login-field input:focus-visible {
+  border-color: var(--accent);
+}
+
+.login-error {
+  margin: 0;
+  font: 500 12px var(--ui);
+  color: var(--badtext);
+  background: var(--badbg);
+  border: 1px solid var(--badb);
+  border-radius: 6px;
+  padding: 8px 10px;
+}
+
+.login-submit {
+  margin-top: 4px;
+  padding: 10px 18px;
+}
+
+/* SSO provider buttons. They have a border and no accent fill. */
+.login-providers {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.login-provider {
+  cursor: pointer;
+  background: var(--field);
+  color: var(--text);
+  border: 1px solid var(--fieldb);
+  font: 600 12px var(--ui);
+  border-radius: 6px;
+  padding: 9px 18px;
+}
+
+.login-provider:hover {
+  border-color: var(--accent);
+}
+
+.login-local {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/*
+ * Flow Desk: the styles of the trace page (flowdesk/TracePage.tsx).
+ */
+
+.trace-page {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 12px 16px;
+  gap: 10px;
+  min-width: 0;
+  min-height: 0;
+  container-type: inline-size;
+}
+
+/* The info and inspector block, sized by the handle above it. `flex: 0 1 auto`
+   with an inner scroll so a long inspector stays inside its budget rather than
+   pushing the ribbon out of the pane. The page itself must never scroll: that
+   would take the ribbon off screen instead of shrinking it. */
+.trace-bottom {
+  flex: 0 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 48px;
+  overflow-y: auto;
+}
+
+.tb-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+}
+
+.tb-chevron {
+  flex: none;
+  display: inline-flex;
+  line-height: 1;
+  color: var(--muted);
+  transition: transform 0.12s ease;
+}
+
+.tb-chevron.open {
+  transform: rotate(90deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tb-chevron {
+    transition: none;
+  }
+}
+
+.tb-title {
+  flex: none;
+  font: 600 10px var(--ui);
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+/* the collapsed preview line: one row, ellipsized rather than wrapped */
+.tb-preview {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: 400 11px var(--ui);
+  color: var(--muted2);
+}
+
+.trace-resize {
+  flex: none;
+  height: 9px;
+  margin: -6px 0;
+  padding: 4px 0;
+  background: transparent;
+  background-clip: content-box;
+  cursor: row-resize;
+  touch-action: none;
+}
+
+.trace-resize:hover {
+  background-color: var(--border);
+}
+
+.trace-resize:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.composer {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  flex: none;
+}
+
+/* The fields are in one row, each with its label above it. `.go` pushes the
+   Trace button to the right end. */
+.composer-row {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.field-label,
+.composer .snap-label {
+  font: 500 11px var(--ui);
+  color: var(--muted2);
+}
+
+.composer .snap-label {
+  text-transform: capitalize;
+}
+
+.composer .snap-picker {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.composer .arrow {
+  display: inline-flex;
+  align-items: center;
+  height: 30px;
+  color: var(--muted);
+}
+
+.composer .advanced-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  height: 30px;
+  margin-left: 0;
+}
+
+.composer input,
+.composer select,
+.composer .snap-select {
+  font: 500 13px var(--mono);
+  color: var(--text);
+  background: var(--field);
+  border: 1px solid var(--fieldb);
+  border-radius: var(--radius-sm);
+  padding: 0 10px;
+  height: 30px;
+  box-sizing: border-box;
+  outline: none;
+}
+
+.composer input:focus-visible,
+.composer select:focus-visible {
+  border-color: var(--accent);
+}
+
+.composer .f-src,
+.composer .f-dst {
+  width: 168px;
+}
+
+.composer .f-port {
+  width: 64px;
+}
+
+.composer .f-start-vrf {
+  width: 200px;
+}
+
+.composer .field-error {
+  font: 500 11px var(--ui);
+  color: var(--bad);
+}
+
+.composer .go {
+  margin-left: auto;
+  align-self: flex-end;
+}
+
+/* Specific enough to beat flowdesk/mtu.css, which loads after this file and
+   sizes the block for the old single-row composer (`flex: 1 0 100%`). In the
+   column layout that basis reads against the card's height and the MTU
+   fieldset fell out of the card. */
+.composer > .composer-advanced {
+  flex: none;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 0;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.composer > .composer-advanced > .mtu-controls {
+  flex: 1 1 100%;
+  min-width: 0;
+}
+
+.composer .mtu-controls input,
+.composer .mtu-controls select {
+  height: 28px;
+  padding: 0 8px;
+}
+
+/*
+ * The snapshot picker of the composer. flowdesk/SnapshotPicker.tsx has its
+ * own classes, because the diff pane uses it without a `.composer` ancestor.
+ */
+
+.snap-label {
+  font: 600 10px var(--ui);
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.snap-select {
+  font: 500 12px var(--ui);
+  color: var(--text);
+  background: var(--field);
+  border: 1px solid var(--fieldb);
+  border-radius: 6px;
+  padding: 5px 9px;
+  outline: none;
+}
+
+.snap-select:focus-visible {
+  border-color: var(--accent);
+}
+
+/* Groups a SnapshotPicker's label, select, kind-filter toggle and truncated
+ * note as one cluster inside whatever flex row it lands in (the composer, or
+ * the diff toolbar), so they wrap together rather than as separate items. */
+.snap-picker {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.snap-truncated {
+  font: 500 11px var(--ui);
+  color: var(--muted);
+}
+
+.compare-toggle {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font: 600 11px var(--ui);
+  color: var(--muted2);
+  cursor: pointer;
+}
+
+.eyebrow {
+  font: 600 10px var(--ui);
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 2px 2px 4px;
+}
+
+.rail-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  width: 100%;
+  text-align: left;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  font: 500 12px var(--ui);
+  color: var(--muted2);
+  padding: 5px 8px;
+  border-radius: var(--radius-sm);
+}
+
+.rail-item:hover {
+  background: var(--sel);
+}
+
+.rail-item.q {
+  font: 500 12px var(--ui);
+}
+
+.rail-item.on {
+  background: var(--accent-soft);
+  color: var(--acctext);
+}
+
+.rail-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* verdict banners */
+
+.banner {
+  border-radius: 6px;
+  padding: 7px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: none;
+}
+
+.banner .head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.banner .word {
+  font: 600 11px var(--ui);
+  letter-spacing: 0.06em;
+}
+
+.banner .flow {
+  font: 400 12px var(--mono);
+  color: var(--text);
+  letter-spacing: -0.01em;
+}
+
+.banner .sub {
+  font: 400 11.5px var(--ui);
+}
+
+.banner.ok {
+  background: var(--okbg);
+  border: 1px solid var(--okb);
+  border-left: 3px solid var(--ok);
+}
+
+.banner.ok .word {
+  color: var(--ok);
+}
+
+.banner.ok .sub {
+  color: var(--oktext);
+}
+
+.banner.bad {
+  background: var(--badbg);
+  border: 1px solid var(--badb);
+  border-left: 3px solid var(--bad);
+}
+
+.banner.bad .word {
+  color: var(--bad);
+}
+
+.banner.bad .sub {
+  color: var(--badtext);
+}
+
+.banner.warn {
+  background: var(--warnbg);
+  border: 1px solid var(--warnb);
+  border-left: 4px solid var(--warntext);
+}
+
+.banner.warn .word,
+.banner.warn .sub {
+  color: var(--warntext);
+}
+
+/* a committed save's warnings (inventory/ui/SaveWarnings.tsx) */
+.banner .save-warnings p,
+.banner .save-warnings ul {
+  margin: 0;
+}
+
+.banner .save-warnings-dismiss {
+  align-self: flex-start;
+}
+
+.banner.err {
+  background: var(--warnbg);
+  border: 1px solid var(--warnb);
+}
+
+.banner.err .sub {
+  color: var(--warntext);
+  font: 500 12.5px var(--ui);
+}
+
+.trace-view-toggle {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+}
+.trace-show-on-map {
+  padding: 3px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+}
+
+/* underline tabs */
+.tabs {
+  display: flex;
+  gap: 2px;
+  border-bottom: 1px solid var(--border);
+  width: 100%;
+}
+
+.tabs button {
+  border: 0;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  cursor: pointer;
+  background: transparent;
+  font: 500 12.5px var(--ui);
+  color: var(--muted2);
+  padding: 7px 12px;
+}
+
+.tabs button:hover {
+  color: var(--text);
+}
+
+.tabs button.on {
+  color: var(--acctext);
+  border-bottom-color: var(--accent);
+  font-weight: 600;
+}
+
+/* ribbon */
+
+.ribbon-outer {
+  position: relative;
+  flex: 1;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+  display: flex;
+  align-items: stretch;
+  overflow: hidden;
+  min-height: 240px;
+}
+
+/* One pane's verdict line above its view; the wrapper takes the place the
+   view had in its parent, so a wide pane's row layout is unchanged. The 240px
+   floor sits once on the wrapper; the views inside take their height from it
+   (min-height 0), so a long list scrolls in its own box instead of growing the
+   wrapper past the pane. */
+.trace-render {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  min-height: 240px;
+}
+
+.trace-render .ribbon-outer,
+.trace-render .pg-outer,
+.trace-render .pt-outer {
+  min-height: 0;
+}
+
+/* A result with more than one interpretation shows one block per
+   interpretation. The blocks scroll inside this column. The gap equals the gap
+   of .trace-page. */
+.trace-groups {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* The stacked panes share the free height. Left at their content size, two
+   Strata panes each stopped at the view's own 240px floor with the rest of
+   the page empty. A pane the user has sized with the handle below it carries
+   `flex: 0 0 auto` and a pixel height inline (TraceGroups in TracePage.tsx);
+   the last pane is never sized, so it absorbs the remainder the way the
+   ribbon does under the details handle. `min-height` stays auto: a pane
+   never shrinks below its view's floor, the stack scrolls instead. */
+.trace-group {
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.rb-controls {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background: var(--panel2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 2px;
+}
+
+.rb-controls button {
+  border: 0;
+  cursor: pointer;
+  background: transparent;
+  color: var(--muted2);
+  border-radius: 4px;
+  padding: 3px 8px;
+  font: 600 12px var(--ui);
+  line-height: 1.2;
+}
+
+.rb-controls button:hover {
+  background: var(--sel);
+  color: var(--text);
+}
+
+.rb-controls button.on {
+  background: var(--sel);
+  color: var(--text);
+}
+
+.rb-controls button:disabled {
+  cursor: default;
+  opacity: 0.45;
+  background: transparent;
+  color: var(--muted2);
+}
+
+.rb-zoomlevel {
+  font: 500 10.5px var(--mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+  min-width: 38px;
+  text-align: center;
+}
+
+.ribbon-empty {
+  width: 100%;
+  text-align: center;
+  font: 400 13px var(--ui);
+  color: var(--muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+  }
+}
+
+/* The Graph's hop detail control, beside the view tabs. */
+.trace-detail {
+  flex: none;
+}
+
+/* The path graph (PathGraphView.tsx): the Paths list above the SVG, and the
+   SVG at its natural size in a frame that scrolls both ways. */
+.pg-outer,
+.pt-outer {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  min-height: 240px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+}
+
+.pg-paths {
+  flex: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.pg-path {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  padding: 3px 8px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--panel2);
+  color: var(--text);
+  cursor: pointer;
+  font: 400 12px var(--mono);
+  text-align: left;
+}
+
+.pg-path:hover {
+  background: var(--sel);
+}
+
+.pg-path[aria-pressed="true"] {
+  border-color: var(--accent);
+  box-shadow: inset 3px 0 0 var(--accent);
+  background: var(--sel);
+}
+
+.pg-pn,
+.pt-pn {
+  font: 700 11px var(--ui);
+  color: var(--muted2);
+  white-space: nowrap;
+}
+
+.pg-via {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.pg-via > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pg-via .pg-src {
+  color: var(--muted2);
+}
+
+.pg-pill,
+.pt-pill {
+  font: 700 10px var(--ui);
+  letter-spacing: 0.04em;
+  border-radius: 3px;
+  padding: 1px 6px;
+  white-space: nowrap;
+  max-width: 32ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pg-pill.ok,
+.pt-pill.ok {
+  color: var(--oktext);
+  background: var(--okbg);
+}
+
+.pg-pill.bad,
+.pt-pill.bad {
+  color: var(--badtext);
+  background: var(--badbg);
+}
+
+.pg-pill.warn,
+.pt-pill.warn {
+  color: var(--warntext);
+  background: var(--warnbg);
+}
+
+.pg-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.pg-scroll.panning,
+.pg-scroll.panning .pg-box {
+  cursor: grabbing;
+}
+
+.pg-scroll .pg-svg {
+  margin: 0 auto;
+}
+
+.pg-svg {
+  display: block;
+}
+
+.pg-link {
+  fill: none;
+  stroke: var(--line);
+}
+
+.pg-link.on {
+  stroke: var(--accent);
+}
+
+/* a link only blocked paths use */
+.pg-link.blocked {
+  stroke: color-mix(in srgb, var(--bad) 55%, var(--line));
+  stroke-dasharray: 5 3;
+}
+
+/* a link only undecided or blocked paths use */
+.pg-link.warn {
+  stroke: var(--warntext);
+  stroke-dasharray: 3 4;
+}
+
+.pg-linklabel {
+  font: 400 9.5px var(--mono);
+  fill: var(--muted2);
+  paint-order: stroke;
+  stroke: var(--panel);
+  stroke-width: 4px;
+}
+
+.pg-box {
+  cursor: pointer;
+}
+
+.pg-box:focus {
+  outline: none;
+}
+
+/* `--kind-color` comes from the box group (hopStyle's kindVar), so the
+   verdict, selection and focus rules below win by cascade. */
+.pg-rect {
+  fill: var(--chipbg);
+  stroke: var(--kind-color, var(--line));
+  stroke-width: 1.2px;
+  stroke-dasharray: 3 2;
+}
+
+.pg-box.solid .pg-rect {
+  stroke-width: 1.6px;
+  stroke-dasharray: none;
+}
+
+.pg-box.v-ok .pg-rect {
+  stroke: var(--ok);
+}
+
+.pg-box.v-bad .pg-rect {
+  stroke: var(--bad);
+}
+
+.pg-box.v-warn .pg-rect {
+  stroke: var(--warntext);
+}
+
+.pg-box.focus .pg-rect {
+  stroke: var(--accent);
+  stroke-width: 3px;
+  stroke-dasharray: none;
+  fill: var(--sel);
+}
+
+.pg-box:focus-visible .pg-rect {
+  stroke: var(--accent);
+  stroke-width: 2.5px;
+  stroke-dasharray: 4 3;
+}
+
+rect.pg-mark {
+  fill: var(--chipbg);
+  stroke: var(--kind-color, var(--line));
+  stroke-width: 1.5px;
+}
+
+.pg-label {
+  font: 600 11.5px var(--ui);
+  fill: var(--text);
+}
+
+.pg-label.mono {
+  font-family: var(--mono);
+}
+
+.pg-sub {
+  font: 400 10px var(--ui);
+  fill: var(--muted2);
+}
+
+.pg-verdict,
+.pg-end {
+  font-weight: 700;
+}
+
+.pg-verdict.ok,
+.pg-end.ok {
+  fill: var(--oktext);
+}
+
+.pg-verdict.bad,
+.pg-end.bad {
+  fill: var(--badtext);
+}
+
+.pg-verdict.warn,
+.pg-end.warn {
+  fill: var(--warntext);
+}
+
+.pg-badge {
+  fill: var(--panel);
+  stroke: var(--accent);
+}
+
+.pg-badget {
+  font: 700 8.5px var(--ui);
+  fill: var(--acctext);
+}
+
+.pg-svg.faded .pg-box:not(.near) {
+  opacity: 0.3;
+}
+
+.pg-svg.faded .pg-link:not(.on) {
+  opacity: 0.18;
+}
+
+/* The path tree (PathTreeView.tsx): monospace rows with ASCII guides. */
+.pt-bar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.pt-filter {
+  flex: 0 1 280px;
+  min-width: 160px;
+  font: 12px var(--ui);
+  padding: 4px 8px;
+  border: 1px solid var(--fieldb);
+  border-radius: var(--radius-sm);
+  background: var(--field);
+  color: var(--text);
+}
+
+.pt-btn {
+  border: 1px solid var(--border);
+  background: var(--panel2);
+  color: var(--muted2);
+  border-radius: var(--radius-sm);
+  padding: 4px 10px;
+  font: 600 12px var(--ui);
+  cursor: pointer;
+}
+
+.pt-btn:hover:not(:disabled) {
+  background: var(--sel);
+  color: var(--text);
+}
+
+.pt-btn:disabled {
+  cursor: default;
+  opacity: 0.45;
+}
+
+.pt-tree {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  font: 12px/1.3 var(--mono);
+  border-radius: var(--radius-sm);
+}
+
+.pt-tree:focus {
+  outline: none;
+}
+
+.pt-tree:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.pt-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: max-content;
+  padding: 2px 6px;
+  white-space: pre;
+  cursor: pointer;
+  color: var(--text);
+}
+
+.pt-row:hover {
+  background: var(--panel2);
+}
+
+.pt-row.selected {
+  background: var(--sel);
+}
+
+.pt-row.cur {
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+
+.pt-tree:focus .pt-row.cur {
+  background: var(--accent-soft);
+}
+
+.pt-row.dim {
+  opacity: 0.4;
+}
+
+.pt-row.match .pt-name,
+.pt-row.match .pt-hname {
+  text-decoration: underline;
+  text-decoration-color: var(--accent);
+  text-underline-offset: 3px;
+}
+
+.pt-pfx {
+  color: var(--line);
+}
+
+.pt-tog {
+  color: var(--muted2);
+}
+
+.pt-mark {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.pt-mark.gate {
+  border-radius: 2px;
+  background: var(--chipbg);
+  border: 1.5px solid var(--kind-color, var(--line));
+}
+
+.pt-name {
+  font-weight: 600;
+}
+
+.pt-kind {
+  font: 500 10.5px var(--ui);
+  color: var(--muted2);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 0 4px;
+}
+
+.pt-note {
+  color: var(--muted);
+}
+
+.pt-tag {
+  font: 600 10px var(--ui);
+  color: var(--acctext);
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  border-radius: 3px;
+  padding: 0 5px;
+}
+
+.pt-end {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* The HST AI entry point in the top bar (shell/TopBar.tsx) and its chat
+   drawer (shell/AgentDrawer.tsx). The z-index of the drawer is below the
+   z-index of `.modal-scrim`. */
+.aibtn {
+  cursor: pointer;
+  background: var(--segon);
+  border: 1px solid var(--fieldb);
+  color: var(--acctext);
+  font: 600 12px var(--ui);
+  border-radius: 6px;
+  padding: 6px 10px;
+}
+
+.aibtn:hover {
+  background: var(--sel);
+}
+
+.drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 400px;
+  max-width: 90vw;
+  background: var(--panel);
+  border-left: 1px solid var(--border);
+  box-shadow: -12px 0 40px rgba(0, 0, 0, 0.25);
+  z-index: 45;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px;
+  transform: translateX(105%); /* past its own shadow, not just its edge */
+  transition: transform 0.18s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .drawer {
+    transition: none;
+  }
+}
+
+.drawer.open {
+  transform: none;
+}
+
+.drawer-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 8px;
+}
+
+.drawer-head .eyebrow {
+  padding: 0;
+}
+
+.drawer-headactions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.drawer-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 4px 0;
+}
+
+.chat-turn p {
+  margin: 0;
+  font: 400 13px/1.5 var(--ui);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.chat-turn.user {
+  align-self: flex-end;
+  max-width: 85%;
+  background: var(--sel);
+  border: 1px solid var(--fieldb);
+  border-radius: 8px 8px 2px 8px;
+  padding: 7px 10px;
+}
+
+.chat-turn.assistant {
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* left-edge drag handle for resizing the drawer */
+.drawer-resize {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -3px;
+  width: 8px;
+  cursor: ew-resize;
+  touch-action: none;
+}
+
+.drawer-resize:hover {
+  background: var(--sel);
+}
+
+/* markdown-rendered agent answers (shell/markdown.tsx) */
+.chat-md {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font: 400 13px/1.5 var(--ui);
+  overflow-wrap: anywhere;
+}
+
+.chat-md p {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.chat-md .md-heading {
+  font-weight: 600;
+}
+
+.chat-md code {
+  font: 400 12px/1.4 var(--mono);
+  background: var(--sel);
+  border-radius: 4px;
+  padding: 0 4px;
+}
+
+.chat-md .md-code {
+  margin: 0;
+  padding: 8px 10px;
+  font: 400 12px/1.5 var(--mono);
+  background: var(--sel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow-x: auto;
+}
+
+.chat-md ul,
+.chat-md ol {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.chat-md .md-tablewrap {
+  overflow-x: auto;
+}
+
+.chat-md table {
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.chat-md th,
+.chat-md td {
+  border: 1px solid var(--border);
+  padding: 4px 8px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.chat-md th {
+  font-weight: 600;
+  background: var(--sel);
+}
+
+.agentpanel-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--field);
+  border: 1px solid var(--fieldb);
+  border-radius: 6px;
+  padding: 8px 12px;
+}
+
+.agentpanel-field input {
+  flex: 1;
+  border: 0;
+  background: none;
+  outline: none;
+  font: 400 13px var(--ui);
+  color: var(--text);
+}
+
+.agentpanel-send {
+  border: 0;
+  background: none;
+  cursor: pointer;
+  font: 600 12px var(--ui);
+  color: var(--acctext);
+}
+
+.agentpanel-note {
+  font: 400 11px var(--ui);
+  color: var(--muted2);
+}
+
+/* The page context the next question carries (shell/AgentDrawer.tsx): one chip
+   per part, each removable except the page itself. */
+.drawer-context {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.context-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  background: var(--sel);
+  border: 1px solid var(--fieldb);
+  border-radius: var(--radius-sm);
+  padding: 2px 8px;
+  font: 400 11px var(--ui);
+  color: var(--muted2);
+  overflow-wrap: anywhere;
+}
+
+.context-chip-remove {
+  border: 0;
+  background: none;
+  cursor: pointer;
+  padding: 0;
+  font: 500 11px var(--ui);
+  color: var(--acctext);
+}
+
+/*
+ * The dialog of the inventory pages (inventory/ui/Page.tsx): a scrim over the
+ * page and a card with a head and a body.
+ */
+
+.modal-scrim {
+  position: fixed;
+  inset: 0;
+  background: rgba(8, 12, 17, 0.5);
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.modal-card {
+  width: 520px;
+  max-width: 100%;
+  max-height: 80vh;
+  overflow: auto;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+}
+
+.modal-label {
+  font: 600 15px var(--ui);
+  color: var(--text);
+}
+
+.modal-close {
+  margin-left: auto;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  font: 500 14px var(--ui);
+  color: var(--muted2);
+  padding: 2px 6px;
+}
+
+.modal-close:hover {
+  color: var(--text);
+}
+
+.modal-body {
+  padding: 14px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* the SD-WAN business policy rules a leg's boundary evaluated, in the node details */
+.inspector-rules {
+  width: 100%;
+  border-collapse: collapse;
+  font: 400 11.5px var(--ui);
+}
+
+.inspector-rules th {
+  text-align: left;
+  font: 600 10.5px var(--ui);
+  color: var(--muted);
+}
+
+.inspector-rules th,
+.inspector-rules td {
+  padding: 3px 6px;
+  border-bottom: 1px solid var(--line);
+}
+
+/* inspector */
+
+.inspector {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: none;
+}
+
+.card-title {
+  font: 600 12.5px var(--ui);
+  color: var(--text);
+}
+
+.inspector .row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.inspector .collapsible-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.traceinfo {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: none;
+}
+
+.traceinfo .collapsible-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.traceinfo ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.traceinfo li {
+  font: 400 11.5px/1.45 var(--mono);
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+.traceinfo li.warn {
+  color: var(--badtext, var(--bad));
+}
+
+.traceinfo-tag {
+  font-weight: 700;
+}
+
+.traceinfo .linkish {
+  align-self: flex-start;
+}
+
+.inspector-leg {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  flex-wrap: wrap;
+  font: 400 12px var(--mono);
+  color: var(--muted);
+  border-top: 1px solid var(--border);
+  padding-top: 8px;
+}
+
+.inspector-leg .bad {
+  color: var(--bad);
+  font-weight: 600;
+}
+
+.inspector .who {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.inspector .kdot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.inspector .name {
+  font: 600 13px var(--ui);
+}
+
+.inspector .kind {
+  font: 400 11px var(--ui);
+  color: var(--muted);
+}
+
+.inspector .note {
+  font: 400 11px var(--ui);
+  color: var(--muted2);
+}
+
+.inspector .uid {
+  font: 500 11px var(--mono);
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+.linkish {
+  margin-left: auto;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  font: 500 11px var(--ui);
+  color: var(--acctext);
+}
+
+.rawpre {
+  margin: 0;
+  background: var(--field);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 9px 10px;
+  font: 400 10.5px/1.55 var(--mono);
+  color: var(--muted2);
+  white-space: pre-wrap;
+  max-height: 180px;
+  overflow: auto;
+}
+
+.hint {
+  font: 400 12px var(--ui);
+  color: var(--muted);
+}
+
+/*
+ * Explore mode: the page layout, the editor card, the Cypher input, the
+ * parameter rows and the results table.
+ */
+
+.explore-layout {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.explore-page {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 12px 16px;
+  gap: 10px;
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.editorcard {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: none;
+}
+
+.editorcard .bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.editorcard .bar .eyebrow {
+  padding: 0;
+}
+
+/* title + the path chain the rail label has no room for */
+.queryhead {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.querydesc {
+  font: 400 11.5px var(--ui);
+  color: var(--muted2);
+}
+
+.cypher-input {
+  resize: vertical;
+  font: 500 12.5px/1.5 var(--mono);
+  color: var(--text);
+  background: var(--field);
+  border: 1px solid var(--fieldb);
+  border-radius: 6px;
+  padding: 9px 10px;
+  outline: none;
+  min-height: 64px;
+  tab-size: 2;
+}
+
+.paramrow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.paramrow:empty {
+  display: none;
+}
+
+.param {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.param label,
+.param-label {
+  font: 600 10px var(--ui);
+  color: var(--muted);
+  letter-spacing: 0.05em;
+}
+
+.param input {
+  font: 500 12px var(--mono);
+  color: var(--text);
+  background: var(--field);
+  border: 1px solid var(--fieldb);
+  border-radius: 5px;
+  padding: 5px 8px;
+  width: 220px;
+  outline: none;
+}
+
+.param input:focus-visible {
+  border-color: var(--accent);
+}
+
+.results {
+  flex: none;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  overflow: auto;
+}
+
+.tabletitle {
+  margin-bottom: 8px;
+}
+
+table {
+  border-collapse: collapse;
+  font: 12px var(--mono);
+  font-variant-numeric: tabular-nums;
+  width: max-content;
+  min-width: 60%;
+}
+
+th {
+  text-align: left;
+  font: 600 11px var(--ui);
+  color: var(--muted2);
+  background: var(--panel2);
+  padding: 7px 10px;
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: -12px;
+}
+
+td {
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  vertical-align: top;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-width: 420px;
+}
+
+td.dim {
+  color: var(--muted2);
+}
+
+.tableempty {
+  font: 400 12px var(--ui);
+  color: var(--muted);
+}
+
+/* The note of a /api/queries or /api/cypher result whose `truncated` flag is
+   set. The server cuts a result at MAX_ROWS (tables.py). */
+.results-truncated {
+  font: 500 11px var(--ui);
+  color: var(--warntext);
+  background: var(--warnbg);
+  border: 1px solid var(--warnb);
+  border-radius: 6px;
+  padding: 6px 10px;
+}
+
+/*
+ * Split workspace. The pane tree is flattened to absolute rectangles in JS
+ * (workspace/layout.ts `tile`) and every pane is positioned inside this one
+ * box. A split or a close keeps the position of each element in the React
+ * tree (see Workspace.tsx).
+ */
+
+.workspace {
+  flex: 1;
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+}
+
+.ws-divider {
+  position: absolute;
+  z-index: 1;
+  background: var(--border);
+  background-clip: content-box;
+  touch-action: none;
+}
+
+/* the seam is zero-thickness, so the handle straddles it */
+.ws-divider.row {
+  width: 9px;
+  padding: 0 4px;
+  cursor: col-resize;
+  transform: translateX(-50%);
+}
+
+.ws-divider.col {
+  height: 9px;
+  padding: 4px 0;
+  cursor: row-resize;
+  transform: translateY(-50%);
+}
+
+.ws-divider:hover {
+  background-color: var(--accent);
+}
+
+.ws-pane {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  overflow: hidden;
+  container-type: inline-size;
+}
+
+/* which pane the rail and the keyboard act on */
+.ws-pane.focused {
+  border-color: var(--accent);
+}
+
+.ws-paneaction {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  background: var(--panel);
+  color: var(--muted2);
+  border-radius: var(--radius-sm);
+  padding: 0;
+}
+
+.ws-paneaction:hover:not(:disabled) {
+  color: var(--text);
+  background: var(--sel);
+}
+
+.ws-paneaction:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.ws-panebody {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.agentpanel-declined {
+  color: var(--warntext);
+}
+
+/* a locally-synthesised error turn (e.g. a poll timeout), not a real answer */
+.agentpanel-failed {
+  color: var(--badtext);
+}
+
+.agentpanel-steps summary {
+  cursor: pointer;
+  font: 500 11px var(--ui);
+  color: var(--acctext);
+  padding: 4px 0;
+}
+
+.agentpanel-step {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 4px 0;
+}
+
+.agentpanel-stepname {
+  font: 600 11px var(--mono);
+  color: var(--muted2);
+}
+
+.agentpanel-stepname.bad {
+  color: var(--badtext);
+}
+
+.agentpanel-steplabel {
+  font: 600 11px var(--mono);
+  color: var(--acctext);
+}
+
+/* Result cards (ai/ResultCards.tsx): one card per tool step, with a summary
+   line for a result the panes read, the handoff actions, and the arguments
+   and result text. */
+.result-card {
+  border-top: 1px solid var(--fieldb);
+}
+
+.result-card-head {
+  display: flex;
+  gap: 6px;
+  align-items: baseline;
+}
+
+.result-card-summary {
+  margin: 0;
+  font: 400 11px var(--ui);
+}
+
+.result-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: baseline;
+}
+
+.result-card-note {
+  font: 400 11px var(--ui);
+  color: var(--muted2);
+}
+
+.result-card-note.bad {
+  color: var(--badtext);
+}
+
+.result-card-raw summary {
+  cursor: pointer;
+  font: 500 10px var(--ui);
+  color: var(--muted2);
+}
+
+/* Citation chips (ai/citations.tsx): the step a statement rests on, a marker
+   that names no step with a result, and a marker no statement carries. */
+.citation-chip {
+  display: inline-block;
+  margin: 0 2px;
+  padding: 0 4px;
+  border: 1px solid var(--fieldb);
+  border-radius: var(--radius-sm);
+  background: var(--sel);
+  font: 500 10px var(--mono);
+  line-height: 14px;
+  color: var(--acctext);
+  vertical-align: baseline;
+  cursor: pointer;
+}
+
+.citation-chip.invalid {
+  cursor: default;
+  color: var(--badtext);
+  text-decoration: line-through;
+}
+
+.citation-chip.neutral {
+  cursor: default;
+  background: none;
+}
+
+.citation-chip.open {
+  border-color: var(--acctext);
+}
+
+/* The unsupported statements of an answer: one line under it, which lists
+   them and highlights them in the answer when opened. */
+.citation-unsupported {
+  margin-top: 6px;
+  font: 400 11px var(--ui);
+  color: var(--muted2);
+}
+
+.citation-unsupported summary {
+  cursor: pointer;
+}
+
+.citation-unsupported ul {
+  margin: 4px 0 0;
+  padding-left: 16px;
+}
+
+.citation-highlight {
+  background: var(--sel);
+  color: inherit;
+  border-bottom: 1px dashed var(--warntext);
+}
+
+/* The evidence of a citation chip (ai/evidence.tsx). */
+.evidence {
+  margin: 6px 0;
+  padding: 6px 8px;
+  border: 1px solid var(--fieldb);
+  border-radius: var(--radius-sm);
+  font: 400 11px var(--ui);
+}
+
+.evidence-head {
+  display: flex;
+  gap: 6px;
+  align-items: baseline;
+}
+
+.evidence-lookup {
+  flex: 1;
+  color: var(--text);
+}
+
+.evidence-caption {
+  margin: 4px 0;
+  color: var(--muted2);
+}
+
+.evidence-record {
+  margin: 4px 0;
+  padding: 4px 6px;
+  border-left: 2px solid var(--fieldb);
+  font: 400 11px var(--mono);
+  overflow-wrap: anywhere;
+}
+
+.evidence-record.supporting {
+  border-left-color: var(--acctext);
+  background: var(--sel);
+}
+
+.evidence-field {
+  display: flex;
+  gap: 8px;
+}
+
+.evidence-field dt {
+  min-width: 96px;
+  color: var(--muted2);
+}
+
+.evidence-field dd {
+  margin: 0;
+}
+
+.evidence-details summary {
+  cursor: pointer;
+  font: 500 10px var(--ui);
+  color: var(--muted2);
+}
+
+.citation-runs {
+  font: 400 11px var(--ui);
+  color: var(--warntext);
+}
+
+/* Link chips under an answer (ai/links.tsx): the stored objects its steps
+   read, each opening in the focused pane. */
+.answer-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.answer-link {
+  cursor: pointer;
+  color: var(--acctext);
+}
+
+/* The three parts of the HST AI drawer (shell/AgentDrawer.tsx): the
+   conversations, the chat and the evidence pane. Side by side in a wide
+   drawer; one level at a time in a narrow one, named by the breadcrumb. */
+.drawer-crumbs {
+  flex: none;
+  min-width: 0;
+}
+
+.drawer-crumbs ol {
+  display: flex;
+  align-items: baseline;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font: 500 12px var(--ui);
+}
+
+.drawer-crumb {
+  min-width: 0;
+  white-space: nowrap;
+}
+
+/* a long chat title shortens; the full title is its tooltip */
+.drawer-crumb > * {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.drawer-crumb:first-child,
+.drawer-crumb:last-child:not(:nth-child(2)) {
+  flex: none;
+}
+
+.drawer-crumb + .drawer-crumb::before {
+  content: "/";
+  padding: 0 6px;
+  color: var(--muted);
+}
+
+.drawer-crumb + .drawer-crumb {
+  display: flex;
+}
+
+.drawer-crumb [aria-current] {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.drawer-parts {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  gap: 12px;
+}
+
+.drawer-part {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* display: flex above would show a hidden tab panel */
+.drawer-part[hidden] {
+  display: none;
+}
+
+.drawer-chats,
+.drawer-evidence {
+  overflow-y: auto;
+}
+
+.drawer.wide .drawer-chats {
+  flex: 0 0 220px;
+  padding-right: 10px;
+  border-right: 1px solid var(--border);
+}
+
+.drawer.wide .drawer-evidence {
+  flex: 1.2 1 0;
+  padding-left: 12px;
+  border-left: 1px solid var(--border);
+}
+
+.chat-steps {
+  align-self: flex-start;
+  font: 500 11px var(--ui);
+}
+
+/* The text of a statement the evidence pane can show (ai/citations.tsx). */
+.claim-text {
+  cursor: pointer;
+}
+
+.claim-text:hover,
+.claim-text.selected {
+  background: var(--sel);
+}
+
+.claim-text.selected {
+  box-shadow: inset 0 -1px 0 var(--acctext);
+}
+
+/* The conversation list (ai/ConversationList.tsx). */
+.ai-convos {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ai-convos-search {
+  font: 400 12px var(--ui);
+  padding: 5px 8px;
+  border: 1px solid var(--fieldb);
+  border-radius: var(--radius-sm);
+  background: var(--panel);
+  color: var(--text);
+}
+
+.ai-convos-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ai-convo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 4px 6px;
+  border-radius: var(--radius-sm);
+}
+
+.ai-convo.current {
+  background: var(--sel);
+}
+
+.ai-convo-open {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  border: 0;
+  padding: 0;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  color: var(--text);
+}
+
+.ai-convo-title {
+  font: 500 12px/1.35 var(--ui);
+  overflow-wrap: anywhere;
+}
+
+.ai-convo-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  font: 400 10.5px var(--ui);
+  color: var(--muted2);
+}
+
+.ai-convo-badge {
+  padding: 0 4px;
+  border: 1px solid var(--fieldb);
+  border-radius: var(--radius-sm);
+  font-family: var(--mono);
+}
+
+.ai-convo-delete,
+.ai-convo-confirm {
+  align-self: flex-end;
+  font: 400 10.5px var(--ui);
+}
+
+.ai-convo-confirm {
+  display: flex;
+  gap: 8px;
+  color: var(--muted2);
+}
+
+/* The evidence pane (ai/EvidencePane.tsx) and its chain (ai/ChainGraph.tsx). */
+.evidence-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font: 400 12px var(--ui);
+}
+
+.evidence-pane .linkish {
+  align-self: flex-start;
+}
+
+.evidence-pane-title,
+.evidence-pane-sub {
+  margin: 0;
+  font: 600 12px var(--ui);
+  color: var(--text);
+}
+
+.evidence-pane-sub {
+  font-size: 11px;
+  color: var(--muted2);
+}
+
+.evidence-statement {
+  margin: 0;
+  padding: 4px 8px;
+  border-left: 2px solid var(--acctext);
+  background: var(--sel);
+}
+
+.chain {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.chain-graph {
+  height: 220px;
+  border: 1px solid var(--fieldb);
+  border-radius: var(--radius-sm);
+}
+
+.chain-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.chain-enlarge {
+  font: 500 11px var(--ui);
+}
+
+/* the enlarge dialog of the evidence chain (ai/EvidencePane.tsx): the window,
+   less the scrim's padding, the dialog head and the hint */
+.modal-card.chain-dialog {
+  width: 100%;
+  max-height: none;
+  height: 100%;
+}
+
+.chain-dialog .modal-body {
+  flex: 1;
+  min-height: 0;
+}
+
+.chain-graph.large {
+  flex: 1;
+  height: auto;
+  min-height: 0;
+}
+
+.chain-text summary {
+  cursor: pointer;
+  font: 500 10px var(--ui);
+  color: var(--muted2);
+}
+
+.chain-column ul,
+.chain-builds,
+.evidence-builds {
+  margin: 2px 0 6px;
+  padding-left: 16px;
+}
+
+.chain-node.selected {
+  font-weight: 600;
+}
+
+/*
+ * Settings: the gear button and the section layout.
+ */
+
+.gearbtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  padding: 5px;
+  color: var(--muted2);
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.gearbtn:hover {
+  color: var(--text);
+  background: var(--sel);
+}
+
+.gearbtn.on {
+  color: var(--text);
+  background: var(--segon);
+  border-color: var(--fieldb);
+}
+
+.settings-layout {
+  flex: 1;
+  display: flex;
+  align-items: stretch;
+  min-height: 0;
+}
+
+.settings-nav {
+  width: 200px;
+  flex: none;
+  background: var(--panel2);
+  border-right: 1px solid var(--border);
+  padding: 16px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow-y: auto;
+}
+
+.settings-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+/* the system prompt is edited as prose, so it gets real room */
+.ai-system {
+  resize: vertical;
+  width: 100%;
+  font: 500 12.5px/1.5 var(--mono);
+  color: var(--text);
+  background: var(--field);
+  border: 1px solid var(--fieldb);
+  border-radius: 6px;
+  padding: 9px 10px;
+  outline: none;
+}
+
+.ai-system:focus-visible {
+  border-color: var(--accent);
+}
+
+/* a fixed prompt layer, shown read-only beside the site instructions */
+.ai-layer {
+  margin: 4px 0 10px;
+  max-height: 240px;
+  overflow: auto;
+  white-space: pre-wrap;
+  font: 500 12px/1.5 var(--mono);
+  color: var(--text);
+  background: var(--field);
+  border: 1px solid var(--fieldb);
+  border-radius: 6px;
+  padding: 9px 10px;
+}
+
+/*
+ * Ops pages: Runs, Sources and Users. They reuse `.editorcard`, `.results`,
+ * `.banner` and `.param`.
+ */
+
+.ops-page {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 12px 16px;
+  gap: 12px;
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.ops-page > .bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sf-field label {
+  display: flex;
+  align-items: center;
+  font: 600 10px var(--ui);
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.sf-required {
+  color: var(--bad);
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  font: 600 10.5px var(--ui);
+  border-radius: 5px;
+  padding: 2px 8px;
+  white-space: nowrap;
+}
+
+.badge.ok {
+  background: var(--okbg);
+  color: var(--oktext);
+  border: 1px solid var(--okb);
+}
+
+.badge.warn {
+  background: var(--warnbg);
+  color: var(--warntext);
+  border: 1px solid var(--warnb);
+}
+
+/* Runs */
+
+.runs-triggers {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.runs-trigger-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 2px;
+}
+
+.runs-source-name {
+  font: 600 12.5px var(--mono);
+}
+
+/* the cancel of a running row sits after its detail and progress */
+.runs-cancel {
+  margin-left: 8px;
+}
+
+/* one source of a cycle: its progress, and the cancel that stops it alone */
+.runs-source-progress {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.run-status {
+  font: 600 11px var(--ui);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.run-status-running {
+  color: var(--warntext);
+}
+
+.run-status-ok {
+  color: var(--oktext);
+}
+
+.run-status-error {
+  color: var(--badtext);
+}
+
+/* An operator stopped the run; nothing it wrote was published. */
+.run-status-cancelled {
+  color: var(--muted);
+}
+
+/* Maintenance job states. `queued` and `dead` have no run equivalent: a queued
+   job is waiting for its turn (or for its retry backoff), and a dead one gave
+   up after exhausting its attempts, which reads the same as an error. */
+
+.run-status-queued {
+  color: var(--muted);
+}
+
+.run-status-dead {
+  color: var(--badtext);
+}
+
+.source-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.source-row {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.source-row-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.source-name {
+  font: 600 13px var(--ui);
+}
+
+.source-type {
+  font: 500 11px var(--mono);
+  color: var(--muted2);
+}
+
+.source-updated {
+  margin-left: auto;
+}
+
+.source-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+/* `.linkish` carries `margin-left: auto` for the lone link at the right of a
+   card header. In these rows several of them sit together, and each one then
+   claimed the free space for itself: three buttons ended up strung evenly
+   across the full width of the row with nothing to tie them to what they act
+   on. Inside a row of actions they stay grouped, and the row itself decides
+   where the group sits. */
+.source-actions .linkish,
+.paramrow .linkish,
+.checkline .linkish,
+.sf-group .linkish {
+  margin-left: 0;
+}
+
+/* The settled action of a card sits apart from the ones that only add rows. */
+.card-actions .primary,
+.card-actions .sf-danger {
+  margin-left: auto;
+}
+
+/* Label above field, so a bare button in the same row lines up with the
+   fields rather than floating against their labels. */
+.ops-page .paramrow {
+  align-items: flex-end;
+}
+
+/* One device of a group: the address on the left, what the last collection did
+   beside it, and the row's own actions at the right edge. It was one flat
+   `.paramrow`, which on a wide screen strung fields, badges, status text and
+   two buttons the whole way across and left nothing lined up with the row
+   below it. */
+.device-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 10px 14px;
+  padding: 10px 0;
+  border-top: 1px solid var(--border);
+}
+
+.device-row:first-of-type {
+  border-top: 0;
+  padding-top: 2px;
+}
+
+/* takes the slack, so the actions below stay at the right edge */
+.device-row-status {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  flex: 1 1 220px;
+}
+
+.device-row > .source-actions {
+  margin-left: auto;
+}
+
+.device-row > .banner {
+  flex-basis: 100%;
+}
+
+.device-row input[type="checkbox"] {
+  width: auto;
+}
+
+/* An inventory reads down its columns, so it takes the width it is given
+   rather than the width of its widest cell. */
+.device-table {
+  width: 100%;
+}
+
+/* A card's own description belongs under its title, not pushed to the far
+   right of the header by the header's own space-between. */
+.card-note {
+  font: 400 12px var(--ui);
+  color: var(--muted);
+  margin: 0;
+  max-width: 70ch;
+}
+
+/* inside a row of fields it is a line of its own, not a fourth column */
+.paramrow > .card-note {
+  flex-basis: 100%;
+}
+
+.sf-danger {
+  color: var(--badtext);
+}
+
+/* Group mappings: a sub-panel under each provider row in .source-list. */
+.auth-mappings {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.auth-mapping-add {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.auth-saml-endpoints {
+  margin: 4px 0;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.auth-saml-endpoints code {
+  font: 500 12px var(--mono);
+  color: var(--text);
+  word-break: break-all;
+}
+
+/* First-run setup reuses the login card. Two additions: a line of explanation above the
+   fields, and a hint under the password. */
+.login-intro {
+  margin: 0 0 4px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--fg-muted, #8a8f98);
+}
+.login-hint {
+  margin: -6px 0 0;
+  font-size: 12px;
+  color: var(--fg-muted, #8a8f98);
+}
+
+/* Constraint hints under a source-form field. The rules a field enforces should be
+   readable before you submit, not delivered afterwards as a regex. */
+.sf-hint {
+  margin: 4px 0 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--fg-muted, #8a8f98);
+}
+.sf-field input:invalid:not(:placeholder-shown) {
+  border-color: var(--danger, #c2410c);
+}
+
+/* A nested config block (SSH credentials, TLS trust, a jump host) is its own group.
+   Flattened into the parent's field list, VyOS showed HOST/PORT/AUTH METHOD/USERNAME/
+   PASSWORD twice with nothing to say which pair was the device and which the bastion. */
+.sf-group {
+  margin: 12px 0;
+  padding: 10px 12px 4px;
+  border: 1px solid var(--border, #d7dbe0);
+  border-radius: 8px;
+  min-width: 0;
+}
+.sf-group > legend {
+  padding: 0 6px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--fg-muted, #8a8f98);
+}
+.sf-group .sf-optional {
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+/* The way out of settings. Sits above the section list and reads as navigation rather
+   than as one more section. */
+.settings-back {
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+a.brand {
+  text-decoration: none;
+  color: inherit;
+}
+
+/* ---- theme picker in the user menu ---- */
+
+.themeselect {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 12px;
+  font-size: 12px;
+  color: var(--muted2);
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.themeselect select {
+  background: var(--field);
+  color: var(--text);
+  border: 1px solid var(--fieldb);
+  border-radius: 6px;
+  font: inherit;
+  padding: 3px 6px;
+}
+
+/* ---- query form: collapsed Cypher with operator editing ---- */
+
+.cypherbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.cyphertoggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: none;
+  border: none;
+  padding: 2px 0;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.cypheredit {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 1px 8px;
+  font-size: 11px;
+  color: var(--muted2);
+  cursor: pointer;
+}
+
+.rawedit {
+  width: 100%;
+  background: var(--field);
+  color: var(--text);
+  border: 1px solid var(--fieldb);
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-family: ui-monospace, monospace;
+  font-size: 12px;
+  line-height: 1.45;
+  resize: vertical;
+}
+
+/*
+ * Flow Desk chrome: the rail's view entries and its collapsed form, the top
+ * bar's search field and the palette it opens, and the trace page's
+ * side-by-side body.
+ */
+
+.icon {
+  flex: none;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.rail-views {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.rail-item.nav {
+  justify-content: flex-start;
+  align-items: center;
+  gap: 9px;
+  padding: 6px 8px;
+  font-weight: 500;
+}
+
+.rail-item.nav .icon {
+  color: var(--muted);
+}
+
+.rail-item.nav.on .icon,
+.rail-item.nav:hover .icon {
+  color: currentColor;
+}
+
+.rail-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rail-library {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  /* the library scrolls on its own between the views and the foot */
+  flex: 1 1 auto;
+  min-height: 120px;
+  overflow-y: auto;
+}
+
+.rail-section {
+  display: flex;
+  flex-direction: column;
+}
+
+.rail-section-label {
+  font: 600 10px var(--ui);
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 6px 2px 2px 18px;
+}
+
+.rail-footrow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+}
+
+/* the focused pane's split and close actions, in the rail foot */
+.rail-paneactions {
+  display: flex;
+  gap: 4px;
+  padding: 0 4px 4px;
+}
+
+.side-rail.mini .rail-paneactions {
+  flex-direction: column;
+  align-items: center;
+  padding: 0 0 4px;
+}
+
+.rail-mini {
+  width: auto;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px;
+  color: var(--muted);
+}
+
+/* the narrow rail: icons only, the library and the foot text hidden */
+.side-rail.mini {
+  width: 48px;
+  padding: 10px 6px;
+  align-items: stretch;
+}
+
+.side-rail.mini .rail-label,
+.side-rail.mini .rail-library,
+.side-rail.mini .rail-reset,
+.side-rail.mini .rail-version {
+  display: none;
+}
+
+.side-rail.mini .rail-item.nav {
+  justify-content: center;
+  padding: 7px 0;
+}
+
+.side-rail.mini .rail-footrow {
+  justify-content: center;
+}
+
+/* the top bar's search field: a button that opens the palette */
+.searchbtn {
+  flex: 1 1 auto;
+  max-width: 560px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 30px;
+  padding: 0 8px 0 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--panel2);
+  color: var(--muted);
+  font: 400 12px var(--ui);
+  cursor: text;
+  text-align: left;
+}
+
+.searchbtn:hover {
+  border-color: var(--fieldb);
+}
+
+.searchbtn-text {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.searchbtn kbd,
+.palette-field kbd {
+  font: 500 10.5px var(--mono);
+  color: var(--muted);
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 1px 5px;
+}
+
+.palette-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: rgba(16, 24, 40, 0.28);
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding-top: 12vh;
+}
+
+.palette {
+  width: min(600px, calc(100vw - 32px));
+  max-height: 60vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.22);
+  overflow: hidden;
+}
+
+.palette-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  color: var(--muted);
+}
+
+.palette-field input {
+  flex: 1;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--text);
+  font: 500 13px var(--ui);
+  min-width: 0;
+}
+
+.palette-list {
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  overflow-y: auto;
+}
+
+.palette-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px;
+  border-radius: var(--radius-sm);
+  font: 500 12.5px var(--ui);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.palette-item .icon {
+  color: var(--muted);
+}
+
+.palette-item.on {
+  background: var(--accent-soft);
+  color: var(--acctext);
+}
+
+.palette-item.on .icon {
+  color: currentColor;
+}
+
+.palette-label {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.palette-group {
+  font: 400 11px var(--ui);
+  color: var(--muted);
+}
+
+.palette-detail {
+  margin-left: 8px;
+  font: 400 11px var(--mono);
+  color: var(--muted);
+}
+
+.palette-item.on .palette-detail {
+  color: currentColor;
+}
+
+.palette-empty {
+  padding: 12px 10px;
+  font: 400 12px var(--ui);
+  color: var(--muted);
+}
+
+/* The trace body: the canvas, the drag handle and the details block. They
+   are stacked in a narrow pane. In a wide pane the details block moves to a
+   column on the right, the handle hides, and the inline height of the block
+   is overridden. */
+.trace-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+  min-width: 0;
+}
+
+@container (min-width: 1100px) {
+  .trace-body {
+    flex-direction: row;
+    align-items: stretch;
+  }
+
+  .trace-body > .trace-resize {
+    display: none;
+  }
+
+  .trace-body > .trace-bottom {
+    flex: 0 0 320px;
+    height: auto !important;
+    min-height: 0;
+  }
+}

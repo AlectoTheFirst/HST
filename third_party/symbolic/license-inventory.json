@@ -1,0 +1,14 @@
+{
+  "format_version": 1,
+  "scope": "native symbolic backend source and runtime closure",
+  "components": [
+    {"name": "dd", "version": "0.6.0", "license": "BSD-3-Clause", "notice": "licenses/dd-0.6.0-BSD-3-Clause.txt", "sha256": "725af7ce62efc835d01bd3964f6b5d1f4f17e5b266ff0b7cf52dab1ac08f8d3a", "distribution": "native wheel and symbolic image"},
+    {"name": "CUDD", "version": "3.0.0", "license": "BSD-3-Clause", "notice": "licenses/cudd-3.0.0-BSD-3-Clause.txt", "sha256": "c4474b1beef772da9aacc0221e67bce7ff699bf04d12c88237045e62efbf526c", "distribution": "native wheel and symbolic image"},
+    {"name": "Batfish selected ports", "revision": "2a513d04a14b99d72fe0079f85ad8be3f5b6f4fa", "license": "Apache-2.0", "notice": "licenses/batfish-2a513d0-Apache-2.0.txt", "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4", "distribution": "symbolic image; required when the Batfish ports are included"},
+    {"name": "astutils", "version": "0.0.6", "license": "BSD-3-Clause", "notice": "licenses/astutils-0.0.6-BSD-3-Clause.txt", "sha256": "9bd0da90b14542517dfb6f91afb063b33a148b2c7dc81406c8893da6a2fc74b2", "distribution": "dd runtime dependency"},
+    {"name": "networkx", "version": "3.6.1", "license": "BSD-3-Clause", "notice": "licenses/networkx-3.6.1-BSD-3-Clause.txt", "sha256": "3cf7c3a179d817b23b8b8568211769fefdf93797d207d984b8b2fa24d0220b33", "distribution": "dd runtime dependency"},
+    {"name": "ply", "version": "3.10", "license": "BSD-3-Clause", "notice": "licenses/ply-3.10-BSD-3-Clause.txt", "sha256": "abe31000fef37bd32792a8b0a2407a18c3741e9182571f5b3328a88e0c3caf37", "distribution": "dd runtime dependency"},
+    {"name": "Cython", "version": "3.3.0", "license": "Apache-2.0", "distribution": "build-only"},
+    {"name": "setuptools", "version": "84.0.0", "license": "MIT", "distribution": "build-only"}
+  ]
+}

@@ -1,0 +1,13 @@
+# Templates this repository carries in place of the installed ntc-templates ones.
+# cli_parse reads this index first and falls back to the ntc-templates index for
+# every command not listed here. Same format as the ntc-templates index. A row
+# here is matched ahead of every ntc-templates row, so its pattern matches no
+# command another ntc-templates row serves: the route rows end in `$` and name
+# the one command the collector sends, where the ntc-templates rows for the
+# same templates match a prefix that `show ip route summary` also begins with.
+#
+Template, Hostname, Platform, Command
+
+cisco_ios_show_ip_access-lists.textfsm, .*, cisco_ios, sh[[ow]] ip acce[[ss-lists]]
+cisco_ios_show_ip_route.textfsm, .*, cisco_ios, sh[[ow]] ip ro[[ute]] vrf \*$
+cisco_xr_show_ip_route.textfsm, .*, cisco_xr, sh[[ow]] ro[[ute]] vrf all ipv4$

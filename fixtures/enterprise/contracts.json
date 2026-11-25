@@ -1,0 +1,287 @@
+{
+  "contract": "enterprise-symbolic",
+  "contract_version": "1.0",
+  "schema_version": "2",
+  "header_schema_version": "1",
+  "result_schema_version": "2",
+  "semantic_version": "symbolic-v2",
+  "ordering_version": "1",
+  "semantics": {
+    "truth_values": ["true", "false", "unknown"],
+    "bound_names": {"must": "proven for every completion", "may": "not ruled out by the evidence"},
+    "unknown_codes": [
+      "UNSTATED_DIMENSION",
+      "UNSUPPORTED_PREDICATE",
+      "INCOMPLETE_EVIDENCE",
+      "RESOURCE_CUTOFF",
+      "CHOICE_CORRELATION"
+    ],
+    "request_identity_field": "request_id",
+    "known_world_rule": "An omitted field records epistemic lack of knowledge. It is not an enumeration of selected values and cannot decide a predicate that requires that field.",
+    "world_choice_quantifiers": {
+      "world": "w is a completion of missing evidence; bounds are sound across the admissible completion set W.",
+      "choice": "j is a feasible complete forwarding choice tuple inside one fixed w; it is not another evidence completion.",
+      "possible": "S_possible(w) = {q: exists j in J(w,q) with success(w,j,q)}. For fixed w, possible success quantifies j existentially.",
+      "guaranteed": "S_guaranteed(w) = {q: J(w,q) is nonempty and for all j in J(w,q), success(w,j,q)}. For fixed w, guaranteed success quantifies j universally.",
+      "mode_bounds": "For each selected mode m, L_m subset of intersection over w of S_m(w), and union over w of S_m(w) subset of U_m. L_m and U_m are evidence bounds for mode m; they are not interchangeable with choice quantifiers.",
+      "empty_world_set": "If no admissible completion or feasible choice is established, prove neither bound; retain the relevant gap.",
+      "may_overapproximation": "may and the resulting upper bound are sound over-approximations. Membership need not be jointly realizable with another may member."
+    },
+    "choice_rule": "A choice is an explicit finite set of feasible forwarding tuples inside a fixed evidence world. Existential and universal tests range over complete tuples only.",
+    "empty_universal_rule": "An empty feasible choice set proves neither possible nor guaranteed success.",
+    "ordered_firstmatch": {
+      "universe": "U",
+      "predicate_bounds": "For rule i, must_i and may_i are request sets with must_i subset of may_i.",
+      "rule_attribution_must": "rule_must_i = must(predicate_i) intersect intersection over j<i of (U minus may(predicate_j)); this is a sound attribution bound.",
+      "rule_attribution_may": "rule_may_i = may(predicate_i) intersect intersection over j<i of (U minus must(predicate_j)); this is a sound attribution bound.",
+      "conditional": "For predicate bounds P and continuation bounds X (match) and Y (miss), D=must(P), N=U minus may(P), Q=may(P) minus must(P): lower=D intersect lower(X) union N intersect lower(Y) union Q intersect lower(X) intersect lower(Y); upper=D intersect upper(X) union N intersect upper(Y) union Q intersect (upper(X) union upper(Y)).",
+      "action_bounds": "Fold conditional backwards from the default terminal action. Run the fold once per action to obtain must_action and may_action; this preserves proofs when both uncertain continuations have the same action.",
+      "unknown_rule": "An unknown predicate contributes must=false and may=true over its known outer scope. It is never compiled to false.",
+      "rule_order": "Earlier applicable rules shadow later rules. A rule's action is not a forwarding choice created by predicate uncertainty."
+    },
+    "choice_bounds": {
+      "possible": "possible(S,w) iff there exists a nonempty feasible complete choice tuple j in J(w) with success(S,w,j)",
+      "guaranteed": "guaranteed(S,w) iff J(w) is nonempty and for every feasible complete choice tuple j in J(w), success(S,w,j)",
+      "correlation": "Choice alternatives are tuples keyed by choice_scope and choice_id. Marginal fields must not be cross-producted.",
+      "terminal_outcomes": ["permit", "deny", "no_route", "loop", "unknown"]
+    },
+    "execution_context": {
+      "fields": ["estate", "authority", "domain", "firewall_instance", "vrf", "address_family"],
+      "identity_pattern": "^[a-z][a-z0-9_-]{0,63}$",
+      "address_family_values": ["ipv4", "ipv6"],
+      "valid_example": {"estate": "acme", "authority": "cp-mds", "domain": "prod", "firewall_instance": "fw-vsx-a", "vrf": "blue", "address_family": "ipv4"},
+      "invalid_examples": [
+        {"estate": "acme", "authority": "", "domain": "prod", "firewall_instance": "fw-vsx-a", "vrf": "blue", "address_family": "ipv4"},
+        {"estate": "acme", "authority": "cp-mds", "domain": "prod", "firewall_instance": "fw vsx", "vrf": "blue", "address_family": "ipv4"},
+        {"estate": "acme", "authority": "cp-mds", "domain": "prod", "firewall_instance": "fw-vsx-a", "vrf": "blue", "address_family": "ipx"}
+      ]
+    },
+    "result_serialization": {
+      "required_fields": ["schema_version", "semantic_profile_version", "manifest_digest", "request_universe", "lower", "upper", "completion_status", "gap_references", "evidence_references", "units"],
+      "invalid_examples": [
+        {"schema_version": "2", "lower": [], "upper": []},
+        {"schema_version": "2", "semantic_profile_version": "1", "manifest_digest": "sha256:example", "request_universe": [], "lower": [], "upper": [], "completion_status": "complete", "gap_references": [], "evidence_references": []}
+      ]
+    },
+    "relation_banks": {
+      "banks": ["original", "current", "next"],
+      "transition": "R_next(Q,H2,C2) = exists H: R(Q,H,C) and T(H,H2,C,C2)",
+      "rename_rule": "Eliminate the previous current bank only after renaming next to current; never eliminate original request identity.",
+      "identity_rule": "A relation preserves every field not named by a rewrite, including original request identity and untouched context.",
+      "nat_rule": "NAT is a relation of (original request, current header, scoped choice tuple), not independent original and translated address sets.",
+      "reverse_rule": "Reverse bindings use the same scoped choice tuple and binding owner; cluster membership alone does not establish replication."
+    },
+    "client_aggregation": {
+      "requested_flow_set": "Deduplicate by request_id within each client; a client with no requests is outside both result sets.",
+      "holds": "C_holds = Sources minus projection_client(Requests minus Lower)",
+      "open": "C_open = Sources minus projection_client(Requests minus Upper)",
+      "holds_equation": "holds = sources minus projection_client(requests minus lower)",
+      "open_equation": "open = sources minus projection_client(requests minus upper)",
+      "possible_client": "C_possible is C_open for the selected mode; it contains a client only when every requested flow is in the upper evidence bound.",
+      "guaranteed_client": "C_guaranteed is C_holds for the selected mode; it contains a client only when every requested flow is in the lower evidence bound.",
+      "unknown_client": "C_unknown = C_open minus C_holds",
+      "scope": "Aggregation is per client and universal over that client's requested flows. A success for one member cannot satisfy another member."
+    }
+  },
+  "cases": [
+    {
+      "id": "A01-firstmatch-bounds",
+      "kind": "ordered_firstmatch",
+      "universe": ["r1", "r2", "r3", "r4", "r5"],
+      "rules": [
+        {"uid": "allow-web", "action": "permit", "must": ["r1"], "may": ["r1", "r2"]},
+        {"uid": "deny-admin", "action": "deny", "must": ["r3"], "may": ["r3"]},
+        {"uid": "allow-dns", "action": "permit", "must": [], "may": ["r4"]}
+      ],
+      "default_action": "deny",
+      "expected": {
+        "rule_must": {"allow-web": ["r1"], "deny-admin": ["r3"], "allow-dns": []},
+        "rule_may": {"allow-web": ["r1", "r2"], "deny-admin": ["r3"], "allow-dns": ["r4"]},
+        "action_must": {"permit": ["r1"], "deny": ["r3", "r5"]},
+        "action_may": {"permit": ["r1", "r2", "r4"], "deny": ["r2", "r3", "r4", "r5"]}
+      }
+    },
+    {
+      "id": "A02-known-world-and-dimensions",
+      "kind": "known_world",
+      "requests": [
+        {"request_id": "unspecified-port", "known": {"protocol": "tcp", "destination": "web"}, "predicate_requires": "destination_port", "predicate_values": [443]},
+        {"request_id": "all-valued-ports", "known": {"protocol": "tcp", "destination": "web", "destination_port": [80, 443]}, "predicate_requires": "destination_port", "predicate_values": [443]},
+        {"request_id": "explicit-port", "known": {"protocol": "tcp", "destination": "web", "destination_port": 443}, "predicate_requires": "destination_port", "predicate_values": [443]}
+      ],
+      "expected": {
+        "unspecified-port": {"must": false, "may": true, "unknown_code": "UNSTATED_DIMENSION"},
+        "all-valued-ports": {"must": false, "may": true, "unknown_code": null, "partition": {"match": [443], "non_match": [80]}},
+        "explicit-port": {"must": true, "may": true, "unknown_code": null}
+      }
+    },
+    {
+      "id": "A03-masks-services-ipv6",
+      "kind": "predicate_composition",
+      "address_requests": [
+        {"request_id": "v4-a", "address_family": "ipv4", "source_bits": "0xa0"},
+        {"request_id": "v4-b", "address_family": "ipv4", "source_bits": "0xa4"},
+        {"request_id": "v4-c", "address_family": "ipv4", "source_bits": "0xa5"},
+        {"request_id": "v4-d", "address_family": "ipv4", "source_bits": "0xb0"},
+        {"request_id": "v6-high-match", "address_family": "ipv6", "source_high_64": "0x20010db800000000"},
+        {"request_id": "v6-high-miss", "address_family": "ipv6", "source_high_64": "0x20010db900000000"}
+      ],
+      "noncontiguous_mask": {"width": 8, "base": "0xa0", "wildcard": "0x05", "meaning": "wildcard bits are unconstrained; all other bits must equal base"},
+      "ipv6_high_bits": {"prefix": "0x20010db800000000", "prefix_length": 64},
+      "service_requests": [
+        {"request_id": "svc-web", "protocol": "tcp", "destination_port": 443, "source_group": "trusted"},
+        {"request_id": "svc-alt", "protocol": "tcp", "destination_port": 8443, "source_group": "trusted"},
+        {"request_id": "svc-other-port", "protocol": "tcp", "destination_port": 22, "source_group": "trusted"},
+        {"request_id": "svc-udp", "protocol": "udp", "destination_port": 443, "source_group": "trusted"},
+        {"request_id": "svc-blocked", "protocol": "tcp", "destination_port": 443, "source_group": "blocked"}
+      ],
+      "service_predicate": {"protocol": "tcp", "destination_ports": [443, 8443], "source_group_not": "blocked"},
+      "expected": {
+        "noncontiguous_matches": ["v4-a", "v4-b", "v4-c"],
+        "ipv6_high_bit_matches": ["v6-high-match"],
+        "service_and_negation_matches": ["svc-alt", "svc-web"]
+      }
+    },
+    {
+      "id": "A06-policy-invalidation",
+      "kind": "policy_invalidation",
+      "rules": [
+        {"uid": "rule-web", "position": 1, "objects": ["web"], "enabled": true, "install_on": ["fw-a"]},
+        {"uid": "rule-admin", "position": 2, "objects": ["admin"], "enabled": true, "install_on": ["fw-a", "fw-b"]},
+        {"uid": "rule-db", "position": 3, "objects": ["db"], "enabled": true, "install_on": ["fw-b"]}
+      ],
+      "changes": [
+        {"id": "object-only", "kind": "object_edit", "object": "web", "expected_invalidated": ["rule-web"]},
+        {"id": "disabled-rule", "kind": "enabled_edit", "rule": "rule-db", "enabled": false, "expected_invalidated": ["rule-db"]},
+        {"id": "install-on-change", "kind": "install_on_edit", "rule": "rule-admin", "install_on": ["fw-b"], "expected_invalidated": ["rule-admin"]},
+        {"id": "moved-rule", "kind": "position_edit", "rule": "rule-admin", "old_position": 2, "new_position": 1, "expected_invalidated": ["rule-admin", "rule-web"]}
+      ]
+    },
+    {
+      "id": "A04-layered-firstmatch",
+      "kind": "layered_policy",
+      "layers": [
+        {"uid": "main", "steps": [{"call": "web-inline"}, {"action": "deny"}]},
+        {"uid": "web-inline", "steps": [
+          {"uid": "inline-allow", "action": "permit", "must": ["web"], "may": ["web"]},
+          {"uid": "inline-unknown", "action": "permit", "must": [], "may": ["admin"]}
+        ]}
+      ],
+      "expected": {
+        "permit_must": ["web"],
+        "permit_may": ["admin", "web"],
+        "deny_must": ["db", "unknown"],
+        "deny_may": ["admin", "db", "unknown"]
+      }
+    },
+    {
+      "id": "A04-same-outcome-unknown",
+      "kind": "ordered_firstmatch",
+      "universe": ["q1", "q2"],
+      "rules": [
+        {"uid": "unknown-permit", "action": "permit", "must": [], "may": ["q1", "q2"]}
+      ],
+      "default_action": "permit",
+      "expected": {
+        "rule_attribution_must": [],
+        "rule_attribution_may": ["q1", "q2"],
+        "permit_must": ["q1", "q2"],
+        "permit_may": ["q1", "q2"],
+        "deny_must": [],
+        "deny_may": []
+      }
+    },
+    {
+      "id": "A05-incomplete-evidence",
+      "kind": "evidence",
+      "universe": ["q1", "q2", "q3"],
+      "predicate": {"known_scope": ["q1", "q2"], "must": ["q1"], "may": ["q1", "q2"], "gap": "INCOMPLETE_EVIDENCE"},
+      "expected": {"must": ["q1"], "may": ["q1", "q2"], "gap_codes": ["INCOMPLETE_EVIDENCE"]}
+    },
+    {
+      "id": "A08-nat-original-current",
+      "kind": "nat_relation",
+      "original_requests": ["o1", "o2", "o3"],
+      "pairs": [
+        {"original": "o1", "current": "n1", "choice_scope": "nat-pool", "choice_id": "pool-a"},
+        {"original": "o1", "current": "n2", "choice_scope": "nat-pool", "choice_id": "pool-b"},
+        {"original": "o2", "current": "n3", "choice_scope": "nat-pool", "choice_id": "pool-a"},
+        {"original": "o2", "current": "n4", "choice_scope": "nat-pool", "choice_id": "pool-b"},
+        {"original": "o3", "current": "n9", "choice_scope": "nat-fixed", "choice_id": "fixed"}
+      ],
+      "current_policy_match": ["n1", "n3", "n9"],
+      "expected": {
+        "possible_original": ["o1", "o2", "o3"],
+        "guaranteed_original": ["o3"],
+        "image": {"o1": ["n1", "n2"], "o2": ["n3", "n4"], "o3": ["n9"]},
+        "choice_tuples": [["pool-a"], ["pool-b"], ["fixed"]]
+      }
+    },
+    {
+      "id": "A11-correlated-choices",
+      "kind": "choices",
+      "requests": ["q1", "q2", "q3"],
+      "choices": [
+        {"choice_scope": "path", "choice_id": "east", "outcomes": {"q1": "permit", "q2": "deny", "q3": "permit"}},
+        {"choice_scope": "path", "choice_id": "west", "outcomes": {"q1": "deny", "q2": "permit", "q3": "permit"}}
+      ],
+      "expected": {
+        "possible_success": ["q1", "q2", "q3"],
+        "guaranteed_success": ["q3"],
+        "unspecified_lower_success": ["q3"],
+        "unspecified_upper_success": ["q1", "q2", "q3"],
+        "feasible_choice_ids": ["east", "west"],
+        "incorrect_marginal_cross_product_would_claim": ["q1", "q2"]
+      }
+    },
+    {
+      "id": "A11-worlds-and-choices",
+      "kind": "world_choice_quantifiers",
+      "worlds": [
+        {"world_id": "evidence-a", "choices": [{"choice_id": "east", "success": ["q1"]}, {"choice_id": "west", "success": ["q2"]}]},
+        {"world_id": "evidence-b", "choices": [{"choice_id": "east", "success": ["q2"]}, {"choice_id": "west", "success": ["q1"]}]}
+      ],
+      "expected": {
+        "per_world_possible": {"evidence-a": ["q1", "q2"], "evidence-b": ["q1", "q2"]},
+        "per_world_guaranteed": {"evidence-a": [], "evidence-b": []},
+        "selected_mode_bounds": {
+          "possible": {"lower": ["q1", "q2"], "upper": ["q1", "q2"]},
+          "guaranteed": {"lower": [], "upper": []}
+        }
+      }
+    },
+    {
+      "id": "A21-client-universal",
+      "kind": "client_universal",
+      "selected_mode": "possible",
+      "requests": [
+        {"request_id": "alice-web", "client": "alice"},
+        {"request_id": "alice-dns", "client": "alice"},
+        {"request_id": "bob-web", "client": "bob"},
+        {"request_id": "carol-web", "client": "carol"},
+        {"request_id": "carol-web", "client": "carol"}
+      ],
+      "upper": ["alice-web", "alice-dns", "bob-web", "carol-web"],
+      "lower": ["alice-web", "alice-dns", "carol-web"],
+      "expected": {
+        "open_clients": ["alice", "bob", "carol"],
+        "holds_clients": ["alice", "carol"],
+        "unknown_clients": ["bob"],
+        "deduplicated_request_ids": {"alice": ["alice-dns", "alice-web"], "bob": ["bob-web"], "carol": ["carol-web"]}
+      }
+    },
+    {
+      "id": "A21-client-universal-unknown",
+      "kind": "client_universal",
+      "selected_mode": "possible",
+      "requests": [
+        {"request_id": "dana-web", "client": "dana"},
+        {"request_id": "dana-admin", "client": "dana"},
+        {"request_id": "erin-web", "client": "erin"}
+      ],
+      "upper": ["dana-web", "dana-admin", "erin-web"],
+      "lower": ["dana-web", "erin-web"],
+      "expected": {"open_clients": ["dana", "erin"], "holds_clients": ["erin"], "unknown_clients": ["dana"]}
+    }
+  ]
+}

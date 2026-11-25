@@ -1,0 +1,105 @@
+/* The result card of the Queries tab (ResultCard.tsx). The picture sits beside
+   the active view when the card is 1100px wide or more, under it otherwise. */
+.result-card {
+  container-type: inline-size;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.rc-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.rc-head .tabletitle {
+  margin-bottom: 0;
+}
+
+.rc-spacer {
+  flex: 1;
+}
+
+.rc-small {
+  padding: 3px 10px;
+  font-size: 11.5px;
+}
+
+.rc-head .secondary[aria-pressed="true"] {
+  border-color: var(--accent);
+  color: var(--acctext);
+}
+
+.rc-partial {
+  font: 500 11px var(--ui);
+  color: var(--warntext);
+  background: var(--warnbg);
+  border: 1px solid var(--warnb);
+  border-radius: 4px;
+  padding: 1px 6px;
+}
+
+
+.rc-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.rc-view {
+  min-width: 0;
+  overflow: auto;
+}
+
+@container (min-width: 1100px) {
+  .rc-body.rc-with-picture {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(360px, 42%);
+    align-items: start;
+  }
+}
+
+/* table row selection (ResultsTable.tsx) */
+table.rt-selectable:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+table.rt-selectable tr.rt-pickable {
+  cursor: pointer;
+}
+
+table.rt-selectable tr.rt-hit td {
+  background: var(--accent-soft);
+}
+
+table.rt-selectable tr.rt-picked td {
+  background: var(--sel);
+  box-shadow: inset 0 -1px 0 var(--accent);
+}
+
+table.rt-selectable tr.rt-picked td:first-child {
+  box-shadow: inset 3px 0 0 var(--accent), inset 0 -1px 0 var(--accent);
+}
+
+table.rt-selectable:focus-visible tr.rt-cursor td {
+  outline: 1px dashed var(--accent);
+  outline-offset: -1px;
+}
+
+/* a label with its slot shape: the tree items and the picture legend */
+.label-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font: 600 10px var(--ui);
+  color: var(--text);
+  border-radius: 3px;
+  padding: 1px 5px;
+  white-space: nowrap;
+  background: color-mix(in srgb, var(--chip) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--chip) 40%, transparent);
+}

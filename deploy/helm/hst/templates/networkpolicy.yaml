@@ -1,0 +1,105 @@
+{{- if .Values.networkPolicy.enabled }}
+{{- /*
+The Neo4j and Postgres policies admit the pods of this release to the database ports. The
+account on the bolt port is the built-in `neo4j` admin, and Neo4j Community has no graph
+privileges per user. The egress of both pods is port 53. With an empty
+`networkPolicy.dnsTo` the DNS rule has no `to` and matches every destination.
+
+The app policy renders with a peer in `networkPolicy.ingressFrom`. It admits those peers to
+port 8787. It has no Egress rule, so the collectors reach every device and controller.
+A NetworkPolicy does not block traffic from the node of the pod, so the kubelet probes need
+no rule.
+*/}}
+{{- if .Values.neo4j.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "hst.fullname" . }}-neo4j
+  labels: {{- include "hst.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels: {{- include "hst.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: neo4j
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels: {{- include "hst.selectorLabels" . | nindent 14 }}
+      ports:
+        - port: 7687
+          protocol: TCP
+        - port: 7474
+          protocol: TCP
+  egress:
+    - ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP
+      {{- with .Values.networkPolicy.dnsTo }}
+      to: {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}
+{{- if .Values.postgres.enabled }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "hst.fullname" . }}-postgres
+  labels: {{- include "hst.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels: {{- include "hst.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: postgres
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels: {{- include "hst.selectorLabels" . | nindent 14 }}
+      ports:
+        - port: 5432
+          protocol: TCP
+  egress:
+    - ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP
+      {{- with .Values.networkPolicy.dnsTo }}
+      to: {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}
+{{- with .Values.networkPolicy.ingressFrom }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "hst.fullname" $ }}-app
+  labels: {{- include "hst.labels" $ | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels: {{- include "hst.selectorLabels" $ | nindent 6 }}
+      app.kubernetes.io/component: app
+  policyTypes: [Ingress]
+  ingress:
+    - from: {{- toYaml . | nindent 8 }}
+      ports:
+        - port: 8787
+          protocol: TCP
+{{- end }}
+{{- range $component, $enabled := dict "worker" .Values.worker.enabled "backup" .Values.backup.enabled "migrate" .Values.migrations.enabled "initdb" .Values.initDb.enabled }}
+{{- if $enabled }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "hst.fullname" $ }}-{{ $component }}
+  labels: {{- include "hst.labels" $ | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels: {{- include "hst.selectorLabels" $ | nindent 6 }}
+      app.kubernetes.io/component: {{ $component }}
+  policyTypes: [Ingress]
+{{- end }}
+{{- end }}
+{{- end }}

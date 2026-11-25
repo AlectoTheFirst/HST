@@ -1,0 +1,186 @@
+name: cla
+
+# Reports the commit status `cla` on the head commit of a pull request. The status
+# is a success when the person who opened the pull request and every commit author
+# wrote the agreement sentence of CLA.md from their own account, in the description
+# or in a comment. The status covers every open pull request with that head commit.
+#
+# pull_request_target and issue_comment run with the token of this repository for
+# a pull request from a fork. tests/test_ci_workflows.py checks these 3 rules.
+#   - The job has no checkout and no action, so it executes nothing from the pull request.
+#   - The token reads pull requests and writes commit statuses.
+#   - No text of a contributor reaches the script through an expression. The script
+#     reads descriptions, comments and names through the API.
+on:
+  pull_request_target:
+    types: [opened, edited, reopened, synchronize, closed]
+  issue_comment:
+    types: [created, edited, deleted]
+
+permissions: {}
+
+concurrency:
+  group: cla-${{ github.event.pull_request.number || github.event.issue.number }}
+  cancel-in-progress: true
+
+jobs:
+  # The verdict is the commit status `cla`. The job fails when the status is a failure
+  # and 2 or more open pull requests have the head commit. The job fails when a pull
+  # request has more than 250 commits.
+  status:
+    # An issue_comment event of an issue has no pull_request key.
+    if: github.event_name == 'pull_request_target' || github.event.issue.pull_request
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      pull-requests: read
+      statuses: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      PR: ${{ github.event.pull_request.number || github.event.issue.number }}
+    steps:
+      - name: Report who still has to agree to CLA.md
+        run: |
+          python3 - <<'PYTHON'
+          import json
+          import os
+          import re
+          import sys
+          import urllib.request
+
+          # The sentence of CLA.md "How to agree". A new CLA version changes both.
+          SENTENCE = (
+              "I have read CLA.md version 1.0 and I agree to it for this and all my past and "
+              "future contributions to this repository."
+          )
+          # Accounts the maintainer configures. The repository owner is exempt as well.
+          EXEMPT = {"dependabot[bot]"}
+          # The commits API of a pull request returns 250 commits at most.
+          COMMIT_LIMIT = 250
+          TOO_MANY_COMMITS = f"More than {COMMIT_LIMIT} commits"
+
+
+          def normal(text):
+              """Quote marks at line starts removed, whitespace folded, case folded."""
+              text = re.sub(r"(?m)^[ \t]*(>[ \t]*)+", "", text or "")
+              return " ".join(text.split()).casefold()
+
+
+          def exempt(login, owner):
+              return login.casefold() in {name.casefold() for name in EXEMPT | {owner}}
+
+
+          def missing_signers(pull, commits, comments, owner):
+              """The logins that still have to write the sentence, and the commits
+              that name no GitHub account.
+
+              The person who opened the pull request has to agree. The author field
+              of a commit is not authenticated.
+              """
+              opener = pull["user"]["login"]
+              if exempt(opener, owner):
+                  return [], []
+              unlinked = [c["sha"][:10] for c in commits if not c.get("author")]
+              required = {opener} | {c["author"]["login"] for c in commits if c.get("author")}
+              sentence = normal(SENTENCE)
+              signed = set()
+              if sentence in normal(pull.get("body")):
+                  signed.add(opener.casefold())
+              for comment in comments:
+                  if comment.get("user") and sentence in normal(comment.get("body")):
+                      signed.add(comment["user"]["login"].casefold())
+              missing = {
+                  login
+                  for login in required
+                  if not exempt(login, owner) and login.casefold() not in signed
+              }
+              return sorted(missing, key=str.casefold), unlinked
+
+
+          def verdict(pull, commits, comments, owner):
+              """The state and the description of one pull request."""
+              if pull["commits"] > COMMIT_LIMIT and not exempt(pull["user"]["login"], owner):
+                  return "failure", TOO_MANY_COMMITS
+              missing, unlinked = missing_signers(pull, commits, comments, owner)
+              if unlinked:
+                  return "failure", "Commits that name no GitHub account: " + ", ".join(unlinked)
+              if missing:
+                  return "failure", "The CLA.md sentence is missing from: " + ", ".join(missing)
+              return "success", "The CLA.md sentence is there for every commit author"
+
+
+          def outcome(number, verdicts):
+              """The state and the description of a head commit, and whether the job fails.
+
+              `verdicts` maps the number of each open pull request with the head
+              commit to its verdict. `number` is the pull request of the event.
+              """
+              failed = {n: text for n, (state, text) in verdicts.items() if state == "failure"}
+              if not failed:
+                  return "success", verdicts[min(verdicts)][1], False
+              shown = number if number in failed else min(failed)
+              text = failed[shown]
+              if shown != number:
+                  text = f"Pull request {shown} has the same head commit. {text}"
+              return "failure", text, len(verdicts) > 1 or TOO_MANY_COMMITS in failed.values()
+
+
+          def api(path, data=None):
+              request = urllib.request.Request(
+                  f"{os.environ['GITHUB_API_URL']}/repos/{os.environ['GITHUB_REPOSITORY']}/{path}",
+                  data=json.dumps(data).encode() if data is not None else None,
+                  headers={
+                      "Authorization": f"Bearer {os.environ['GH_TOKEN']}",
+                      "Accept": "application/vnd.github+json",
+                  },
+              )
+              with urllib.request.urlopen(request, timeout=30) as response:
+                  return json.load(response)
+
+
+          def pages(path, query=""):
+              items, page = [], 1
+              while True:
+                  batch = api(f"{path}?per_page=100&page={page}{query}")
+                  items += batch
+                  if len(batch) < 100:
+                      return items
+                  page += 1
+
+
+          def main():
+              number = int(os.environ["PR"])
+              event_pull = api(f"pulls/{number}")
+              head = event_pull["head"]["sha"]
+              owner = os.environ["GITHUB_REPOSITORY_OWNER"]
+              verdicts = {}
+              for listed in pages("pulls", "&state=open"):
+                  if listed["head"]["sha"] == head:
+                      n = listed["number"]
+                      verdicts[n] = verdict(
+                          api(f"pulls/{n}"),
+                          pages(f"pulls/{n}/commits"),
+                          pages(f"issues/{n}/comments"),
+                          owner,
+                      )
+              if not verdicts:
+                  print("no open pull request has this head commit")
+                  return 0
+              state, text, job_fails = outcome(number, verdicts)
+              repository = f"{os.environ['GITHUB_SERVER_URL']}/{os.environ['GITHUB_REPOSITORY']}"
+              api(
+                  f"statuses/{head}",
+                  {
+                      "state": state,
+                      "context": "cla",
+                      "description": text[:140],
+                      "target_url": f"{repository}/blob/{event_pull['base']['ref']}/CLA.md",
+                  },
+              )
+              print(f"{state}: {text}")
+              return 1 if job_fails else 0
+
+
+          if __name__ == "__main__":
+              sys.exit(main())
+          PYTHON

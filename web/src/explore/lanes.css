@@ -1,0 +1,123 @@
+/* The selection picture (LanesPanel.tsx). Plain SVG at a fixed size: the panel
+   scrolls when the picture is larger. */
+.lanes {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  background: var(--panel);
+}
+
+.lanes-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.lanes-head .eyebrow {
+  margin: 0;
+}
+
+.lanes-title {
+  margin-left: auto;
+  font: 600 12px var(--mono);
+  color: var(--text);
+}
+
+.lanes-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.lanes-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.lanes-scroll {
+  overflow: auto;
+  max-height: 560px;
+}
+
+.lanes-svg {
+  display: block;
+}
+
+.lanes-svg:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.lanes-lane {
+  font: 600 9.5px var(--ui);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  fill: var(--muted);
+}
+
+.lanes-node {
+  cursor: pointer;
+}
+
+.lanes-caption {
+  font: 500 11.5px var(--ui);
+  fill: var(--text);
+}
+
+.lanes-owner {
+  font: 400 10.5px var(--ui);
+  fill: var(--muted2);
+}
+
+.lanes-svg:focus-visible .lanes-node.cursor rect {
+  stroke-dasharray: none;
+  outline: none;
+  filter: drop-shadow(0 0 2px var(--accent));
+}
+
+.lanes-edgelabel {
+  font: 500 10px var(--ui);
+  fill: var(--acctext);
+  paint-order: stroke;
+  stroke: var(--panel);
+  stroke-width: 3px;
+}
+
+.lanes-count {
+  font: 700 11.5px var(--ui);
+  fill: var(--text);
+}
+
+.lanes-member {
+  cursor: pointer;
+}
+
+.lanes-member text {
+  font: 400 10.5px var(--mono);
+  fill: var(--text);
+}
+
+.lanes-member.on text {
+  font-weight: 700;
+  fill: var(--acctext);
+}
+
+.lanes-memberhit {
+  fill: color-mix(in srgb, var(--accent) 14%, transparent);
+}
+
+.lanes-faded .lanes-node:not(.near) {
+  opacity: 0.3;
+}
+
+.lanes-faded .lanes-edge:not(.on) {
+  opacity: 0.18;
+}

@@ -1,0 +1,265 @@
+/* The Tree view of a query result (ResultTree.tsx). */
+.rtree {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.rtree-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.rtree-filter {
+  flex: 0 1 280px;
+  min-width: 160px;
+  font: 12px var(--ui);
+  padding: 4px 8px;
+  border: 1px solid var(--fieldb);
+  border-radius: var(--radius-sm);
+  background: var(--field);
+  color: var(--text);
+}
+
+.rtree-status {
+  font-size: 11.5px;
+}
+
+.rtree-fallback {
+  font: 11.5px var(--mono);
+  background: var(--panel2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  max-height: 240px;
+  overflow: auto;
+  margin: 0;
+  color: var(--text);
+  resize: vertical;
+  white-space: pre;
+}
+
+.rtree-items {
+  font: 12px var(--mono);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 4px 0;
+  max-height: 560px;
+  overflow: auto;
+}
+
+.rtree-items:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.rt-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 24px;
+  padding-right: 8px;
+  white-space: nowrap;
+  cursor: default;
+  color: var(--text);
+}
+
+.rt-item:hover {
+  background: var(--panel2);
+}
+
+.rt-item.rt-active {
+  background: var(--sel);
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+
+.rt-item.rt-match .rt-caption,
+.rt-item.rt-match .rt-grouptext {
+  text-decoration: underline;
+  text-decoration-color: var(--accent);
+  text-underline-offset: 3px;
+}
+
+.rt-guide {
+  flex: none;
+  white-space: pre;
+  color: var(--line);
+  padding-left: 6px;
+}
+
+.rt-tog {
+  flex: none;
+  white-space: pre;
+  color: var(--muted2);
+  cursor: pointer;
+}
+
+.rt-mark {
+  flex: none;
+}
+
+.rt-caption {
+  font-weight: 600;
+}
+
+
+.rt-summary {
+  color: var(--muted2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rt-tag {
+  font: 500 10.5px var(--ui);
+  color: var(--muted2);
+  background: var(--panel2);
+  border: 1px dashed var(--border);
+  border-radius: 3px;
+  padding: 0 4px;
+}
+
+
+.rt-grouptext {
+  color: var(--muted2);
+}
+
+.rt-type {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.rt-count {
+  color: var(--muted);
+}
+
+.rt-ref {
+  color: var(--muted2);
+  cursor: pointer;
+}
+
+.rt-ref em {
+  font-family: var(--ui);
+  color: var(--muted);
+  margin-left: 6px;
+}
+
+.rt-more {
+  color: var(--acctext);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.rt-more.rt-disabled {
+  color: var(--muted);
+  cursor: default;
+  text-decoration: none;
+}
+
+.rt-error {
+  color: var(--badtext);
+}
+
+.rtree-detail {
+  border-top: 1px solid var(--border);
+  padding-top: 8px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px 16px;
+  align-items: start;
+}
+
+@media (max-width: 560px) {
+  .rtree-detail {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.rtree-detail-main {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.rtree-detail-title {
+  margin: 0;
+  font: 600 13px var(--ui);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.rtree-detail .hint {
+  margin: 0;
+}
+
+.rtree-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.rtree-hits {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  font: 12px var(--ui);
+  color: var(--muted2);
+}
+
+.rtree-keys {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  font: 11px var(--ui);
+  color: var(--muted);
+}
+
+.rtree-keys kbd {
+  font: 600 10.5px var(--mono);
+  color: var(--text);
+  background: var(--panel2);
+  border: 1px solid var(--border);
+  border-bottom-width: 2px;
+  border-radius: 3px;
+  padding: 0 4px;
+}
+
+.rtree-props {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 2px 12px;
+  font: 11.5px var(--mono);
+  margin: 0;
+}
+
+.rtree-props > div {
+  display: contents;
+}
+
+.rtree-props dt {
+  color: var(--muted2);
+}
+
+.rtree-props dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.rtree-detail .linklike {
+  align-self: flex-start;
+  border: 0;
+  background: none;
+  padding: 0;
+  color: var(--acctext);
+  font: 600 12px var(--ui);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}

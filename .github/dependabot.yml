@@ -1,0 +1,56 @@
+version: 2
+updates:
+  - package-ecosystem: uv
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      python-minor:
+        update-types: ["minor", "patch"]
+    ignore:
+      # build-lock.json and license-inventory.json record the versions of these 3
+      # packages. check_symbolic_licenses.py compares the 2 records with uv.lock.
+      - dependency-name: "astutils"
+      - dependency-name: "networkx"
+      - dependency-name: "ply"
+
+  - package-ecosystem: npm
+    directory: "/web"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      npm-minor:
+        update-types: ["minor", "patch"]
+    ignore:
+      - dependency-name: "brace-expansion"
+      # eslint-plugin-jsx-a11y 6.10.2 supports ESLint up to 9.
+      - dependency-name: "eslint"
+        versions: [">=10"]
+      - dependency-name: "@eslint/js"
+        versions: [">=10"]
+
+  - package-ecosystem: docker
+    directories: ["/deploy", "/deploy/symbolic"]
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 3
+
+  # /.github/ci-services holds the images of the service containers of ci.yml.
+  - package-ecosystem: docker-compose
+    directories: ["/", "/.github/ci-services"]
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 3
+    ignore:
+      # The stack runs Postgres 16 and Neo4j 5.26.
+      - dependency-name: "*postgres"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "*neo4j"
+        update-types: ["version-update:semver-major"]
+
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly

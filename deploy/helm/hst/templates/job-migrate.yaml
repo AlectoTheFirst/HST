@@ -1,0 +1,88 @@
+{{- if .Values.migrations.enabled }}
+{{- /*
+The Job runs Alembic once per release. A pre-install hook runs before the bundled Postgres
+exists, so the Job is a normal resource. The revision in its name gives each release a new
+Job. The app and worker pods wait for it in an init container (hst.waitForMigrations).
+
+The Deployments set HST_RUN_MIGRATIONS to false, so only this Job changes the schema.
+*/}}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "hst.fullname" . }}-migrate-{{ .Release.Revision }}
+  labels: {{- include "hst.labels" . | nindent 4 }}
+    app.kubernetes.io/component: migrate
+  annotations:
+    # Argo CD renders with `helm template`, which sets .Release.Revision to 1, so
+    # the Job name is constant there. A Job spec is immutable. With Replace=true
+    # and Force=true Argo CD deletes and recreates the Job on each sync. Helm
+    # ignores the annotation.
+    argocd.argoproj.io/sync-options: Replace=true,Force=true
+spec:
+  backoffLimit: {{ .Values.migrations.backoffLimit }}
+  ttlSecondsAfterFinished: {{ .Values.migrations.ttlSecondsAfterFinished }}
+  template:
+    metadata:
+      labels: {{- include "hst.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: migrate
+    spec:
+      restartPolicy: Never
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets: {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "hst.serviceAccountName" . }}
+      automountServiceAccountToken: false
+      securityContext:
+        seccompProfile: { type: RuntimeDefault }
+      {{- if .Values.postgres.enabled }}
+      initContainers:
+        # The Job starts with the StatefulSet, so it waits until Postgres accepts
+        # connections.
+        - name: wait-for-postgres
+          image: {{ .Values.postgres.image | quote }}
+          command:
+            - sh
+            - -c
+            - |
+              n=0
+              until pg_isready -h {{ include "hst.postgresHost" . }} -U {{ .Values.postgres.username }} -d {{ .Values.postgres.database }}; do
+                n=$((n + 1))
+                if [ "$n" -ge {{ .Values.migrations.waitAttempts }} ]; then
+                  echo "postgres has not accepted connections after $n attempts; giving up"
+                  exit 1
+                fi
+                echo "waiting for postgres"; sleep 2
+              done
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 999
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: ["ALL"] }
+          resources: {{- toYaml .Values.migrations.resources | nindent 12 }}
+      {{- end }}
+      containers:
+        - name: migrate
+          image: {{ include "hst.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          # `hst migrate` runs `alembic upgrade head` against POSTGRES_DSN. Until the
+          # Job succeeds, the app and worker pods stay in their init container.
+          command: ["hst", "migrate"]
+          env: {{- include "hst.env" . | nindent 12 }}
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: {{ .Values.podSecurityContext.runAsUser }}
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: ["ALL"] }
+          resources: {{- toYaml .Values.migrations.resources | nindent 12 }}
+          {{- if .Values.postgres.tls.enabled }}
+          volumeMounts:
+            {{- include "hst.postgresCaVolumeMount" . | nindent 12 }}
+      {{- end }}
+      {{- if .Values.postgres.tls.enabled }}
+      volumes:
+        {{- include "hst.postgresCaVolume" . | nindent 8 }}
+      {{- end }}
+{{- end }}
+
