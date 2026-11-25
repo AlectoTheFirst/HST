@@ -98,19 +98,18 @@ async def test_patch_merges_and_keeps_omitted_secrets(seeded):
         assert (await client.patch("/api/sources/ghost", json={})).status_code == 404
 
 
-async def test_patch_racing_a_delete_is_404_not_500(seeded):
+async def test_patch_of_a_source_deleted_before_the_locked_read_is_404(seeded):
     async with await make_app_client(seeded) as client:
         await login(client, "ada")
         await client.post("/api/sources", json=UNIFI_BODY)
 
-        real_get = seeded.get_source
+        real_modify = seeded.modify_source
 
-        async def get_then_delete(name):
-            row = await real_get(name)
-            seeded.sources.pop(name, None)  # deleted between pre-check and write
-            return row
+        async def delete_then_modify(name, change):
+            seeded.sources.pop(name, None)
+            return await real_modify(name, change)
 
-        seeded.get_source = get_then_delete
+        seeded.modify_source = delete_then_modify
         r = await client.patch("/api/sources/home-unifi", json={"enabled": False})
         assert r.status_code == 404
         assert "no source" in r.json()["error"]
