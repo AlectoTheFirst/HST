@@ -12,7 +12,7 @@ RUN python tools/build_symbolic_wheels.py --work-dir /tmp/hst-symbolic-build --o
 FROM python:3.14-slim@sha256:ce40764625a4ff50df3548277632e7f96c4e77fe75fa848aae9885476e7df5a4 AS test-base
 WORKDIR /work
 ARG HST_CONTEXT_ID
-COPY --from=ghcr.io/astral-sh/uv:0.12.0@sha256:606e70c71c852d03f611b1e56a195d08648507018a7057fab82c4974c4eae105 /uv /usr/local/bin/uv
+COPY --from=ghcr.io/astral-sh/uv:0.13.10@sha256:a3ea1357342c1a4bf9a0c53a3deb1b55379aefa037338d8113d5771efa01774f /uv /usr/local/bin/uv
 COPY pyproject.toml uv.lock README.md LICENSE ./
 COPY --from=symbolic-build /wheelhouse/ /wheelhouse/
 COPY --from=symbolic-build /wheelhouse/symbolic-artifacts.json /usr/share/hst/symbolic-build.json
