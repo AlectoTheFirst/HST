@@ -210,3 +210,30 @@ def test_the_application_inventory_query_takes_comma_separated_uids(session):
     assert "10.70.0.0/24" in by_uid[ADDRESS]["related"]
     assert by_uid[PREFIX]["kind"] == "Prefix"
     assert session.run(cypher, uids="", snap=CTS).data() == []
+
+
+def test_a_device_reference_binds_no_address_of_its_interfaces(session):
+    from tests.test_business_applications import one_connection_definition
+
+    from hst.applications.models import InventoryReference
+    from hst.applications.resolution import GraphInventoryReader, resolve_application
+
+    reader = GraphInventoryReader(session, CTS)
+    (interface,) = reader.resolve(InventoryReference(kind="interface", uid=INTERFACE), REFERENCE)
+    assert [binding.address for binding in interface.addresses] == ["10.70.0.5"]
+    (device,) = reader.resolve(InventoryReference(kind="device", uid=DEVICE), REFERENCE)
+    assert device.kind == "device"
+    assert device.addresses == ()
+    (prefix,) = reader.resolve(InventoryReference(kind="network", uid=PREFIX), REFERENCE)
+    assert [binding.address for binding in prefix.addresses] == ["10.70.0.0/24"]
+
+    result = resolve_application(
+        one_connection_definition("device", DEVICE), revision=1, snapshot=REFERENCE, reader=reader
+    )
+
+    assert result["groups"]["servers"]["web"]["bindings"] == []
+    assert {issue["code"] for issue in result["issues"]} == {
+        "inventory-address-unavailable",
+        "destination-empty",
+    }
+    assert result["connections"][0]["request"] is None
