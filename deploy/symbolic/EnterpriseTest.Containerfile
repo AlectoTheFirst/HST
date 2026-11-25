@@ -449,7 +449,7 @@ RUN .venv/bin/python tools/run_limited.py --memory-mib 1024 --timeout 300 -- \
         tests/enterprise/test_direct_analysis.py tests/enterprise/test_symbolic_cost.py \
         tests/enterprise/test_assessment_symbolic_bridge.py
 
-FROM postgres:16.14@sha256:95206741a5b214807675e14165369d05b93a9cf692223b616d07cca227e74b0b AS enterprise-postgres
+FROM postgres:16.15@sha256:f9a7b9ebf6f56201f949db745e47bc423c0f0f8294bafe991cc10bf74b029657 AS enterprise-postgres
 COPY --from=test-base /usr/local/ /usr/local/
 COPY --from=test-base /work/ /work/
 WORKDIR /work
@@ -472,7 +472,7 @@ RUN set -eu; \
         .venv/bin/pytest -vv "$path" -m pg; \
     done
 
-FROM postgres:16.14@sha256:95206741a5b214807675e14165369d05b93a9cf692223b616d07cca227e74b0b AS enterprise-postgres-api
+FROM postgres:16.15@sha256:f9a7b9ebf6f56201f949db745e47bc423c0f0f8294bafe991cc10bf74b029657 AS enterprise-postgres-api
 COPY --from=test-base /usr/local/ /usr/local/
 COPY --from=test-base /work/ /work/
 WORKDIR /work

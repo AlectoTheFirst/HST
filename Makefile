@@ -263,9 +263,9 @@ enterprise-build-check:  ## Validate locks/licenses and the supplied qualified n
 # (ci.yml). The host ports 7699, 7477 and 5544 differ from the ports of the compose stack.
 test-stack:  ## Start disposable Postgres+Neo4j matching the CI service containers (ci.yml). Scratch data only.
 	podman run -d --rm --name hst-test-pg -e POSTGRES_USER=hst -e POSTGRES_PASSWORD=citest \
-	  -e POSTGRES_DB=hst_test -p 127.0.0.1:5544:5432 postgres:16.14@sha256:95206741a5b214807675e14165369d05b93a9cf692223b616d07cca227e74b0b
+	  -e POSTGRES_DB=hst_test -p 127.0.0.1:5544:5432 postgres:16.15@sha256:f9a7b9ebf6f56201f949db745e47bc423c0f0f8294bafe991cc10bf74b029657
 	podman run -d --rm --name hst-test-neo4j -e NEO4J_AUTH=neo4j/citest-password \
-	  -p 127.0.0.1:7699:7687 -p 127.0.0.1:7477:7474 neo4j:5.26.29-community@sha256:d9dd3dc7d1c78fa959191ff02dbdcbefadceaf83eee23428fb92a58cac8ad3fe
+	  -p 127.0.0.1:7699:7687 -p 127.0.0.1:7477:7474 neo4j:5.26.33-community@sha256:51d0314ef86074f519003da8dd4daaa9fff72b8479672b742d7cab7f3064e3ed
 
 test-stack-down:  ## Stop and remove both disposable databases (their data goes with them).
 	podman rm -f hst-test-pg hst-test-neo4j
