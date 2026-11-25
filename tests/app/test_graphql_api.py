@@ -418,7 +418,7 @@ async def test_a_document_of_nested_fragments_is_refused(client, graph):
     await login(client, "vera")
     r = await _gql(client, _nested_fragments(9))
     assert r.json() == {"data": {"__typename": "Query"}}
-    with cpu_time() as spent:
+    with cpu_time(all_threads=True) as spent:
         r = await _gql(client, _nested_fragments(22))
     assert spent.seconds < 5
     messages = [e["message"] for e in r.json()["errors"]]
@@ -436,7 +436,7 @@ async def test_a_fragment_cycle_is_refused(client, graph):
         f"fragment {name} on Query {{ {' '.join(f'...{other}' for other in names if other != name)} }}"
         for name in names
     )
-    with cpu_time() as spent:
+    with cpu_time(all_threads=True) as spent:
         r = await _gql(client, "{ ...F0 } " + each)
     assert spent.seconds < 5
     assert r.json()["errors"][0]["message"] == "Cannot spread fragment 'F0' within itself via 'F1'."
