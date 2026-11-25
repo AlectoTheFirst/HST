@@ -1010,7 +1010,8 @@ export function Diagram({
       // a stub goes with its device
       core.nodes(".exit").forEach((stub) => {
         const owners = stub.neighborhood("node.device");
-        stub.toggleClass("hid", owners.nonempty() && owners.filter(".hid").length === owners.length);
+        const ownerHidden = owners.nonempty() && owners.filter(".hid").length === owners.length;
+        stub.toggleClass("hid", ownerHidden || (!look.undiscovered && stub.hasClass("undiscovered")));
       });
       devices.toggleClass("noaddr", !look.addresses);
       cables.toggleClass("noports", !look.ports);

@@ -42,6 +42,8 @@ export interface Look {
   segments: boolean;
   /** the client badges per attachment point */
   clients: boolean;
+  /** the exits to a CDP or LLDP neighbor with no device in the graph */
+  undiscovered: boolean;
 }
 
 export const DEFAULT_LOOK: Look = {
@@ -57,17 +59,19 @@ export const DEFAULT_LOOK: Look = {
   routes: false,
   segments: true,
   clients: false,
+  undiscovered: true,
 };
 
 /** The symbol the legend shows beside each device group. */
 const CATEGORY_SYMBOL: Readonly<Record<Category, SymbolName>> = { l3: "router", l2: "switch", host: "server", other: "unknown" };
 
 /** The overlays the Options drawer turns on and off as chips. */
-const OVERLAYS: ReadonlyArray<{ key: "frames" | "routes" | "segments" | "clients"; label: string }> = [
+const OVERLAYS: ReadonlyArray<{ key: "frames" | "routes" | "segments" | "clients" | "undiscovered"; label: string }> = [
   { key: "frames", label: "Frames" },
   { key: "routes", label: "Routes" },
   { key: "segments", label: "Segments" },
   { key: "clients", label: "Clients" },
+  { key: "undiscovered", label: "Undiscovered peers" },
 ];
 
 type PortLabels = "none" | "port" | "address";
