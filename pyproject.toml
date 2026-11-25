@@ -38,7 +38,7 @@ sidestore = ["duckdb>=2.0.0", "pyarrow>=26.0.1"]
 app = [
   "fastapi>=0.163.0",
   "uvicorn[standard]>=0.54.0",
-  "sqlalchemy[asyncio]>=2.1.8",
+  "sqlalchemy[asyncio]>=2.1.9",
   "asyncpg>=0.32.0",
   "alembic>=1.20.1",
   "argon2-cffi>=25.1",
