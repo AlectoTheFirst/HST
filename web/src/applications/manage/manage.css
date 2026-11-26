@@ -1,8 +1,10 @@
 .apps-count { margin-left: 6px; padding: 0 6px; border-radius: 999px; background: var(--warnbg); color: var(--warntext); border: 1px solid var(--warnb); font-size: 12px; }
 .apps-selection { display: flex; flex-wrap: wrap; gap: 10px; align-items: end; margin-top: 12px; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--panel2); }
 .apps-section-head { display: flex; justify-content: space-between; gap: 12px; align-items: center; }
-.apps-split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(320px, 420px); gap: 16px; align-items: start; }
-.apps-split > section { min-width: 0; }
+.apps-split { display: flex; flex-wrap: wrap; gap: 16px; align-items: start; }
+.apps-split > section { flex: 3 1 520px; min-width: 0; }
+.apps-split > aside { flex: 1 1 320px; max-width: 420px; min-width: 0; }
+.apps-page a.primary { display: inline-flex; align-items: center; color: #fff; text-decoration: none; }
 .apps-form { border: 1px solid var(--border); border-radius: var(--radius); background: var(--panel); padding: 12px; }
 .apps-form fieldset { border: 0; padding: 0; margin: 0; }
 .apps-used-by { display: grid; gap: 4px; margin: 8px 0; color: var(--muted2); }
@@ -14,5 +16,5 @@
 .apps-page .tabs { margin: 12px 0; }
 .apps-page .linkish { background: none; border: 0; padding: 0; color: var(--acctext); cursor: pointer; text-align: left; }
 .apps-page .linkish[aria-pressed="true"] { font-weight: 600; }
-@media (max-width: 900px) { .apps-split, .apps-overview-grid { grid-template-columns: 1fr; } }
+@media (max-width: 900px) { .apps-overview-grid { grid-template-columns: 1fr; } }
 .apps-page .yaml-editor textarea { flex: 1; width: auto; min-width: 0; border: 0; padding: 4px 6px; font: inherit; line-height: inherit; white-space: pre; overflow: auto; resize: vertical; }
