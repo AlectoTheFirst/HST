@@ -4,7 +4,8 @@ import { api, apiDownload, ApiError } from "../api/client";
 import { atLeast, useAuth } from "../auth";
 import { PinnedSnapshotPicker } from "../assessments/PinnedSnapshotPicker";
 import { analyzeReadyConnections } from "./analysis";
-import { ApplicationEditor, changedAreas } from "./ApplicationEditor";
+import { ApplicationEditor, changedAreas, newApplication, toCondition } from "./ApplicationEditor";
+import { conditionSentence } from "../assessments/types";
 import { ApplicationStructure, memberSource } from "./ApplicationStructure";
 import { resultLabel } from "../results/text";
 import { YamlEditor } from "./YamlEditor";
@@ -12,7 +13,9 @@ import { ApplicationDraftWorkspace, describeIssue } from "./ApplicationDraftWork
 import type {
   ApplicationDraftRef,
   ApplicationEditTarget,
+  ApplicationConnection,
   ApplicationRevision,
+  EndpointContext,
   FlowCheck,
   ImportPreview,
   ResolvedApplication,
@@ -79,6 +82,40 @@ function describeOrigin(origin: RevisionOrigin | null | undefined): string {
   return `${source}, validated at snapshot ${validation.snapshot.snapshot}, ${state}`;
 }
 
+const CONTEXT_TEXT: Record<keyof EndpointContext, string> = {
+  vrf: "VRF",
+  device_uid: "device",
+  identity_uid: "identity",
+  segment_uid: "segment",
+  ingress_interface_uid: "ingress interface",
+};
+
+function describeContext(context: EndpointContext | null | undefined): string {
+  return (Object.keys(CONTEXT_TEXT) as Array<keyof EndpointContext>)
+    .filter((key) => context?.[key])
+    .map((key) => `${CONTEXT_TEXT[key]} ${context![key]}`)
+    .join(", ");
+}
+
+const MTU_MODE_TEXT = {
+  off: "off",
+  inventory: "MTU evidence",
+  unfragmented: "unfragmented packet size",
+  packet: "packet behavior",
+} as const;
+
+function describeMtu(mtu: NonNullable<ApplicationConnection["mtu"]>): string {
+  return [
+    MTU_MODE_TEXT[mtu.mode ?? "off"],
+    mtu.ip_packet_bytes != null ? `IP packet ${mtu.ip_packet_bytes} bytes` : "",
+    mtu.reply_ip_packet_bytes != null ? `reply IP packet ${mtu.reply_ip_packet_bytes} bytes` : "",
+    mtu.ipv4_df != null ? `IPv4 Don't Fragment ${mtu.ipv4_df ? "set" : "clear"}` : "",
+    mtu.traffic_class ? `traffic class ${mtu.traffic_class}` : "",
+  ]
+    .filter(Boolean)
+    .join(", ");
+}
+
 /** Without `onDraft` the page keeps the draft itself. */
 export default function ApplicationsPage({
   applicationId,
@@ -109,6 +146,7 @@ export default function ApplicationsPage({
     setComposing(null);
     setDraft(undefined);
   };
+  const [creating, setCreating] = useState(false);
   const catalog = useQuery({
     queryKey: ["business-applications"],
     queryFn: () => api<{ applications: ApplicationRevision[] }>("/business-applications"),
@@ -302,6 +340,17 @@ export default function ApplicationsPage({
             <span className="eyebrow">Catalog</span>
             <h2>Business applications</h2>
           </div>
+          {canEdit && (
+            <button
+              type="button"
+              onClick={() => {
+                if (drafting) closeDraft();
+                setCreating(true);
+              }}
+            >
+              New application
+            </button>
+          )}
         </div>
         {catalog.isLoading && <p role="status">Loading applications</p>}
         {catalog.isError && <p role="alert">Could not load applications</p>}
@@ -314,6 +363,7 @@ export default function ApplicationsPage({
                 className={selected === item.id ? "on" : undefined}
                 onClick={() => {
                   if (drafting) closeDraft();
+                  setCreating(false);
                   onNavigate(item.id);
                 }}
               >
@@ -331,6 +381,7 @@ export default function ApplicationsPage({
             <button
               type="button"
               onClick={() => {
+                setCreating(false);
                 setDraft(undefined);
                 setComposing({});
               }}
@@ -505,6 +556,20 @@ export default function ApplicationsPage({
               void queryClient.invalidateQueries({ queryKey: ["business-application", saved.id] });
             }}
           />
+        ) : creating ? (
+          <ApplicationEditor
+            key="new"
+            record={newApplication()}
+            canEdit={canEdit}
+            onSaved={(saved) => {
+              setCreating(false);
+              queryClient.setQueryData(["business-application", saved.id], {
+                application: saved,
+              });
+              void queryClient.invalidateQueries({ queryKey: ["business-applications"] });
+              onNavigate(saved.id);
+            }}
+          />
         ) : (
           <>
             {!selected && (
@@ -645,6 +710,22 @@ export default function ApplicationsPage({
                           {(connection.destination_ports ?? ["unspecified"]).join(", ")},{" "}
                           {connection.success}
                         </p>
+                        {connection.source_ports && (
+                          <p>Source ports: {connection.source_ports.join(", ")}</p>
+                        )}
+                        <p>
+                          Destination condition:{" "}
+                          {conditionSentence(toCondition(connection.destination_condition))}
+                        </p>
+                        {describeContext(connection.source_context) && (
+                          <p>Source context: {describeContext(connection.source_context)}</p>
+                        )}
+                        {describeContext(connection.destination_context) && (
+                          <p>
+                            Destination context: {describeContext(connection.destination_context)}
+                          </p>
+                        )}
+                        {connection.mtu && <p>MTU: {describeMtu(connection.mtu)}</p>}
                         <p>Service: {servicesByConnection.get(connection.id) ?? "Unassigned"}</p>
                       </article>
                     ))}

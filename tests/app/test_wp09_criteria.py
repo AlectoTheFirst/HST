@@ -76,7 +76,7 @@ async def test_an_editor_saved_revision_exports_and_imports_again_as_the_same_re
     assert exported.headers["x-hst-application-revision"] == "2"
     document = yaml.safe_load(exported.text)
     assert document == saved["definition"]
-    # the fields of the Checkout example the editor has no control for
+    # the advanced fields of the Checkout example
     connections = {item["id"]: item for item in document["connections"]}
     assert connections["clients-to-frontend"]["mtu"] == {
         "mode": "packet",

@@ -63,20 +63,31 @@ export function ListField({
   );
 }
 
-function ConditionEditor({
+export interface ConditionChoice {
+  value: string;
+  label: string;
+}
+
+/** Without `rootMember` the top condition has no member select. The caller
+ *  then shows its own control for a top `member` condition. */
+export function ConditionEditor({
   value,
   members,
   onChange,
+  legend = "Success condition",
+  rootMember = true,
   depth = 0,
 }: {
   value: Condition;
-  members: Member[];
+  members: ConditionChoice[];
   onChange: (value: Condition) => void;
+  legend?: string;
+  rootMember?: boolean;
   depth?: number;
 }) {
   return (
     <fieldset className="assessment-condition">
-      <legend>{depth ? "Condition group" : "Success condition"}</legend>
+      <legend>{depth ? "Condition group" : legend}</legend>
       <label className="assessment-field">
         <span>Condition type</span>
         <select
@@ -85,13 +96,13 @@ function ConditionEditor({
             const kind = e.target.value as Condition["kind"];
             onChange(
               kind === "member"
-                ? { kind, member: members[0]?.name }
+                ? { kind, member: members[0]?.value }
                 : {
                     kind,
                     ...(kind === "threshold" ? { n: 1 } : {}),
                     parts: value.parts?.length
                       ? value.parts
-                      : [{ kind: "member", member: members[0]?.name }],
+                      : [{ kind: "member", member: members[0]?.value }],
                   },
             );
           }}
@@ -103,20 +114,22 @@ function ConditionEditor({
         </select>
       </label>
       {value.kind === "member" ? (
-        <label className="assessment-field">
-          <span>Required member</span>
-          <select
-            value={value.member ?? ""}
-            onChange={(e) => onChange({ ...value, member: e.target.value })}
-          >
-            <option value="">Select a member</option>
-            {members.map((m, i) => (
-              <option key={i} value={m.name}>
-                {m.name || `Unnamed member ${i + 1}`}
-              </option>
-            ))}
-          </select>
-        </label>
+        (depth > 0 || rootMember) && (
+          <label className="assessment-field">
+            <span>Required member</span>
+            <select
+              value={value.member ?? ""}
+              onChange={(e) => onChange({ ...value, member: e.target.value })}
+            >
+              <option value="">Select a member</option>
+              {members.map((m, i) => (
+                <option key={i} value={m.value}>
+                  {m.label}
+                </option>
+              ))}
+            </select>
+          </label>
+        )
       ) : (
         <>
           {value.kind === "threshold" && (
@@ -153,7 +166,7 @@ function ConditionEditor({
               onClick={() =>
                 onChange({
                   ...value,
-                  parts: [...(value.parts ?? []), { kind: "member", member: members[0]?.name }],
+                  parts: [...(value.parts ?? []), { kind: "member", member: members[0]?.value }],
                 })
               }
             >
@@ -298,7 +311,10 @@ export function RequirementComposer({
       </button>
       <ConditionEditor
         value={value.condition}
-        members={value.members}
+        members={value.members.map((m, i) => ({
+          value: m.name,
+          label: m.name || `Unnamed member ${i + 1}`,
+        }))}
         onChange={(condition) => onChange({ ...value, condition })}
       />
       <p className="assessment-condition-summary">{conditionSentence(value.condition)}</p>

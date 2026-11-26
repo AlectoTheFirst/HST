@@ -1,16 +1,24 @@
 /**
  * WP-09 "Done when": the visual application editor builds the Checkout
- * structure from names and pickers, shows the connections of each group, and
- * saves the fields it has no control for unchanged.
+ * structure from names and pickers, shows the connections of each group,
+ * saves the fields it has no control for unchanged, and creates the
+ * definition of docs/examples/business-application.yaml from an empty start.
  */
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
-import { ApplicationEditor } from "../applications/ApplicationEditor";
+import { ApplicationEditor, newApplication } from "../applications/ApplicationEditor";
 import type { ApplicationRevision, BusinessApplicationDefinition } from "../applications/types";
 import { mockApi, type MockRequest } from "../test/fetchMock";
+// @ts-expect-error -- "fs" has no type declarations in scope here
+import { readFileSync } from "fs";
+// @ts-expect-error -- "process" has no type declarations in scope here
+import { cwd } from "process";
+
+// vitest runs in web/
+const exampleYaml = readFileSync(`${cwd()}/../docs/examples/business-application.yaml`, "utf-8") as string;
 
 const SNAPSHOTS = { snapshots: [{ id: "4000", ts_ms: 4000, kind: "full" }], current: 4000, truncated: false };
 const API_INTERFACE = { uid: "interface:api-primary", name: "api-primary", kind: "interface", device_name: "api-1", site: "DC1", selectable: true };
@@ -217,5 +225,173 @@ describe("Advanced fields through an editor save", () => {
     expected.connections[1].destination_ports = [9443];
     expected.services[0].name = "Checkout storefront";
     expect(definition).toEqual(expected);
+  });
+});
+
+/** The block mappings, block sequences of mappings, flow sequences and plain
+ *  scalars of the example file. */
+function parseExample(source: string): unknown {
+  const lines = source
+    .split("\n")
+    .filter((line) => line.trim() && !line.trim().startsWith("#"))
+    .map((line) => ({ indent: line.length - line.trimStart().length, text: line.trim() }));
+  let i = 0;
+  const scalar = (text: string): unknown =>
+    text.startsWith("[")
+      ? text.slice(1, -1).split(",").map((item) => scalar(item.trim()))
+      : /^-?\d+$/.test(text)
+        ? Number(text)
+        : text === "true" || text === "false"
+          ? text === "true"
+          : text;
+  function block(indent: number): unknown {
+    if (lines[i].text.startsWith("- ")) {
+      const items: unknown[] = [];
+      while (i < lines.length && lines[i].indent === indent && lines[i].text.startsWith("- ")) {
+        lines[i] = { indent: indent + 2, text: lines[i].text.slice(2) };
+        items.push(block(indent + 2));
+      }
+      return items;
+    }
+    const mapping: Record<string, unknown> = {};
+    while (i < lines.length && lines[i].indent === indent && !lines[i].text.startsWith("- ")) {
+      const { text } = lines[i];
+      const colon = text.indexOf(":");
+      const value = text.slice(colon + 1).trim();
+      i += 1;
+      mapping[text.slice(0, colon)] = value ? scalar(value) : block(lines[i].indent);
+    }
+    return mapping;
+  }
+  return block(0);
+}
+
+/** Drops the schema defaults that the editor writes: `parts: []` of a member
+ *  condition and an empty `header_constraints`. */
+function withoutDefaults(definition: BusinessApplicationDefinition): unknown {
+  const condition = (value: Record<string, unknown>): Record<string, unknown> => {
+    const { parts, ...rest } = value as { parts?: Array<Record<string, unknown>> };
+    return parts?.length ? { ...rest, parts: parts.map(condition) } : rest;
+  };
+  return {
+    ...definition,
+    connections: definition.connections.map((connection) => {
+      const { header_constraints: headers, ...rest } = connection;
+      return {
+        ...rest,
+        ...(headers && Object.keys(headers).length ? { header_constraints: headers } : {}),
+        destination_condition: condition(connection.destination_condition as unknown as Record<string, unknown>),
+      };
+    }),
+  };
+}
+
+describe("Building the example application from an empty start", () => {
+  it("posts the definition of docs/examples/business-application.yaml", async () => {
+    const saved: MockRequest[] = [];
+    mockApi({
+      "GET /api/snapshots": () => ({ body: SNAPSHOTS }),
+      "GET /api/assessment-options": () => ({ body: { snapshot: "4000", items: [API_INTERFACE], truncated: false } }),
+      "POST /api/business-applications": (req) => {
+        saved.push(req);
+        const definition = (req.body as { definition: BusinessApplicationDefinition }).definition;
+        return { status: 201, body: { ...revision(definition), definition } };
+      },
+    });
+    render(
+      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+        <ApplicationEditor record={newApplication()} canEdit onSaved={() => undefined} />
+      </QueryClientProvider>,
+    );
+    const user = userEvent.setup();
+    async function fill(field: HTMLElement, text: string) {
+      await user.clear(field);
+      await user.type(field, text);
+    }
+
+    const metadata = section("Application metadata");
+    await fill(within(metadata).getByLabelText("Name"), "Checkout");
+    await fill(within(metadata).getByLabelText("Stable ID"), "checkout-production");
+    await fill(within(metadata).getByLabelText("Environment"), "production");
+    await fill(within(metadata).getByLabelText("Description"), "Synthetic production checkout example");
+
+    async function addGroup(name: string, id: string) {
+      await user.click(within(section("Component groups")).getByRole("button", { name: "Add component group" }));
+      const card = last(cards("Component groups"));
+      await fill(within(card).getByLabelText("Name"), name);
+      await fill(within(card).getByLabelText("Stable ID"), id);
+      return card;
+    }
+    async function addMember(card: HTMLElement, id: string, address?: string, context?: string) {
+      await user.click(within(card).getByRole("button", { name: "Add member" }));
+      const row = last(within(card).getAllByLabelText("Member ID")).closest<HTMLElement>(".application-member")!;
+      await fill(within(row).getByLabelText("Member ID"), id);
+      if (address) await fill(within(row).getByLabelText("Address or prefix"), address);
+      if (context) await fill(within(row).getByLabelText("Context"), context);
+      return row;
+    }
+
+    const clients = await addGroup("Branch clients", "branch-clients");
+    await addMember(clients, "branch-ipv4", "192.0.2.0/24", "vrf:branch");
+    await addMember(clients, "branch-ipv6", "2001:db8:10::/64", "vrf:branch");
+    await addMember(await addGroup("Frontend", "frontend"), "web-primary", "198.51.100.10");
+    const api = await addMember(await addGroup("API", "api"), "api-primary");
+    await addMember(await addGroup("Checkout database", "database"), "database-primary", "203.0.113.20", "vrf:production");
+
+    // the API member is the recorded interface found by name
+    await user.selectOptions(within(api).getByLabelText("Source"), "Inventory reference");
+    const snapshot = within(section("Component groups")).getByLabelText("Inventory snapshot");
+    await user.selectOptions(snapshot, await within(snapshot).findByRole("option", { name: /\[full\]/ }));
+    await user.type(within(api).getByLabelText("Find interface"), "api");
+    await user.click(await within(api).findByRole("button", { name: "api-primary api-1, DC1" }));
+    await user.clear(within(api).getByLabelText("Member name"));
+    await user.selectOptions(within(api).getByLabelText("Role"), "Destination");
+    await user.type(within(api).getByLabelText("Context"), "vrf:production");
+
+    async function addConnection(name: string, id: string, source: string, destination: string, port: string, success: string) {
+      await user.click(within(section("Connections")).getByRole("button", { name: "Add connection" }));
+      const card = last(cards("Connections"));
+      await fill(within(card).getByLabelText("Name"), name);
+      await fill(within(card).getByLabelText("Stable ID"), id);
+      await user.selectOptions(within(card).getByLabelText("Source"), source);
+      await user.selectOptions(within(card).getByLabelText("Destination"), destination);
+      await user.type(within(card).getByLabelText("Protocol"), "tcp");
+      await user.type(within(card).getByLabelText("Destination ports"), port);
+      await user.selectOptions(within(card).getByLabelText("Required behavior"), success);
+      return card;
+    }
+    const toFrontend = await addConnection("Branch clients to frontend", "clients-to-frontend", "Branch clients", "Frontend", "443", "Session");
+    await user.type(within(toFrontend).getByLabelText("Source ports"), "1024-65535");
+    await user.type(within(toFrontend).getByLabelText("Source VRF"), "vrf:branch");
+    await user.selectOptions(within(toFrontend).getByLabelText("MTU assessment"), "Assess packet behavior");
+    expect(within(toFrontend).getByLabelText("Complete IP packet bytes")).toHaveValue(1500);
+    await user.selectOptions(within(toFrontend).getByLabelText("IPv4 Don't Fragment"), "Set");
+
+    const toApi = await addConnection("Frontend to API", "frontend-to-api", "Frontend", "API", "8443", "Round trip");
+    await user.type(within(toApi).getByLabelText("Destination VRF"), "vrf:production");
+    await user.selectOptions(within(toApi).getByLabelText("Condition type"), "At least N");
+    expect(within(toApi).getByLabelText("Minimum members or groups")).toHaveValue(1);
+    expect(within(toApi).getByLabelText("Required member")).toHaveDisplayValue("api-primary");
+
+    const toDatabase = await addConnection("API to database", "api-to-database", "API", "Checkout database", "5432", "Session");
+    await user.type(within(toDatabase).getByLabelText("Source VRF"), "vrf:production");
+    await user.type(within(toDatabase).getByLabelText("Destination VRF"), "vrf:production");
+
+    await user.click(within(section("Services")).getByRole("button", { name: "Add service" }));
+    const service = last(cards("Services"));
+    await fill(within(service).getByLabelText("Name"), "Checkout frontend");
+    await fill(within(service).getByLabelText("Stable ID"), "checkout-frontend");
+    for (const name of ["Branch clients to frontend", "Frontend to API", "API to database"]) {
+      await user.click(within(service).getByRole("checkbox", { name }));
+    }
+    await user.click(within(service).getByRole("button", { name: "Add component role" }));
+    await user.selectOptions(within(service).getByLabelText("Component group"), "Frontend");
+    await user.selectOptions(within(service).getByLabelText("Role"), "Endpoint");
+
+    await user.click(screen.getByRole("button", { name: "Save revision" }));
+    await waitFor(() => expect(saved).toHaveLength(1));
+    const body = saved[0].body as { definition: BusinessApplicationDefinition; expected_revision: number; source: string };
+    expect(body).toMatchObject({ expected_revision: 0, source: "editor" });
+    expect(withoutDefaults(body.definition)).toEqual(parseExample(exampleYaml));
   });
 });

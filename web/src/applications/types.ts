@@ -1,6 +1,7 @@
 import type { ResultValue } from "../results/text";
 import type { Requirement } from "../assessments/types";
 import type { SnapshotReference } from "../analysis/contracts";
+import type { MtuRequest } from "../api/types";
 
 export type InventoryKind = "device" | "interface" | "ip" | "network" | "dns" | "service_requirement" | "vrf" | "identity" | "segment";
 
@@ -52,6 +53,14 @@ export interface DestinationCondition {
   parts: DestinationCondition[];
 }
 
+export interface EndpointContext {
+  vrf?: string | null;
+  device_uid?: string | null;
+  identity_uid?: string | null;
+  segment_uid?: string | null;
+  ingress_interface_uid?: string | null;
+}
+
 export interface ApplicationConnection {
   id: string;
   name: string;
@@ -63,10 +72,10 @@ export interface ApplicationConnection {
   source_ports?: Array<number | string> | null;
   success: "forward" | "round-trip" | "session";
   destination_condition: DestinationCondition;
-  source_context?: Record<string, string | null> | null;
-  destination_context?: Record<string, string | null> | null;
+  source_context?: EndpointContext | null;
+  destination_context?: EndpointContext | null;
   header_constraints?: Record<string, Array<[number, number]>>;
-  mtu?: Record<string, unknown> | null;
+  mtu?: MtuRequest | null;
   provenance?: Record<string, unknown> | null;
 }
 
