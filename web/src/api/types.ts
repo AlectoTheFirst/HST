@@ -2135,6 +2135,8 @@ export interface TopologyLag {
   cables: string[];
   far: string[];
   ports_without_cable: string[];
+  /** the CDP or LLDP neighbor of a port in `ports_without_cable`; the neighbor is a device of the drawing */
+  neighbors_without_cable: { port: string; far_name: string; far_port: string | null; source: string }[];
   multi_chassis: boolean;
   basis: string;
 }

@@ -105,8 +105,9 @@ def plan(
     with one end outside `devices` is an exit of the drawing. `lags` rows hold
     uid, dev, name and the member port names, and optionally the `neighbors`
     that the member ports report (port, name, far_port, proto). A member port
-    without a cable whose neighbor is known is an exit to that neighbor. No
-    collector collected that neighbor, and `far_dev` is empty. `groups` rows
+    without a cable whose neighbor is no device of the drawing is an exit to
+    that neighbor, with an empty `far_dev`. A neighbor that is a device of the
+    drawing is listed in `neighbors_without_cable` of the LAG. `groups` rows
     hold uid, kind, name and the member device uids. `wan_devices` are the
     devices that hold a WAN link.
     """
@@ -396,7 +397,9 @@ def _lags(
     exits: Iterable[Mapping[str, Any]] = (),
 ) -> list[dict[str, Any]]:
     """Each drawn LAG as an overlay on its member cables. A member port with
-    no cable is listed as a stub."""
+    no cable and no exit is listed in `ports_without_cable`. The CDP or LLDP
+    neighbor that such a port reports is listed in `neighbors_without_cable`.
+    That neighbor is a device of this drawing."""
     by_end: dict[tuple[str, str], tuple[str, tuple[str, str]]] = {}
     for cid, line in lines.items():
         by_end[line["a"]] = (cid, line["b"])
@@ -408,12 +411,23 @@ def _lags(
         dev = lag["dev"]
         if dev not in devs:
             continue
-        cable_ids, far_devs, loose = [], set(), []
+        cable_ids, far_devs, loose, loose_neighbors = [], set(), [], []
+        hints = {n["port"]: n for n in lag.get("neighbors") or [] if n.get("port") and n.get("name")}
         for port in sorted(set(lag.get("ports") or [])):
             hit = by_end.get((dev, port))
             if hit is None:
                 if (dev, port) not in exit_ends:
                     loose.append(port)
+                    n = hints.get(port)
+                    if n is not None:
+                        loose_neighbors.append(
+                            {
+                                "port": port,
+                                "far_name": _neighbor_name(str(n["name"])),
+                                "far_port": n.get("far_port") or None,
+                                "source": f"{n.get('proto') or 'cdp'}, no cable",
+                            }
+                        )
             else:
                 cable_ids.append(hit[0])
                 far_devs.add(hit[1][0])
@@ -426,6 +440,7 @@ def _lags(
                 "cables": sorted(cable_ids),
                 "far": sorted(far_devs),
                 "ports_without_cable": loose,
+                "neighbors_without_cable": loose_neighbors,
                 "multi_chassis": multi,
                 "basis": "inferred" if multi else "collector",
             }

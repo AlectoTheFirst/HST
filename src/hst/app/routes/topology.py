@@ -100,7 +100,7 @@ MATCH (l:Lag)-[o:ON]->(d)
 WHERE NOT l:Retired AND o._retired_at IS NULL
 OPTIONAL MATCH (p:Port)-[m:MEMBER_OF]->(l) WHERE m._retired_at IS NULL AND NOT p:Retired
 // the CDP or LLDP neighbor a member port reports (collectors/cisco_common.py `_neighbor_stage`): the
-// planner draws it where no cable joins the port, which is when the neighbor is no collected device
+// planner draws it where no cable joins the port
 WITH l, d, p, coalesce(p.lldp_neighbor_name, p.cdp_neighbor_name) AS neighbor
 RETURN l.uid AS uid, d.uid AS dev, l.name AS name, collect(DISTINCT p.name) AS ports,
        [x IN collect(DISTINCT CASE WHEN neighbor IS NOT NULL THEN {

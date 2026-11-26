@@ -1,5 +1,6 @@
 """Where a LAG member port with no cable in the drawing ends (hst/diagram/planner.py): at
-its exit, at the CDP or LLDP neighbor no collector reached, or nowhere."""
+its exit, at the CDP or LLDP neighbor no collector reached, at a stub with the
+neighbor that is a device of the drawing, or at a stub with no neighbor."""
 
 from __future__ import annotations
 
@@ -64,10 +65,25 @@ def test_a_neighbor_no_collector_reached_is_no_way_out_of_the_site():
     assert sw1["anchor"] is None
 
 
-def test_a_neighbor_that_names_a_drawn_device_is_no_exit_and_the_member_stays_loose():
-    # the neighbor is rt1, in this drawing, with a domain suffix the reasoner did not join
-    neighbors = [_cdp("Eth1/107", "RT1.corp.example", "Gi0/1")]
-    model = _plan([], _lag(["Eth1/107", "Eth1/108"], neighbors))
+def test_a_neighbor_that_is_a_drawn_device_is_no_exit_and_the_lag_lists_it():
+    # the neighbor is rt1, in this drawing, and the reasoner wrote no cable to it
+    neighbors = [
+        _cdp("Eth1/107", "RT1.corp.example(FDO12345678)", "Gi0/1"),
+        {"port": "Eth1/108", "name": "rt1", "far_port": None, "proto": "lldp"},
+    ]
+    model = _plan([], _lag(["Eth1/107", "Eth1/108", "Eth1/109"], neighbors))
 
     assert model["exits"] == []
-    assert model["lags"][0]["ports_without_cable"] == ["Eth1/107", "Eth1/108"]
+    [lag] = model["lags"]
+    assert lag["ports_without_cable"] == ["Eth1/107", "Eth1/108", "Eth1/109"]
+    assert lag["neighbors_without_cable"] == [
+        {"port": "Eth1/107", "far_name": "RT1.corp.example", "far_port": "Gi0/1", "source": "cdp, no cable"},
+        {"port": "Eth1/108", "far_name": "rt1", "far_port": None, "source": "lldp, no cable"},
+    ]
+
+
+def test_a_member_at_an_exit_has_no_row_in_the_neighbors_without_cable():
+    neighbors = [_cdp("Eth1/107", "SWA-01", "Ethernet1/107")]
+    model = _plan([], _lag(["Eth1/107"], neighbors))
+
+    assert model["lags"][0]["neighbors_without_cable"] == []
