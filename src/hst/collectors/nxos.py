@@ -81,6 +81,7 @@ from .cisco_common import (
     ace_qualifiers,
     annotate_fhrp_sections,
     capture_mtu,
+    cdp_device_id,
     device_uid,
     list_references,
     match_list_stage,
@@ -121,7 +122,7 @@ CMD_VERSION = "show version | json"
 CMD_INTERFACE = "show interface | json"
 CMD_LLDP = "show lldp neighbors detail | json"
 # The brief CDP table. `device_id` is `<hostname>[.<domain>](<serial>)` on a
-# Nexus far end and a bare hostname on the rest (`_cdp_device_id`).
+# Nexus far end and a bare hostname on the rest (`cisco_common.cdp_device_id`).
 CMD_CDP = "show cdp neighbors | json"
 # A device with CDP off answers the CDP command with this one line in place of
 # the table, with exit status 0. The answer gives no neighbors and an
@@ -2568,25 +2569,6 @@ def _lldp_text(value: Any) -> str | None:
     return text
 
 
-# A Nexus far end sends its CDP device id as `<hostname>(<serial>)`, with the
-# chassis serial in parentheses. The name can have a domain suffix. Every other
-# platform sends the hostname without parentheses, with or without the domain.
-_CDP_DEVICE_ID_RE = re.compile(r"^(?P<name>[^()]+?)\s*\((?P<serial>[^()]+)\)\s*$")
-
-
-def _cdp_device_id(value: Any) -> tuple[str | None, str | None]:
-    """(name, serial) from a CDP `device_id`. The serial is the `serial`
-    property of the Device and a key of the device identity registry. A Nexus
-    neighbor that this run also collected is matched by the serial. Every
-    other far end gives the name alone."""
-    if not isinstance(value, str) or not value.strip():
-        return None, None
-    m = _CDP_DEVICE_ID_RE.match(value.strip())
-    if m is None:
-        return value.strip(), None
-    return m.group("name").strip(), m.group("serial").strip() or None
-
-
 def _parse_interface(row: dict) -> dict:
     name = row["interface"]
     kind = _kind(name)
@@ -2823,7 +2805,7 @@ def parse(raw: dict[str, str]) -> dict[str, Any]:
     cdp_text = raw.get(CMD_CDP)
     cdp_payload = {} if cdp_off_note(cdp_text) else _json_payload(cdp_text, CMD_CDP)
     for row in _rows(cdp_payload, "cdp_neighbor_brief_info"):
-        name, serial = _cdp_device_id(row.get("device_id"))
+        name, serial = cdp_device_id(row.get("device_id"))
         neighbors.append(
             {
                 "local_port": row.get("intf_id"),

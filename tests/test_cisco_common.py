@@ -10,6 +10,7 @@ from hst.collectors import iosxe, iosxr, nxos
 from hst.collectors.cisco_common import (
     ace_port_spec,
     ace_qualifier_reason,
+    cdp_device_id,
     fallback_device_uid,
     normalize_cisco,
     parse_access_groups,
@@ -1128,3 +1129,18 @@ def test_cdp_neighbor_serial_lands_on_the_port_and_absent_serial_writes_nothing(
     second = by_uid[uid.port(DEV, "port-channel1")]
     assert second.props["cdp_neighbor_name"] == "access1"
     assert "cdp_neighbor_serial" not in second.props
+
+
+@pytest.mark.parametrize(
+    "value, expected",
+    [
+        ("core2.example.com(ABC1234XYZ)", ("core2.example.com", "ABC1234XYZ")),
+        ("core2(ABC1234XYZ)", ("core2", "ABC1234XYZ")),
+        ("access1.mgmt.example.com", ("access1.mgmt.example.com", None)),
+        ("  edge1  ", ("edge1", None)),
+        ("", (None, None)),
+        (None, (None, None)),
+    ],
+)
+def test_cdp_device_id_splits_name_and_serial(value, expected):
+    assert cdp_device_id(value) == expected

@@ -3265,20 +3265,43 @@ def lldp_neighbor_rows(lldp_rows: list[dict[str, Any]], *, name_key: str) -> lis
     ]
 
 
+# A Nexus far end sends its CDP device id as `<hostname>(<serial>)`, with the
+# chassis serial in parentheses. The name can have a domain suffix. Every other
+# platform sends the hostname without parentheses, with or without the domain.
+_CDP_DEVICE_ID_RE = re.compile(r"^(?P<name>[^()]+?)\s*\((?P<serial>[^()]+)\)\s*$")
+
+
+def cdp_device_id(value: Any) -> tuple[str | None, str | None]:
+    """(name, serial) from a CDP device id. The serial is the `serial`
+    property of the Device and a key of the device identity registry. A Nexus
+    neighbor that this run also collected is matched by the serial. Every
+    other far end gives the name alone."""
+    if not isinstance(value, str) or not value.strip():
+        return None, None
+    m = _CDP_DEVICE_ID_RE.match(value.strip())
+    if m is None:
+        return value.strip(), None
+    return m.group("name").strip(), m.group("serial").strip() or None
+
+
 @debug_capture.traced
 def cdp_neighbor_rows(
     cdp_rows: list[dict[str, Any]], *, name_keys: tuple[str, ...] = ("neighbor_name",)
 ) -> list[dict]:
-    return [
-        {
+    rows = []
+    for r in cdp_rows:
+        name, serial = cdp_device_id(next((r[k] for k in name_keys if r.get(k)), None))
+        row = {
             "local_port": (r.get("local_interface") or "").strip(),
-            "name": next((r[k] for k in name_keys if r.get(k)), None),
+            "name": name,
             "mac": None,
             "port": (r.get("neighbor_interface") or "").strip(),
             "proto": "cdp",
         }
-        for r in cdp_rows
-    ]
+        if serial:
+            row["serial"] = serial
+        rows.append(row)
+    return rows
 
 
 @debug_capture.traced
