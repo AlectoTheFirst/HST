@@ -103,11 +103,14 @@ no backend.
 
 ## Changing the schema
 
-The schema is versioned and defined in 2 places that must agree:
+The schema is versioned and defined in 3 places that must agree:
 
 1. `src/hst/core/labels.py` is the machine-readable registry. The loader rejects
    any label or relationship type that is not in it.
-2. `README.md` "Architecture" summarizes the model. It must not contradict the
+2. `docs/schema.md` is the catalog. `tools/gen_docs.py` writes its lists of
+   labels, relationship types, vocabularies and gate bindings from the registry.
+   The properties and the ends of each relationship are written by hand.
+3. `README.md` "Architecture" summarizes the model. It must not contradict the
    registry.
 
 Checklist for a schema change:
@@ -121,6 +124,9 @@ Checklist for a schema change:
 - For a new `:Gate`, add its evaluation to `src/hst/path/gates/`, or confirm that
   it reports `indeterminate`. A gate the engine cannot evaluate must never render
   as a pass.
+- Add the properties, the ends and the writer of the new element to `docs/schema.md`.
+  Then run `uv run python tools/gen_docs.py`, which also writes
+  `docs/schema-by-source-type.md` from the tables of `docs/schema.md`.
 - Run the checks.
 
 The loader reserves the property `uid` and every property that starts with `_`. The
@@ -135,22 +141,25 @@ objects without transformation, then normalizes them into `NodeRecord` and
 
 - Use read-only credentials, and the read-only login mode where the management plane
   has one, such as Check Point's `"read-only": true`.
-- Release each session that the collector opens.
+- Release each session where the management plane has a logout call, as the Check Point
+  collector does with `/web_api/logout`.
 - Every `Device` uid comes from the device identity registry: call `self.identity.resolve_device`
   with the chassis serial, or with `<source>:<ref>` when the device reports no serial, and with
   the hostname. Do not build a `dev:` uid by hand.
-- Never write the derived edges `L3_ADJACENT`, `INTERCONNECTED_BY` and resolved
-  `SAME_AS`. The reasoner writes them.
-- Set a stable `scope` per partition, for example `apic:fab1`. Retirement depends on it.
-- For an SSH collector, open one `ssh.session()` per fetch and run every command over it.
-  `ssh.run()` is for the single command of `probe()`.
+- Never write a resolved `SAME_AS` edge. The reasoner writes it.
+- Set a stable `scope` per partition, for example `apic:fab1`. The carry of a run and the
+  source assertions read it. `docs/conventions.md` has the scope of each source type.
+- An SSH collector is a subclass of `SshCliCollector` in
+  `src/hst/collectors/cli_collector.py`. The base class opens one session for a fetch and
+  sends every command over it. With `fresh_connection_per_command`, it opens one
+  connection for each command.
 - Interface names go through `core.normalize.canonical_ifname` and `iface_slug`. Never
   key a dictionary on a raw vendor interface name.
 - The 3 templates in `src/hst/collectors/templates/` are changed copies of
   ntc-templates files under Apache-2.0. `NOTICE` in that directory lists them.
 - Nothing that this tool produced from real infrastructure goes in the repository:
-  raw snapshots, the changes log, the parquet side store, database dumps, collector
-  captures, anything sealed with `HST_SECRET_KEY`. This applies to raw, redacted and
+  raw snapshots, HTTP traces, debug records, the parquet side store, database dumps,
+  collector captures, anything sealed with `HST_SECRET_KEY`. This applies to raw, redacted and
   scrubbed data of any size.
 
   Collector tests use hand-written payloads, for example `tests/test_nxos.py`.

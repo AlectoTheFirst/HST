@@ -58,7 +58,7 @@ jobs:
             [ -z "$f" ] && continue
             case "$f" in
               # The docs files that tests read. tests/test_ci_workflows.py checks the list.
-              docs/examples/*)
+              docs/*.md|docs/examples/*)
                 code=true ;;
               README.md|CONTRIBUTING.md|SECURITY.md|docs/*)
                 ;;
