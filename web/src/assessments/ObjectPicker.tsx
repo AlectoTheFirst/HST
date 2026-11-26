@@ -2,7 +2,12 @@ import { useId, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../api/client";
 import { objectDescription, optionsPath } from "./guided";
-import type { DiscoveryObject, DiscoveryResponse, ObjectKind } from "./guided";
+import type { ContextKind, DiscoveryObject, DiscoveryResponse, ObjectKind } from "./guided";
+
+const PLURAL: Partial<Record<ObjectKind | ContextKind, string>> = {
+  domain: "shared failure domains",
+  identity: "identity groups",
+};
 
 export function ObjectPicker({
   snapshot,
@@ -13,7 +18,7 @@ export function ObjectPicker({
   selectedUids = [],
 }: {
   snapshot: string;
-  kind: ObjectKind;
+  kind: ObjectKind | ContextKind;
   label: string;
   onSelect: (item: DiscoveryObject) => void;
   assessmentId?: string;
@@ -40,7 +45,7 @@ function ObjectSearch({
   selectedUids,
 }: {
   snapshot: string;
-  kind: ObjectKind;
+  kind: ObjectKind | ContextKind;
   label: string;
   onSelect: (item: DiscoveryObject) => void;
   assessmentId?: string;
@@ -63,7 +68,9 @@ function ObjectSearch({
           type="search"
           value={query}
           disabled={!snapshot}
-          placeholder="Search name, device or site"
+          placeholder={
+            kind === "identity" || kind === "segment" ? "Search name" : "Search name, device or site"
+          }
           onChange={(event) => setQuery(event.target.value)}
         />
       </label>
@@ -119,8 +126,7 @@ function ObjectSearch({
           </ul>
           {!items.length && (
             <p>
-              No matching {kind === "domain" ? "shared failure domains" : `${kind}s`} recorded in
-              this snapshot
+              No matching {PLURAL[kind] ?? `${kind}s`} recorded in this snapshot
             </p>
           )}
           {result.data?.truncated && <p role="status">More matches exist</p>}

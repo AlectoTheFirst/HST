@@ -668,35 +668,32 @@ export function ApplicationEditor({
                   <option value="session">Session</option>
                 </select>
               </label>
-              <label>
-                Required destination
-                <select
-                  value={
-                    connection.destination_condition.kind === "member"
-                      ? (connection.destination_condition.member ?? "")
-                      : ""
-                  }
-                  disabled={connection.destination_condition.kind !== "member"}
-                  onChange={(event) =>
-                    replaceConnection(index, {
-                      ...connection,
-                      destination_condition: {
-                        kind: "member",
-                        member: event.target.value,
-                        parts: [],
-                      },
-                    })
-                  }
-                >
-                  {draft.groups
-                    .find((group) => group.id === connection.destination)
-                    ?.members.map((member) => (
-                      <option key={member.id} value={member.id}>
-                        {member.name ?? member.id}
-                      </option>
-                    ))}
-                </select>
-              </label>
+              {connection.destination_condition.kind === "member" && (
+                <label>
+                  Required destination
+                  <select
+                    value={connection.destination_condition.member ?? ""}
+                    onChange={(event) =>
+                      replaceConnection(index, {
+                        ...connection,
+                        destination_condition: {
+                          kind: "member",
+                          member: event.target.value,
+                          parts: [],
+                        },
+                      })
+                    }
+                  >
+                    {draft.groups
+                      .find((group) => group.id === connection.destination)
+                      ?.members.map((member) => (
+                        <option key={member.id} value={member.id}>
+                          {member.name ?? member.id}
+                        </option>
+                      ))}
+                  </select>
+                </label>
+              )}
             </div>
             <ConditionEditor
               legend="Destination condition"
@@ -1118,7 +1115,9 @@ function ContextEditor({
   onChange: (value: EndpointContext | undefined) => void;
 }) {
   const name = END_TEXT[end];
-  const [finding, setFinding] = useState<"device_uid" | "ingress_interface_uid" | null>(null);
+  const [finding, setFinding] = useState<
+    "device_uid" | "ingress_interface_uid" | "identity_uid" | "segment_uid" | null
+  >(null);
   const set = (key: keyof EndpointContext, next: string | undefined) => {
     const context: EndpointContext = { ...value };
     if (next) context[key] = next;
@@ -1145,6 +1144,8 @@ function ContextEditor({
         [
           ["device_uid", "device", "device"],
           ["ingress_interface_uid", "interface", "ingress interface"],
+          ["identity_uid", "identity", "identity"],
+          ["segment_uid", "segment", "segment"],
         ] as const
       ).map(([key, kind, text]) => (
         <div key={key}>
@@ -1167,8 +1168,6 @@ function ContextEditor({
           )}
         </div>
       ))}
-      {selected("identity_uid", "identity")}
-      {selected("segment_uid", "segment")}
     </fieldset>
   );
 }

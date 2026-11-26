@@ -1,12 +1,14 @@
 import type { AnalysisKind, Requirement } from "./types";
 
 export type ObjectKind = "device" | "interface" | "rulebase" | "link" | "tunnel" | "domain";
+/** The kinds of the context of a Business Application connection end. */
+export type ContextKind = "identity" | "segment";
 interface NamedObject {
   uid: string;
   name: string;
 }
 export interface DiscoveryObject extends NamedObject {
-  kind: ObjectKind | "service";
+  kind: ObjectKind | ContextKind | "service";
   device?: NamedObject;
   devices?: NamedObject[];
   device_uid?: string;

@@ -72,7 +72,7 @@ describe("Destination condition", () => {
     const user = userEvent.setup();
     const connection = card("Connections");
     await user.selectOptions(within(connection).getByLabelText("Condition type"), "At least N");
-    expect(within(connection).getByLabelText("Required destination")).toBeDisabled();
+    expect(within(connection).queryByLabelText("Required destination")).not.toBeInTheDocument();
     await user.click(within(connection).getByRole("button", { name: "Add condition" }));
     const members = within(connection).getAllByLabelText("Required member");
     await user.selectOptions(members[1], "api-secondary");
