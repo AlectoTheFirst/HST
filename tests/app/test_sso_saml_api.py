@@ -618,3 +618,39 @@ async def test_the_sp_metadata_ignores_the_host_header(client, idp):
     assert r.status_code == 200
     assert DET.fromstring(r.content).get("entityID") == ENTITY_ID
     assert ACS_URL in r.text and OTHER_HOST not in r.text
+
+
+# --- required group ------------------------------------------------------------
+
+
+async def test_a_login_with_the_required_group_signs_in(client, store, idp):
+    await _register_provider(client, idp, required_group="hst-users")
+    request_id = await _start_login(client)
+    saml_response = idp.create_signed_response(
+        sp_entity_id=ENTITY_ID,
+        acs_url=ACS_URL,
+        in_response_to=request_id,
+        name_id="gina@example.com",
+        attributes={"uid": ["gina"], "groups": ["hst-users"]},
+    )
+    r = await _acs(client, saml_response)
+    assert r.status_code == 302 and r.headers["location"] == "/"
+    assert await store.get_user_by_username("gina") is not None
+
+
+async def test_a_login_without_the_required_group_creates_no_account(client, store, idp):
+    await _register_provider(client, idp, required_group="hst-users")
+    provider = await store.get_auth_provider("adfs")
+    request_id = await _start_login(client)
+    saml_response = idp.create_signed_response(
+        sp_entity_id=ENTITY_ID,
+        acs_url=ACS_URL,
+        in_response_to=request_id,
+        name_id="hugo@example.com",
+        attributes={"uid": ["hugo"], "groups": ["engineers"]},
+    )
+    r = await _acs(client, saml_response)
+    assert r.status_code == 302 and r.headers["location"] == "/login?error=sso"
+    assert "hst_session=" not in r.headers.get("set-cookie", "")
+    assert await store.get_user_by_username("hugo") is None
+    assert await store.get_identity(provider.id, "hugo@example.com") is None

@@ -115,9 +115,9 @@ async def _validate_and_discover(request: Request, kind: str, config: dict) -> d
     """Validate the shape of a submitted config and, for OIDC and SAML, run
     discovery or metadata parsing.
 
-    Either step raises ValueError for a missing required field or for a scheme
-    violation in discovery or in the metadata fetch. The caller turns the
-    ValueError into a 4xx.
+    Either step raises ValueError for a missing required field, for a scheme
+    violation in discovery or in the metadata fetch, or for an issuer mismatch
+    in discovery. The caller turns the ValueError into a 4xx.
     """
     trust = tls.resolve(request.app.state.settings, config)
     if kind == "oidc":

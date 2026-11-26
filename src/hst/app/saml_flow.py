@@ -141,6 +141,7 @@ def validate_saml_config(config: dict[str, Any]) -> None:
     allowed = (*ROLES, "none")
     if default_role not in allowed:
         raise ValueError(f"config.default_role must be one of {', '.join(allowed)}")
+    sso_flow.validate_required_group(config)
     if config.get(tls.CA_BUNDLE):
         tls.validate_ca_bundle(config[tls.CA_BUNDLE], what=f"config.{tls.CA_BUNDLE}")
 

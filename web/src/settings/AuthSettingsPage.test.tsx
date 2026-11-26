@@ -127,6 +127,7 @@ describe("AuthSettingsPage: create provider", () => {
       config: {
         issuer: "https://new.okta.com",
         client_id: "client-abc",
+        scope: "openid profile email",
         groups_claim: "groups",
         default_role: "viewer",
       },
@@ -156,6 +157,7 @@ describe("AuthSettingsPage: secret stays write-only", () => {
       config: {
         issuer: AUTH_PROVIDER_OIDC.config.issuer,
         client_id: AUTH_PROVIDER_OIDC.config.client_id,
+        scope: "openid profile email",
         groups_claim: "roles",
         default_role: AUTH_PROVIDER_OIDC.config.default_role,
         label: AUTH_PROVIDER_OIDC.config.label,
@@ -172,6 +174,125 @@ describe("AuthSettingsPage: secret stays write-only", () => {
     expect(screen.getByText(/stored/)).toBeInTheDocument();
     const field = screen.getByLabelText("Client secret", { exact: false }) as HTMLInputElement;
     expect(field.value).toBe("");
+  });
+});
+
+describe("AuthSettingsPage: required group", () => {
+  async function saveUnchanged(provider: AuthProviderRow): Promise<unknown> {
+    const user = userEvent.setup();
+    let patched: unknown = null;
+    renderPage(ME_ADMIN, {
+      "GET /api/settings/auth/providers": () => ({ status: 200, body: [provider] }),
+      [`PATCH /api/settings/auth/providers/${provider.name}`]: (req) => {
+        patched = req.body;
+        return { status: 200, body: provider };
+      },
+    });
+    await user.click(await screen.findByRole("button", { name: `Edit ${provider.name}` }));
+    expect(screen.getByLabelText("Required group")).toHaveValue("hst-users");
+    await user.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(() => expect(patched).not.toBeNull());
+    return patched;
+  }
+
+  it("sends the stored required group of an OIDC provider on save", async () => {
+    const provider = {
+      ...AUTH_PROVIDER_OIDC,
+      config: { ...AUTH_PROVIDER_OIDC.config, required_group: "hst-users" },
+    };
+    expect(await saveUnchanged(provider)).toMatchObject({ config: { required_group: "hst-users" } });
+  });
+
+  it("sends the stored required group of a SAML provider on save", async () => {
+    const provider = {
+      ...AUTH_PROVIDER_SAML,
+      config: { ...AUTH_PROVIDER_SAML.config, required_group: "hst-users" },
+    };
+    expect(await saveUnchanged(provider)).toMatchObject({ config: { required_group: "hst-users" } });
+  });
+
+  it("posts the required group of a new OIDC provider", async () => {
+    const user = userEvent.setup();
+    let posted: unknown = null;
+    renderPage(ME_ADMIN, {
+      "POST /api/settings/auth/providers": (req) => {
+        posted = req.body;
+        return { status: 201, body: { ...AUTH_PROVIDER_OIDC, name: "new-okta" } };
+      },
+    });
+
+    await user.click(await screen.findByRole("button", { name: "Add provider" }));
+    await user.type(screen.getByLabelText("Name"), "new-okta");
+    await user.type(screen.getByLabelText("Issuer"), "https://new.okta.com");
+    await user.type(screen.getByLabelText("Client ID"), "client-abc");
+    await user.type(screen.getByLabelText("Required group"), " hst-users ");
+    await user.click(screen.getByRole("button", { name: "Create" }));
+
+    await waitFor(() => expect(posted).not.toBeNull());
+    expect(posted).toMatchObject({ config: { required_group: "hst-users" } });
+  });
+
+  it("sends no required group when the field is empty", async () => {
+    const user = userEvent.setup();
+    let patched: unknown = null;
+    const provider = {
+      ...AUTH_PROVIDER_OIDC,
+      config: { ...AUTH_PROVIDER_OIDC.config, required_group: "hst-users" },
+    };
+    renderPage(ME_ADMIN, {
+      "GET /api/settings/auth/providers": () => ({ status: 200, body: [provider] }),
+      "PATCH /api/settings/auth/providers/okta": (req) => {
+        patched = req.body;
+        return { status: 200, body: provider };
+      },
+    });
+    await user.click(await screen.findByRole("button", { name: "Edit okta" }));
+    await user.clear(screen.getByLabelText("Required group"));
+    await user.click(screen.getByRole("button", { name: "Save" }));
+
+    await waitFor(() => expect(patched).not.toBeNull());
+    expect((patched as { config: object }).config).not.toHaveProperty("required_group");
+  });
+});
+
+describe("AuthSettingsPage: scope", () => {
+  it("sends the stored scope of an OIDC provider on save", async () => {
+    const user = userEvent.setup();
+    let patched: unknown = null;
+    const provider = {
+      ...AUTH_PROVIDER_OIDC,
+      config: { ...AUTH_PROVIDER_OIDC.config, scope: "openid profile email groups" },
+    };
+    renderPage(ME_ADMIN, {
+      "GET /api/settings/auth/providers": () => ({ status: 200, body: [provider] }),
+      "PATCH /api/settings/auth/providers/okta": (req) => {
+        patched = req.body;
+        return { status: 200, body: provider };
+      },
+    });
+    await user.click(await screen.findByRole("button", { name: "Edit okta" }));
+    expect(screen.getByLabelText("Scope")).toHaveValue("openid profile email groups");
+    await user.click(screen.getByRole("button", { name: "Save" }));
+
+    await waitFor(() => expect(patched).not.toBeNull());
+    expect(patched).toMatchObject({ config: { scope: "openid profile email groups" } });
+  });
+
+  it("sends the default scope when the field is empty", async () => {
+    const user = userEvent.setup();
+    let patched: unknown = null;
+    renderPage(ME_ADMIN, {
+      "PATCH /api/settings/auth/providers/okta": (req) => {
+        patched = req.body;
+        return { status: 200, body: AUTH_PROVIDER_OIDC };
+      },
+    });
+    await user.click(await screen.findByRole("button", { name: "Edit okta" }));
+    await user.clear(screen.getByLabelText("Scope"));
+    await user.click(screen.getByRole("button", { name: "Save" }));
+
+    await waitFor(() => expect(patched).not.toBeNull());
+    expect(patched).toMatchObject({ config: { scope: "openid profile email" } });
   });
 });
 
