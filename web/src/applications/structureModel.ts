@@ -18,6 +18,21 @@ export function memberSource(member: ApplicationMember): string {
   return member.address ?? `${member.inventory?.kind} ${member.inventory?.uid}`;
 }
 
+/** The state of a member at a resolution: its issue codes, "resolved" or
+ *  "unresolved", or null when the resolution does not hold the member. */
+export function memberStateOf(resolution: ResolvedApplication | null | undefined) {
+  const issueCodes = new Map<string, string[]>();
+  for (const issue of resolution?.issues ?? [])
+    issueCodes.set(issue.path, [...(issueCodes.get(issue.path) ?? []), issue.code]);
+  return (groupId: string, memberId: string): string | null => {
+    const resolved = resolution?.groups[groupId]?.[memberId];
+    if (!resolved) return null;
+    const codes = issueCodes.get(`groups.${groupId}.members.${memberId}`);
+    if (codes) return codes.join(", ");
+    return resolved.bindings.length > 0 ? "resolved" : "unresolved";
+  };
+}
+
 /** The class and colour key of a flow check answer: passes, fails, not decided (`open`). */
 export type EdgeAnswer = "passes" | "fails" | "open";
 

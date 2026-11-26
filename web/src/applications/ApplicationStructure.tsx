@@ -1,5 +1,5 @@
 import { lazy, Suspense, useMemo, useState } from "react";
-import { memberSource, structureGraph } from "./structureModel";
+import { memberSource, memberStateOf, structureGraph } from "./structureModel";
 import type { BusinessApplicationDefinition, FlowCheck, ResolvedApplication } from "./types";
 
 export {
@@ -37,19 +37,10 @@ export function ApplicationStructure({
     () => structureGraph(definition, resolution, flows),
     [definition, resolution, flows],
   );
-  const issueCodes = new Map<string, string[]>();
-  for (const issue of resolution?.issues ?? [])
-    issueCodes.set(issue.path, [...(issueCodes.get(issue.path) ?? []), issue.code]);
   const readiness = new Map(
     (resolution?.connections ?? []).map((item) => [item.id, item.readiness] as const),
   );
-  const memberState = (groupId: string, memberId: string): string | null => {
-    const resolved = resolution?.groups[groupId]?.[memberId];
-    if (!resolved) return null;
-    const codes = issueCodes.get(`groups.${groupId}.members.${memberId}`);
-    if (codes) return codes.join(", ");
-    return resolved.bindings.length > 0 ? "resolved" : "unresolved";
-  };
+  const memberState = memberStateOf(resolution);
   return (
     <section className="application-structure" aria-label="Structure">
       <div className="application-structure-mode" role="group" aria-label="Structure view">

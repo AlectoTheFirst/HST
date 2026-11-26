@@ -1,10 +1,10 @@
-import { useState } from "react";
-import { ApiError, api } from "../api/client";
+import { Fragment, useState, type ReactNode } from "react";
 import { MtuRequirementFields } from "../assessments/MtuRequirementFields";
 import { ObjectPicker } from "../assessments/ObjectPicker";
 import { PinnedSnapshotPicker } from "../assessments/PinnedSnapshotPicker";
 import { ConditionEditor } from "../assessments/RequirementComposer";
 import type { Condition } from "../assessments/types";
+import { nextId, useApplicationDraft, type ApplicationDraft } from "./useApplicationDraft";
 import type {
   ApplicationConnection,
   ApplicationMember,
@@ -24,7 +24,7 @@ const identifier = (value: string) =>
     .replace(/[^a-z0-9-]+/g, "-")
     .replace(/^[^a-z]+/, "")
     .slice(0, 63);
-const ports = (value: string): Array<number | string> | null => {
+export const ports = (value: string): Array<number | string> | null => {
   const values = value
     .split(",")
     .map((item) => item.trim())
@@ -73,21 +73,6 @@ function fromCondition(value: Condition): DestinationCondition {
   };
 }
 
-function renameMember(
-  value: DestinationCondition,
-  from: string,
-  to: string,
-): DestinationCondition {
-  if (value.kind === "member") return value.member === from ? { ...value, member: to } : value;
-  return { ...value, parts: (value.parts ?? []).map((part) => renameMember(part, from, to)) };
-}
-
-function nextId(prefix: string, values: Array<{ id: string }>): string {
-  let index = values.length + 1;
-  while (values.some((item) => item.id === `${prefix}-${index}`)) index += 1;
-  return `${prefix}-${index}`;
-}
-
 export function changedAreas(
   left: BusinessApplicationDefinition,
   right: BusinessApplicationDefinition,
@@ -105,37 +90,6 @@ export function changedAreas(
   return areas;
 }
 
-function rebaseDraft(
-  base: BusinessApplicationDefinition,
-  local: BusinessApplicationDefinition,
-  remote: BusinessApplicationDefinition,
-): BusinessApplicationDefinition {
-  const result = structuredClone(remote);
-  for (const key of ["name", "description", "owner", "environment", "state"] as const) {
-    if (JSON.stringify(local[key]) !== JSON.stringify(base[key]))
-      (result[key] as unknown) = local[key];
-  }
-  for (const key of ["services", "groups", "connections"] as const) {
-    const baseById = new Map(base[key].map((item) => [item.id, item]));
-    const localById = new Map(local[key].map((item) => [item.id, item]));
-    const remoteValues = result[key] as Array<{ id: string }>;
-    const merged = remoteValues
-      .filter((item) => localById.has(item.id) || !baseById.has(item.id))
-      .map((item) => {
-        const localItem = localById.get(item.id);
-        const baseItem = baseById.get(item.id);
-        return localItem && JSON.stringify(localItem) !== JSON.stringify(baseItem)
-          ? localItem
-          : item;
-      });
-    for (const item of local[key])
-      if (!baseById.has(item.id) && !merged.some((entry) => entry.id === item.id))
-        merged.push(item);
-    (result[key] as Array<{ id: string }>) = merged;
-  }
-  return result;
-}
-
 export function ApplicationEditor({
   record,
   canEdit,
@@ -145,144 +99,10 @@ export function ApplicationEditor({
   canEdit: boolean;
   onSaved: (record: ApplicationRevision) => void;
 }) {
-  const [draft, setDraft] = useState<BusinessApplicationDefinition>(() =>
-    structuredClone(record.definition),
-  );
-  const [base, setBase] = useState(record);
-  const [conflict, setConflict] = useState<ApplicationRevision | null>(null);
+  const editor = useApplicationDraft(record, onSaved);
+  const { draft, busy, dirty } = editor;
   const [inventorySnapshot, setInventorySnapshot] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
-  const isNew = base.revision === 0;
-  const dirty = JSON.stringify(draft) !== JSON.stringify(base.definition);
-  const placeholders = draft.groups.some((group) =>
-    group.members.some((member) => member.placeholder),
-  );
-
-  function update<K extends keyof BusinessApplicationDefinition>(
-    key: K,
-    value: BusinessApplicationDefinition[K],
-  ) {
-    setDraft((current) => ({ ...current, [key]: value }));
-  }
-
-  function addService() {
-    const id = nextId("service", draft.services);
-    update("services", [
-      ...draft.services,
-      { id, name: `Service ${draft.services.length + 1}`, connection_ids: [], component_roles: [] },
-    ]);
-  }
-
-  function addGroup() {
-    const id = nextId("group", draft.groups);
-    update("groups", [
-      ...draft.groups,
-      { id, name: `Component group ${draft.groups.length + 1}`, members: [] },
-    ]);
-  }
-
-  function addConnection() {
-    const id = nextId("connection", draft.connections);
-    const source = draft.groups[0]?.id ?? "";
-    const destination = draft.groups[1]?.id ?? source;
-    const member =
-      draft.groups.find((group) => group.id === destination)?.members[0]?.id ??
-      "destination-member";
-    update("connections", [
-      ...draft.connections,
-      {
-        id,
-        name: `Connection ${draft.connections.length + 1}`,
-        source,
-        destination,
-        success: "forward",
-        destination_condition: { kind: "member", member, parts: [] },
-        header_constraints: {},
-      },
-    ]);
-  }
-
-  function replaceService(index: number, value: ApplicationService) {
-    update(
-      "services",
-      draft.services.map((item, i) => (i === index ? value : item)),
-    );
-  }
-
-  /** A changed group or member id is renamed in the connections and the
-   *  component roles that reference it. */
-  function replaceGroup(index: number, value: ComponentGroup) {
-    const before = draft.groups[index];
-    const members = new Map<string, string>();
-    if (before.members.length === value.members.length)
-      before.members.forEach((member, i) => {
-        if (member.id !== value.members[i].id) members.set(member.id, value.members[i].id);
-      });
-    const group = (id: string) => (id === before.id ? value.id : id);
-    setDraft((current) => ({
-      ...current,
-      groups: current.groups.map((item, i) => (i === index ? value : item)),
-      services: current.services.map((service) => ({
-        ...service,
-        component_roles: service.component_roles.map((entry) => ({
-          ...entry,
-          group_id: group(entry.group_id),
-        })),
-      })),
-      connections: current.connections.map((connection) => {
-        let condition = connection.destination_condition;
-        if (connection.destination === before.id)
-          for (const [from, to] of members) condition = renameMember(condition, from, to);
-        return {
-          ...connection,
-          source: group(connection.source),
-          destination: group(connection.destination),
-          destination_condition: condition,
-        };
-      }),
-    }));
-  }
-
-  /** A changed connection id is renamed in the services. */
-  function replaceConnection(index: number, value: ApplicationConnection) {
-    const before = draft.connections[index];
-    setDraft((current) => ({
-      ...current,
-      connections: current.connections.map((item, i) => (i === index ? value : item)),
-      services: current.services.map((service) => ({
-        ...service,
-        connection_ids: service.connection_ids.map((id) => (id === before.id ? value.id : id)),
-      })),
-    }));
-  }
-
-  async function save() {
-    setBusy(true);
-    setError("");
-    try {
-      const saved = await api<ApplicationRevision>(
-        isNew
-          ? "/business-applications"
-          : `/business-applications/${encodeURIComponent(record.id)}`,
-        {
-          method: isNew ? "POST" : "PUT",
-          body: { definition: draft, expected_revision: base.revision, source: "editor" },
-        },
-      );
-      onSaved(saved);
-    } catch (cause) {
-      if (!isNew && cause instanceof ApiError && cause.status === 409) {
-        const latest = await api<{ application: ApplicationRevision }>(
-          `/business-applications/${encodeURIComponent(record.id)}`,
-        );
-        setConflict(latest.application);
-        setError("The application has a newer revision");
-      } else setError(cause instanceof Error ? cause.message : "Could not save the application");
-    } finally {
-      setBusy(false);
-    }
-  }
+  const locked = !canEdit || busy;
 
   return (
     <section className="application-editor" aria-label="Visual application editor">
@@ -292,471 +112,71 @@ export function ApplicationEditor({
         </div>
         {dirty && <span role="status">Unsaved changes</span>}
       </div>
-      <fieldset disabled={!canEdit || busy}>
-        <legend>Application metadata</legend>
-        <div className="application-fields">
-          <label>
-            Name
-            <input
-              required
-              value={draft.name}
-              onChange={(event) => update("name", event.target.value)}
-            />
-          </label>
-          <IdInput
-            label="Stable ID"
-            value={draft.id}
-            disabled={!isNew}
-            onCommit={(id) => update("id", id)}
-          />
-          <label>
-            Environment
-            <input
-              value={draft.environment ?? ""}
-              onChange={(event) => update("environment", event.target.value || null)}
-            />
-          </label>
-          <label>
-            Owner
-            <input
-              value={draft.owner ?? ""}
-              onChange={(event) => update("owner", event.target.value || null)}
-            />
-          </label>
-          <label>
-            Catalog state
-            <select
-              value={draft.state}
-              onChange={(event) => update("state", event.target.value as "draft" | "ready")}
-            >
-              <option value="draft">Draft</option>
-              <option value="ready" disabled={placeholders}>
-                Ready intent
-              </option>
-            </select>
-          </label>
-        </div>
-        <label>
-          Description
-          <textarea
-            rows={2}
-            value={draft.description ?? ""}
-            onChange={(event) => update("description", event.target.value || null)}
-          />
-        </label>
-      </fieldset>
+      <MetadataFields editor={editor} disabled={locked} />
+      <ServicesFields editor={editor} disabled={locked} />
 
-      <fieldset disabled={!canEdit || busy}>
-        <legend>Services</legend>
-        {draft.services.map((service, index) => (
-          <article className="application-edit-card" key={index}>
-            <div className="application-fields">
-              <label>
-                Name
-                <input
-                  value={service.name}
-                  onChange={(event) =>
-                    replaceService(index, { ...service, name: event.target.value })
-                  }
-                />
-              </label>
-              <IdInput
-                label="Stable ID"
-                value={service.id}
-                taken={draft.services.map((item) => item.id)}
-                onCommit={(id) => replaceService(index, { ...service, id })}
-              />
-            </div>
-            <span>Associated connections</span>
-            <div className="application-checks">
-              {draft.connections.map((connection) => (
-                <label key={connection.id}>
-                  <input
-                    type="checkbox"
-                    checked={service.connection_ids.includes(connection.id)}
-                    onChange={(event) =>
-                      replaceService(index, {
-                        ...service,
-                        connection_ids: event.target.checked
-                          ? [...service.connection_ids, connection.id]
-                          : service.connection_ids.filter((id) => id !== connection.id),
-                      })
-                    }
-                  />
-                  {connection.name}
-                </label>
-              ))}
-            </div>
-            <span>Component roles</span>
-            {service.component_roles.map((entry, roleIndex) => {
-              const roles = (value: ApplicationService["component_roles"][number]) =>
-                replaceService(index, {
-                  ...service,
-                  component_roles: service.component_roles.map((item, i) =>
-                    i === roleIndex ? value : item,
-                  ),
-                });
-              return (
-                <div className="application-fields" key={roleIndex}>
-                  <label>
-                    Component group
-                    <select
-                      value={entry.group_id}
-                      onChange={(event) => roles({ ...entry, group_id: event.target.value })}
-                    >
-                      {draft.groups.map((group) => (
-                        <option key={group.id} value={group.id}>
-                          {group.name}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <label>
-                    Role
-                    <select
-                      value={entry.role}
-                      onChange={(event) =>
-                        roles({ ...entry, role: event.target.value as typeof entry.role })
-                      }
-                    >
-                      <option value="client">Client</option>
-                      <option value="endpoint">Endpoint</option>
-                      <option value="dependency">Dependency</option>
-                      <option value="component">Component</option>
-                    </select>
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      replaceService(index, {
-                        ...service,
-                        component_roles: service.component_roles.filter((_, i) => i !== roleIndex),
-                      })
-                    }
-                  >
-                    Remove component role
-                  </button>
-                </div>
-              );
-            })}
-            <button
-              type="button"
-              disabled={draft.groups.length === 0}
-              onClick={() =>
-                replaceService(index, {
-                  ...service,
-                  component_roles: [
-                    ...service.component_roles,
-                    { group_id: draft.groups[0].id, role: "component" },
-                  ],
-                })
-              }
-            >
-              Add component role
-            </button>
-            <button
-              type="button"
-              onClick={() =>
-                update(
-                  "services",
-                  draft.services.filter((_, i) => i !== index),
-                )
-              }
-            >
-              Remove service
-            </button>
-          </article>
-        ))}
-        <button type="button" onClick={addService}>
-          Add service
-        </button>
-      </fieldset>
-
-      <fieldset disabled={!canEdit || busy}>
+      <fieldset disabled={locked}>
         <legend>Component groups</legend>
         <PinnedSnapshotPicker
           label="Inventory snapshot"
           value={inventorySnapshot}
           onChange={setInventorySnapshot}
         />
-        {draft.groups.map((group, groupIndex) => {
-          const affected = draft.connections.filter(
-            (connection) => connection.source === group.id || connection.destination === group.id,
-          );
-          return (
-            <article className="application-edit-card" key={groupIndex}>
-              <div className="application-fields">
-                <label>
-                  Name
-                  <input
-                    value={group.name}
-                    onChange={(event) =>
-                      replaceGroup(groupIndex, { ...group, name: event.target.value })
-                    }
-                  />
-                </label>
-                <IdInput
-                  label="Stable ID"
-                  value={group.id}
-                  taken={draft.groups.map((item) => item.id)}
-                  onCommit={(id) => replaceGroup(groupIndex, { ...group, id })}
-                />
-              </div>
-              {affected.length > 0 && <p>Affects {affected.map((item) => item.name).join(", ")}</p>}
-              {group.members.map((member, memberIndex) => (
-                <MemberEditor
-                  key={memberIndex}
-                  member={member}
-                  taken={group.members.map((item) => item.id)}
-                  snapshot={inventorySnapshot}
-                  onChange={(value) =>
-                    replaceGroup(groupIndex, {
-                      ...group,
-                      members: group.members.map((item, i) => (i === memberIndex ? value : item)),
-                    })
-                  }
-                  onRemove={() =>
-                    replaceGroup(groupIndex, {
-                      ...group,
-                      members: group.members.filter((_, i) => i !== memberIndex),
-                    })
-                  }
-                />
-              ))}
-              <button
-                type="button"
-                onClick={() =>
-                  replaceGroup(groupIndex, {
-                    ...group,
-                    members: [
-                      ...group.members,
-                      { id: nextId("member", group.members), address: "192.0.2.1" },
-                    ],
-                  })
-                }
-              >
-                Add member
-              </button>
-              <button
-                type="button"
-                onClick={() =>
-                  update(
-                    "groups",
-                    draft.groups.filter((_, i) => i !== groupIndex),
-                  )
-                }
-              >
-                Remove group
-              </button>
-            </article>
-          );
-        })}
-        <button type="button" onClick={addGroup}>
+        {draft.groups.map((group, groupIndex) => (
+          <article className="application-edit-card" key={groupIndex}>
+            <GroupFields
+              group={group}
+              definition={draft}
+              snapshot={inventorySnapshot}
+              onChange={(value) => editor.replaceGroup(groupIndex, value)}
+            />
+            <button type="button" onClick={() => editor.removeGroup(groupIndex)}>
+              Remove group
+            </button>
+          </article>
+        ))}
+        <button type="button" onClick={editor.addGroup}>
           Add component group
         </button>
       </fieldset>
 
-      <fieldset disabled={!canEdit || busy}>
+      <fieldset disabled={locked}>
         <legend>Connections</legend>
         {draft.connections.map((connection, index) => (
           <article className="application-edit-card" key={index}>
-            <div className="application-fields">
-              <label>
-                Name
-                <input
-                  value={connection.name}
-                  onChange={(event) =>
-                    replaceConnection(index, { ...connection, name: event.target.value })
-                  }
-                />
-              </label>
-              <IdInput
-                label="Stable ID"
-                value={connection.id}
-                taken={draft.connections.map((item) => item.id)}
-                onCommit={(id) => replaceConnection(index, { ...connection, id })}
-              />
-              <label>
-                Source
-                <select
-                  value={connection.source}
-                  onChange={(event) =>
-                    replaceConnection(index, { ...connection, source: event.target.value })
-                  }
-                >
-                  {draft.groups.map((group) => (
-                    <option key={group.id} value={group.id}>
-                      {group.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                Destination
-                <select
-                  value={connection.destination}
-                  onChange={(event) => {
-                    const destination = event.target.value;
-                    const member =
-                      draft.groups.find((group) => group.id === destination)?.members[0]?.id ?? "";
-                    replaceConnection(index, {
-                      ...connection,
-                      destination,
-                      destination_condition:
-                        connection.destination_condition.kind === "member"
-                          ? { kind: "member", member, parts: [] }
-                          : connection.destination_condition,
-                    });
-                  }}
-                >
-                  {draft.groups.map((group) => (
-                    <option key={group.id} value={group.id}>
-                      {group.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                Protocol
-                <input
-                  value={connection.protocol ?? ""}
-                  onChange={(event) =>
-                    replaceConnection(index, {
-                      ...connection,
-                      protocol: event.target.value || null,
-                    })
-                  }
-                />
-              </label>
-              <label>
-                Destination ports
-                <input
-                  value={(connection.destination_ports ?? []).join(", ")}
-                  onChange={(event) =>
-                    replaceConnection(index, {
-                      ...connection,
-                      destination_ports: ports(event.target.value),
-                    })
-                  }
-                />
-              </label>
-              <label>
-                Source ports
-                <input
-                  value={(connection.source_ports ?? []).join(", ")}
-                  onChange={(event) =>
-                    replaceConnection(index, {
-                      ...connection,
-                      source_ports: ports(event.target.value),
-                    })
-                  }
-                />
-              </label>
-              <label>
-                Required behavior
-                <select
-                  value={connection.success}
-                  onChange={(event) =>
-                    replaceConnection(index, {
-                      ...connection,
-                      success: event.target.value as ApplicationConnection["success"],
-                    })
-                  }
-                >
-                  <option value="forward">Forward</option>
-                  <option value="round-trip">Round trip</option>
-                  <option value="session">Session</option>
-                </select>
-              </label>
-              {connection.destination_condition.kind === "member" && (
-                <label>
-                  Required destination
-                  <select
-                    value={connection.destination_condition.member ?? ""}
-                    onChange={(event) =>
-                      replaceConnection(index, {
-                        ...connection,
-                        destination_condition: {
-                          kind: "member",
-                          member: event.target.value,
-                          parts: [],
-                        },
-                      })
-                    }
-                  >
-                    {draft.groups
-                      .find((group) => group.id === connection.destination)
-                      ?.members.map((member) => (
-                        <option key={member.id} value={member.id}>
-                          {member.name ?? member.id}
-                        </option>
-                      ))}
-                  </select>
-                </label>
-              )}
-            </div>
-            <ConditionEditor
-              legend="Destination condition"
-              rootMember={false}
-              value={toCondition(connection.destination_condition)}
-              members={(
-                draft.groups.find((group) => group.id === connection.destination)?.members ?? []
-              ).map((member) => ({ value: member.id, label: member.name ?? member.id }))}
-              onChange={(condition) =>
-                replaceConnection(index, {
-                  ...connection,
-                  destination_condition: fromCondition(condition),
-                })
-              }
+            <ConnectionFields
+              connection={connection}
+              definition={draft}
+              snapshot={inventorySnapshot}
+              onChange={(value) => editor.replaceConnection(index, value)}
             />
-            {(["source", "destination"] as const).map((end) => (
-              <ContextEditor
-                key={end}
-                end={end}
-                snapshot={inventorySnapshot}
-                value={connection[`${end}_context`]}
-                onChange={(context) =>
-                  replaceConnection(index, { ...connection, [`${end}_context`]: context })
-                }
-              />
-            ))}
-            <MtuRequirementFields
-              value={connection.mtu}
-              ipv6={ipv6Group(draft.groups.find((group) => group.id === connection.source))}
-              onChange={(mtu) => replaceConnection(index, { ...connection, mtu })}
-            />
-            <button
-              type="button"
-              onClick={() =>
-                update(
-                  "connections",
-                  draft.connections.filter((_, i) => i !== index),
-                )
-              }
-            >
+            <button type="button" onClick={() => editor.removeConnection(index)}>
               Remove connection
             </button>
           </article>
         ))}
-        <button type="button" disabled={draft.groups.length < 2} onClick={addConnection}>
+        <button type="button" disabled={draft.groups.length < 2} onClick={editor.addConnection}>
           Add connection
         </button>
       </fieldset>
       <div className="assessment-actions">
-        <button type="button" disabled={!canEdit || busy || !dirty} onClick={() => void save()}>
+        <button type="button" disabled={locked || !dirty} onClick={() => void editor.save()}>
           {busy ? "Saving" : "Save revision"}
         </button>
-        <button
-          type="button"
-          disabled={!dirty || busy}
-          onClick={() => {
-            setDraft(structuredClone(base.definition));
-            setConflict(null);
-          }}
-        >
+        <button type="button" disabled={!dirty || busy} onClick={editor.discard}>
           Discard draft
         </button>
       </div>
+      <DraftConflict editor={editor} />
+    </section>
+  );
+}
+
+/** The error of the last save and the choices after a 409 conflict. */
+export function DraftConflict({ editor }: { editor: ApplicationDraft }) {
+  const { conflict, error, base, draft } = editor;
+  return (
+    <>
       {error && <p role="alert">{error}</p>}
       {conflict && (
         <section className="application-edit-card" aria-label="Revision conflict">
@@ -766,26 +186,10 @@ export function ApplicationEditor({
             {changedAreas(base.definition, conflict.definition).join(", ") || "revision metadata"}
           </p>
           <div className="assessment-actions">
-            <button
-              type="button"
-              onClick={() => {
-                setDraft(rebaseDraft(base.definition, draft, conflict.definition));
-                setBase(conflict);
-                setConflict(null);
-                setError("Local edits rebased onto the current revision");
-              }}
-            >
+            <button type="button" onClick={editor.rebase}>
               Rebase local edits
             </button>
-            <button
-              type="button"
-              onClick={() => {
-                setDraft(structuredClone(conflict.definition));
-                setBase(conflict);
-                setConflict(null);
-                setError("");
-              }}
-            >
+            <button type="button" onClick={editor.takeCurrent}>
               Use current revision
             </button>
           </div>
@@ -798,11 +202,429 @@ export function ApplicationEditor({
           </details>
         </section>
       )}
-    </section>
+    </>
   );
 }
 
-function MemberEditor({
+export function MetadataFields({ editor, disabled }: { editor: ApplicationDraft; disabled: boolean }) {
+  const { draft, update, isNew, placeholders } = editor;
+  return (
+    <fieldset disabled={disabled}>
+      <legend>Application metadata</legend>
+      <div className="application-fields">
+        <label>
+          Name
+          <input
+            required
+            value={draft.name}
+            onChange={(event) => update("name", event.target.value)}
+          />
+        </label>
+        <IdInput
+          label="Stable ID"
+          value={draft.id}
+          disabled={!isNew}
+          onCommit={(id) => update("id", id)}
+        />
+        <label>
+          Environment
+          <input
+            value={draft.environment ?? ""}
+            onChange={(event) => update("environment", event.target.value || null)}
+          />
+        </label>
+        <label>
+          Owner
+          <input
+            value={draft.owner ?? ""}
+            onChange={(event) => update("owner", event.target.value || null)}
+          />
+        </label>
+        <label>
+          Catalog state
+          <select
+            value={draft.state}
+            onChange={(event) => update("state", event.target.value as "draft" | "ready")}
+          >
+            <option value="draft">Draft</option>
+            <option value="ready" disabled={placeholders}>
+              Ready intent
+            </option>
+          </select>
+        </label>
+      </div>
+      <label>
+        Description
+        <textarea
+          rows={2}
+          value={draft.description ?? ""}
+          onChange={(event) => update("description", event.target.value || null)}
+        />
+      </label>
+    </fieldset>
+  );
+}
+
+export function ServicesFields({ editor, disabled }: { editor: ApplicationDraft; disabled: boolean }) {
+  const { draft, replaceService } = editor;
+  return (
+    <fieldset disabled={disabled}>
+      <legend>Services</legend>
+      {draft.services.map((service, index) => (
+        <article className="application-edit-card" key={index}>
+          <div className="application-fields">
+            <label>
+              Name
+              <input
+                value={service.name}
+                onChange={(event) =>
+                  replaceService(index, { ...service, name: event.target.value })
+                }
+              />
+            </label>
+            <IdInput
+              label="Stable ID"
+              value={service.id}
+              taken={draft.services.map((item) => item.id)}
+              onCommit={(id) => replaceService(index, { ...service, id })}
+            />
+          </div>
+          <span>Associated connections</span>
+          <div className="application-checks">
+            {draft.connections.map((connection) => (
+              <label key={connection.id}>
+                <input
+                  type="checkbox"
+                  checked={service.connection_ids.includes(connection.id)}
+                  onChange={(event) =>
+                    replaceService(index, {
+                      ...service,
+                      connection_ids: event.target.checked
+                        ? [...service.connection_ids, connection.id]
+                        : service.connection_ids.filter((id) => id !== connection.id),
+                    })
+                  }
+                />
+                {connection.name}
+              </label>
+            ))}
+          </div>
+          <span>Component roles</span>
+          {service.component_roles.map((entry, roleIndex) => {
+            const roles = (value: ApplicationService["component_roles"][number]) =>
+              replaceService(index, {
+                ...service,
+                component_roles: service.component_roles.map((item, i) =>
+                  i === roleIndex ? value : item,
+                ),
+              });
+            return (
+              <div className="application-fields" key={roleIndex}>
+                <label>
+                  Component group
+                  <select
+                    value={entry.group_id}
+                    onChange={(event) => roles({ ...entry, group_id: event.target.value })}
+                  >
+                    {draft.groups.map((group) => (
+                      <option key={group.id} value={group.id}>
+                        {group.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  Role
+                  <select
+                    value={entry.role}
+                    onChange={(event) =>
+                      roles({ ...entry, role: event.target.value as typeof entry.role })
+                    }
+                  >
+                    <option value="client">Client</option>
+                    <option value="endpoint">Endpoint</option>
+                    <option value="dependency">Dependency</option>
+                    <option value="component">Component</option>
+                  </select>
+                </label>
+                <button
+                  type="button"
+                  onClick={() =>
+                    replaceService(index, {
+                      ...service,
+                      component_roles: service.component_roles.filter((_, i) => i !== roleIndex),
+                    })
+                  }
+                >
+                  Remove component role
+                </button>
+              </div>
+            );
+          })}
+          <button
+            type="button"
+            disabled={draft.groups.length === 0}
+            onClick={() =>
+              replaceService(index, {
+                ...service,
+                component_roles: [
+                  ...service.component_roles,
+                  { group_id: draft.groups[0].id, role: "component" },
+                ],
+              })
+            }
+          >
+            Add component role
+          </button>
+          <button type="button" onClick={() => editor.removeService(index)}>
+            Remove service
+          </button>
+        </article>
+      ))}
+      <button type="button" onClick={editor.addService}>
+        Add service
+      </button>
+    </fieldset>
+  );
+}
+
+/** The name, id and members of a group. `memberExtra` renders after each member. */
+export function GroupFields({
+  group,
+  definition,
+  snapshot,
+  onChange,
+  memberExtra,
+  addButton = true,
+}: {
+  group: ComponentGroup;
+  definition: BusinessApplicationDefinition;
+  snapshot: string;
+  onChange: (group: ComponentGroup) => void;
+  memberExtra?: (member: ApplicationMember) => ReactNode;
+  addButton?: boolean;
+}) {
+  const affected = definition.connections.filter(
+    (connection) => connection.source === group.id || connection.destination === group.id,
+  );
+  return (
+    <>
+      <div className="application-fields">
+        <label>
+          Name
+          <input
+            value={group.name}
+            onChange={(event) => onChange({ ...group, name: event.target.value })}
+          />
+        </label>
+        <IdInput
+          label="Stable ID"
+          value={group.id}
+          taken={definition.groups.map((item) => item.id)}
+          onCommit={(id) => onChange({ ...group, id })}
+        />
+      </div>
+      {affected.length > 0 && <p>Affects {affected.map((item) => item.name).join(", ")}</p>}
+      {group.members.map((member, memberIndex) => (
+        <Fragment key={memberIndex}>
+          <MemberEditor
+            member={member}
+            taken={group.members.map((item) => item.id)}
+            snapshot={snapshot}
+            onChange={(value) =>
+              onChange({
+                ...group,
+                members: group.members.map((item, i) => (i === memberIndex ? value : item)),
+              })
+            }
+            onRemove={() =>
+              onChange({
+                ...group,
+                members: group.members.filter((_, i) => i !== memberIndex),
+              })
+            }
+          />
+          {memberExtra?.(member)}
+        </Fragment>
+      ))}
+      {addButton && (
+        <button
+          type="button"
+          onClick={() =>
+            onChange({
+              ...group,
+              members: [
+                ...group.members,
+                { id: nextId("member", group.members), address: "192.0.2.1" },
+              ],
+            })
+          }
+        >
+          Add member
+        </button>
+      )}
+    </>
+  );
+}
+
+/** Every field of a connection: ends, ports, condition, contexts and MTU. */
+export function ConnectionFields({
+  connection,
+  definition,
+  snapshot,
+  onChange,
+}: {
+  connection: ApplicationConnection;
+  definition: BusinessApplicationDefinition;
+  snapshot: string;
+  onChange: (connection: ApplicationConnection) => void;
+}) {
+  const groups = definition.groups;
+  return (
+    <>
+      <div className="application-fields">
+        <label>
+          Name
+          <input
+            value={connection.name}
+            onChange={(event) => onChange({ ...connection, name: event.target.value })}
+          />
+        </label>
+        <IdInput
+          label="Stable ID"
+          value={connection.id}
+          taken={definition.connections.map((item) => item.id)}
+          onCommit={(id) => onChange({ ...connection, id })}
+        />
+        <label>
+          Source
+          <select
+            value={connection.source}
+            onChange={(event) => onChange({ ...connection, source: event.target.value })}
+          >
+            {groups.map((group) => (
+              <option key={group.id} value={group.id}>
+                {group.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          Destination
+          <select
+            value={connection.destination}
+            onChange={(event) => {
+              const destination = event.target.value;
+              const member = groups.find((group) => group.id === destination)?.members[0]?.id ?? "";
+              onChange({
+                ...connection,
+                destination,
+                destination_condition:
+                  connection.destination_condition.kind === "member"
+                    ? { kind: "member", member, parts: [] }
+                    : connection.destination_condition,
+              });
+            }}
+          >
+            {groups.map((group) => (
+              <option key={group.id} value={group.id}>
+                {group.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          Protocol
+          <input
+            value={connection.protocol ?? ""}
+            onChange={(event) => onChange({ ...connection, protocol: event.target.value || null })}
+          />
+        </label>
+        <label>
+          Destination ports
+          <input
+            value={(connection.destination_ports ?? []).join(", ")}
+            onChange={(event) =>
+              onChange({ ...connection, destination_ports: ports(event.target.value) })
+            }
+          />
+        </label>
+        <label>
+          Source ports
+          <input
+            value={(connection.source_ports ?? []).join(", ")}
+            onChange={(event) => onChange({ ...connection, source_ports: ports(event.target.value) })}
+          />
+        </label>
+        <label>
+          Required behavior
+          <select
+            value={connection.success}
+            onChange={(event) =>
+              onChange({
+                ...connection,
+                success: event.target.value as ApplicationConnection["success"],
+              })
+            }
+          >
+            <option value="forward">Forward</option>
+            <option value="round-trip">Round trip</option>
+            <option value="session">Session</option>
+          </select>
+        </label>
+        {connection.destination_condition.kind === "member" && (
+          <label>
+            Required destination
+            <select
+              value={connection.destination_condition.member ?? ""}
+              onChange={(event) =>
+                onChange({
+                  ...connection,
+                  destination_condition: { kind: "member", member: event.target.value, parts: [] },
+                })
+              }
+            >
+              {groups
+                .find((group) => group.id === connection.destination)
+                ?.members.map((member) => (
+                  <option key={member.id} value={member.id}>
+                    {member.name ?? member.id}
+                  </option>
+                ))}
+            </select>
+          </label>
+        )}
+      </div>
+      <ConditionEditor
+        legend="Destination condition"
+        rootMember={false}
+        value={toCondition(connection.destination_condition)}
+        members={(groups.find((group) => group.id === connection.destination)?.members ?? []).map(
+          (member) => ({ value: member.id, label: member.name ?? member.id }),
+        )}
+        onChange={(condition) =>
+          onChange({ ...connection, destination_condition: fromCondition(condition) })
+        }
+      />
+      {(["source", "destination"] as const).map((end) => (
+        <ContextEditor
+          key={end}
+          end={end}
+          snapshot={snapshot}
+          value={connection[`${end}_context`]}
+          onChange={(context) => onChange({ ...connection, [`${end}_context`]: context })}
+        />
+      ))}
+      <MtuRequirementFields
+        value={connection.mtu}
+        ipv6={ipv6Group(groups.find((group) => group.id === connection.source))}
+        onChange={(mtu) => onChange({ ...connection, mtu })}
+      />
+    </>
+  );
+}
+
+export function MemberEditor({
   member,
   taken,
   snapshot,
@@ -1055,7 +877,7 @@ type InventoryReferenceKind = NonNullable<ApplicationMember["inventory"]>["kind"
 
 /** The text is committed on blur. An empty text or an id in `taken` is
  *  reverted. */
-function IdInput({
+export function IdInput({
   label,
   value,
   taken = [],
@@ -1103,7 +925,7 @@ function ipv6Group(group: ComponentGroup | undefined): boolean {
 
 const END_TEXT = { source: "Source", destination: "Destination" } as const;
 
-function ContextEditor({
+export function ContextEditor({
   end,
   value,
   snapshot,

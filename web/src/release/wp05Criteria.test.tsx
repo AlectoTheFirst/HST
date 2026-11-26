@@ -122,7 +122,6 @@ describe("Revision by pasted YAML", () => {
     ]);
     expect(navigated).toHaveBeenCalledWith("checkout");
     expect(screen.getByRole("textbox", { name: "Definition YAML" })).toHaveValue("");
-    expect(await screen.findByRole("button", { name: /No environment, revision 3/ })).toBeInTheDocument();
   });
 });
 

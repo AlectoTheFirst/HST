@@ -112,6 +112,30 @@ ROUTES: list[tuple[str, str, str, dict[str, Any]]] = [
     ),
     (
         "GET",
+        "/api/business-applications/{application_id}/analyses",
+        "viewer",
+        {"url": "/api/business-applications/missing/analyses"},
+    ),
+    (
+        "GET",
+        "/api/business-applications/{application_id}/review",
+        "viewer",
+        {"url": "/api/business-applications/missing/review"},
+    ),
+    (
+        "POST",
+        "/api/business-applications/{application_id}/review",
+        "operator",
+        {"url": "/api/business-applications/missing/review", "json": {}},
+    ),
+    (
+        "POST",
+        "/api/business-applications/{application_id}/review/close",
+        "operator",
+        {"url": "/api/business-applications/missing/review/close"},
+    ),
+    (
+        "GET",
         "/api/business-applications/{application_id}/export",
         "viewer",
         {"url": "/api/business-applications/missing/export"},

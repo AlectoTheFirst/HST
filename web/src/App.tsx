@@ -11,6 +11,7 @@ import { Workspace } from "./workspace/Workspace";
 import { SettingsLayout } from "./settings/SettingsLayout";
 import { InventoryGate, InventoryRedirect } from "./inventory/InventoryGate";
 import { InventoryLayout } from "./inventory/InventoryLayout";
+import { ApplicationsLayout } from "./applications/manage/ApplicationsLayout";
 
 // The settings and inventory pages load on first visit.
 const RunsPage = lazy(() => import("./settings/RunsPage"));
@@ -37,6 +38,18 @@ const ConnectionsPage = lazy(() =>
 );
 const ConnectionDetailPage = lazy(() =>
   import("./inventory/connections/ConnectionDetailPage").then((m) => ({ default: m.ConnectionDetailPage })),
+);
+const ApplicationsListPage = lazy(() =>
+  import("./applications/manage/pages").then((m) => ({ default: m.ApplicationsListPage })),
+);
+const ApplicationsReviewPage = lazy(() =>
+  import("./applications/manage/pages").then((m) => ({ default: m.ApplicationsReviewPage })),
+);
+const ApplicationImportPage = lazy(() =>
+  import("./applications/manage/pages").then((m) => ({ default: m.ApplicationImportPage })),
+);
+const ApplicationDetailPage = lazy(() =>
+  import("./applications/manage/pages").then((m) => ({ default: m.ApplicationDetailPage })),
 );
 const ProfilesPage = lazy(() =>
   import("./inventory/profiles/ProfilesPage").then((m) => ({ default: m.ProfilesPage })),
@@ -94,6 +107,12 @@ export default function App() {
           <Route path="connections" element={<RequireRole min="operator"><ConnectionsPage /></RequireRole>} />
           <Route path="connections/profiles" element={<RequireRole min="admin"><ProfilesPage /></RequireRole>} />
           <Route path="connections/:id" element={<RequireRole min="operator"><ConnectionDetailPage /></RequireRole>} />
+        </Route>
+        <Route path="/applications" element={<RequireRole min="viewer"><ApplicationsLayout /></RequireRole>}>
+          <Route index element={<ApplicationsListPage />} />
+          <Route path="review" element={<ApplicationsReviewPage />} />
+          <Route path="import" element={<ApplicationImportPage />} />
+          <Route path=":id" element={<ApplicationDetailPage />} />
         </Route>
         {/* The outer guard is the lowest section floor, the viewer's Access tokens. */}
         <Route

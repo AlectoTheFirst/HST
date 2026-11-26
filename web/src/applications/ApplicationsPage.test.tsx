@@ -32,7 +32,7 @@ describe("Business Applications catalog", () => {
       "GET /api/business-applications": () => ({ body: { applications: [] } }),
     });
     renderPage();
-    expect(await screen.findByText("No applications")).toBeInTheDocument();
+    expect(await screen.findByRole("link", { name: "Applications" })).toHaveAttribute("href", "/applications");
     expect(screen.getByRole("textbox", { name: "Definition YAML" })).toBeDisabled();
   });
 
@@ -948,7 +948,7 @@ describe("Business Applications generated drafts", () => {
       "GET /api/business-applications": () => ({ body: { applications: [] } }),
     });
     renderPage();
-    expect(await screen.findByText("No applications")).toBeInTheDocument();
+    expect(await screen.findByRole("link", { name: "Applications" })).toHaveAttribute("href", "/applications");
     expect(
       screen.queryByRole("button", { name: "Generate from a description" }),
     ).not.toBeInTheDocument();

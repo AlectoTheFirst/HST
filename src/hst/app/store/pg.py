@@ -78,7 +78,7 @@ from hst.app.store import (
     identity_report,
     step_digest,
 )
-from hst.assessment.store import AssessmentStoreMixin, AssessmentTransaction, bounded_json
+from hst.assessment.store import ApplicationReview, AssessmentStoreMixin, AssessmentTransaction, bounded_json
 from hst.core import uid as uidmod
 from hst.core.identity import base_uid, identifier, legacy_uid, mint_for
 
@@ -590,6 +590,31 @@ evidence_exports = sa.Table(
     sa.Index("ix_evidence_exports_at", "at"),
 )
 
+
+# The review flags of the Business Applications (0040_application_reviews.py).
+# `application_id` holds the id of an `application` record of `assessment_records`.
+application_reviews = sa.Table(
+    "application_reviews",
+    metadata,
+    sa.Column("id", UUID(as_uuid=False), primary_key=True),
+    sa.Column("application_id", sa.Text, nullable=False),
+    sa.Column("state", sa.Text, nullable=False),
+    sa.Column("reason", sa.Text, nullable=False),
+    sa.Column("revision", sa.Integer, nullable=False),
+    sa.Column("opened_at", sa.TIMESTAMP(timezone=True), nullable=False),
+    sa.Column("opened_by", sa.Integer, sa.ForeignKey("users.id", ondelete="SET NULL"), nullable=True),
+    sa.Column("closed_at", sa.TIMESTAMP(timezone=True), nullable=True),
+    sa.Column("closed_by", sa.Integer, sa.ForeignKey("users.id", ondelete="SET NULL"), nullable=True),
+    sa.CheckConstraint("state IN ('open', 'closed')", name="ck_application_reviews_state"),
+    sa.CheckConstraint("revision > 0", name="ck_application_reviews_revision"),
+    sa.Index("ix_application_reviews_opened", "application_id", "opened_at"),
+    sa.Index(
+        "uq_application_reviews_open",
+        "application_id",
+        unique=True,
+        postgresql_where=sa.text("state = 'open'"),
+    ),
+)
 
 # The network map's shared layouts and views (0037_network_map_layouts.py).
 network_map_layouts = sa.Table(
@@ -1127,6 +1152,20 @@ def _evidence_export(row: sa.Row) -> EvidenceExport:
         row.host,
         row.run_id,
         row.payloads,
+    )
+
+
+def _application_review(row: sa.Row) -> ApplicationReview:
+    return ApplicationReview(
+        id=str(row.id),
+        application_id=row.application_id,
+        state=row.state,
+        reason=row.reason,
+        revision=row.revision,
+        opened_at=row.opened_at.isoformat(),
+        opened_by=row.opened_by,
+        closed_at=row.closed_at.isoformat() if row.closed_at else None,
+        closed_by=row.closed_by,
     )
 
 
@@ -3598,6 +3637,78 @@ class PgStore(AssessmentStoreMixin):
                 )
             ).all()
         return [_evidence_export(r) for r in rows]
+
+    # --- application review flags ---------------------------------------------------
+
+    async def open_application_review(
+        self, application_id: str, *, reason: str, revision: int, opened_by: int | None
+    ) -> ApplicationReview | None:
+        """Open a flag. The method returns None when the application has an open flag."""
+        t = application_reviews
+        async with self._engine.begin() as c:
+            row = (
+                await c.execute(
+                    insert(t)
+                    .values(
+                        id=str(uuid4()),
+                        application_id=application_id,
+                        state="open",
+                        reason=reason,
+                        revision=revision,
+                        opened_at=datetime.now(UTC),
+                        opened_by=opened_by,
+                    )
+                    .on_conflict_do_nothing(
+                        index_elements=["application_id"], index_where=sa.text("state = 'open'")
+                    )
+                    .returning(t)
+                )
+            ).first()
+        return _application_review(row) if row else None
+
+    async def close_application_review(
+        self, application_id: str, *, closed_by: int | None
+    ) -> ApplicationReview | None:
+        """Close the open flag. The method returns None when the application has no open flag."""
+        t = application_reviews
+        async with self._engine.begin() as c:
+            row = (
+                await c.execute(
+                    t.update()
+                    .where(t.c.application_id == application_id, t.c.state == "open")
+                    .values(state="closed", closed_at=datetime.now(UTC), closed_by=closed_by)
+                    .returning(t)
+                )
+            ).first()
+        return _application_review(row) if row else None
+
+    async def list_application_reviews(
+        self, application_id: str, limit: int = 100
+    ) -> list[ApplicationReview]:
+        """The flags of the application, newest first."""
+        t = application_reviews
+        async with self._engine.connect() as c:
+            rows = (
+                await c.execute(
+                    t.select()
+                    .where(t.c.application_id == application_id)
+                    .order_by(t.c.opened_at.desc(), t.c.id)
+                    .limit(limit)
+                )
+            ).all()
+        return [_application_review(row) for row in rows]
+
+    async def open_application_reviews(self, application_ids: list[str]) -> dict[str, ApplicationReview]:
+        if not application_ids:
+            return {}
+        t = application_reviews
+        async with self._engine.connect() as c:
+            rows = (
+                await c.execute(
+                    t.select().where(t.c.application_id.in_(application_ids), t.c.state == "open")
+                )
+            ).all()
+        return {row.application_id: _application_review(row) for row in rows}
 
     # --- network map layouts and views ----------------------------------------------
 

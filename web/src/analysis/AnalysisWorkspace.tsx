@@ -21,6 +21,7 @@ import type {
 import { useAiContext, useAiPaneId } from "../ai/context";
 import { useAiDrawer, useOpenConversation } from "../ai/drawer";
 import { SessionRunComparison } from "./SessionRunComparison";
+import { applicationReferences, staleRevisionTexts, type CurrentRevisions } from "./applicationRevision";
 import "./analysis.css";
 import "../changesim/changesim.css";
 
@@ -531,6 +532,23 @@ export default function AnalysisWorkspace({
     enabled: !!selected && section === "history",
   });
   const record = detail.data;
+  const boundApplications =
+    !!sessions.data?.sessions.some((item) => applicationReferences(item.definition).length > 0) ||
+    (!!record && applicationReferences(record.definition).length > 0);
+  const applicationCatalog = useQuery({
+    queryKey: ["business-applications"],
+    queryFn: () => api<{ applications: ApplicationRevision[] }>("/business-applications"),
+    enabled: boundApplications,
+  });
+  const currentRevisions: CurrentRevisions | undefined = applicationCatalog.data
+    ? new Map(applicationCatalog.data.applications.map((item) => [item.id, { revision: item.revision, name: item.name }]))
+    : undefined;
+  const staleNotes = (texts: string[]) =>
+    texts.map((text) => (
+      <p key={text} className="banner warn" role="note">
+        {text}
+      </p>
+    ));
   // the legacy assessment ids come from the pane (ai/context.tsx)
   const inputSnapshot = record?.definition.input.snapshot?.snapshot;
   useAiContext(useAiPaneId(), {
@@ -595,6 +613,7 @@ export default function AnalysisWorkspace({
           {simulation && <span>Execution: {run.execution}</span>}
           <span>Coverage: {run.coverage.replace("_", " ")}</span>
         </p>
+        {staleNotes(staleRevisionTexts(record ? applicationReferences(record.definition, run.item_id) : [], currentRevisions))}
         {!simulation && <RunResult id={run.id} />}
         {binding && (
           <button
@@ -685,6 +704,7 @@ export default function AnalysisWorkspace({
                   {item.definition.input.kind}, revision {item.revision}
                 </span>
               </button>
+              {staleNotes(staleRevisionTexts(applicationReferences(item.definition), currentRevisions))}
             </li>
           ))}
         </ul>
@@ -760,6 +780,7 @@ export default function AnalysisWorkspace({
                 )}
               </div>
             </header>
+            {staleNotes(staleRevisionTexts(applicationReferences(record.definition), currentRevisions))}
             {runs.length > 0 && (
               <p className="analysis-status">
                 <span>Session execution: {aggregate.execution}</span>

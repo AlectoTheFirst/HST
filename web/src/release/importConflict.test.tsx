@@ -60,7 +60,7 @@ describe("Import update/conflict", () => {
     const user = userEvent.setup();
     render(<QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}><MemoryRouter><AuthProvider><ApplicationsPage onNavigate={navigated} onOpenAnalysis={() => undefined} /></AuthProvider></MemoryRouter></QueryClientProvider>);
 
-    await screen.findByRole("button", { name: /Checkout/ });
+    await waitFor(() => expect(screen.getByText("Import YAML").closest("details")).not.toHaveAttribute("open"));
     await user.click(screen.getByText("Import YAML"));
     const editor = await screen.findByRole("textbox", { name: "Definition YAML" });
     await user.click(editor);
