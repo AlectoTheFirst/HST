@@ -59,7 +59,8 @@ assessment revisions with their analysis jobs and results, the Business
 Application catalog, HST AI conversations with their tool steps, AI event
 records and personal access tokens.
 
-Routing tables, MAC tables, ARP tables and endpoint tables are stored in the side
+Routing tables, MAC tables, ARP tables, the OSPF link-state database, the observed
+BGP sessions and paths, and Check Point policy envelopes are stored in the side
 store. The side store holds parquet files that DuckDB reads. The side store is
 not encrypted.
 
@@ -326,7 +327,8 @@ validates 20 scenarios. This needs no network hardware.
 The backend uses Python 3.13 or later, FastAPI and pydantic v2. CI runs the
 tests on Python 3.14. The frontend in `web/` uses React 19 and TypeScript.
 [CONTRIBUTING.md](CONTRIBUTING.md) has the setup and the checklists for schema
-changes and new collectors.
+changes and new collectors. The docs in [docs/](docs/) describe the storage, the
+graph schema, the collectors and the code flow.
 
 ## Status
 
@@ -346,9 +348,10 @@ The design target of the collection engine is 5,000 to 10,000 devices:
 - A source is either a group with a fleet of hosts or an orchestrator that
   discovers its own devices and reports where each sits. `hst devices import`
   and `PUT /api/sources/{name}/devices` set the hosts of a group.
-- Collection runs as jobs on a Postgres-backed queue in `src/hst/worker/`. A
-  per-group `interval_s` fans out one job per device with per-device failure
-  backoff.
+- With `RUN_EXECUTION=queue`, a run is a job on a Postgres-backed queue in
+  `src/hst/worker/`. The default `inline` starts a run in the API process. The
+  scheduler of the worker queues one fetch job per device at the collection
+  interval of the device, with per-device failure backoff.
 - SSH uses the asyncssh transport in `src/hst/collectors/assh.py` by default,
   with paramiko as a second transport.
 - The `COLLECT_*` settings in `src/hst/core/config.py` bound concurrency, load,
