@@ -22,6 +22,7 @@ import type {
 
 const ROLES: Role[] = ["viewer", "operator", "admin"];
 const DEFAULT_ROLES: DefaultRole[] = ["viewer", "operator", "admin", "none"];
+const DEFAULT_SCOPE = "openid profile email";
 
 function errorMessage(err: unknown, fallback: string): string {
   return err instanceof ApiError ? err.message : fallback;
@@ -106,7 +107,9 @@ function TlsFields<T extends TlsValues>({
 interface OidcValues extends TlsValues {
   issuer: string;
   client_id: string;
+  scope: string;
   groups_claim: string;
+  required_group: string;
   default_role: DefaultRole;
   label: string;
   secret: string;
@@ -116,7 +119,9 @@ function oidcInitial(config: Record<string, unknown> | undefined): OidcValues {
   return {
     issuer: asString(config, "issuer"),
     client_id: asString(config, "client_id"),
+    scope: asString(config, "scope", DEFAULT_SCOPE),
     groups_claim: asString(config, "groups_claim", "groups"),
+    required_group: asString(config, "required_group"),
     default_role: (asString(config, "default_role", "viewer") as DefaultRole) || "viewer",
     label: asString(config, "label"),
     secret: "",
@@ -153,7 +158,9 @@ function OidcForm({
     const config: Record<string, unknown> = {
       issuer: values.issuer,
       client_id: values.client_id,
+      scope: values.scope.trim() || DEFAULT_SCOPE,
       groups_claim: values.groups_claim || "groups",
+      ...(values.required_group.trim() ? { required_group: values.required_group.trim() } : {}),
       default_role: values.default_role,
       ...(values.label.trim() ? { label: values.label.trim() } : {}),
       ...tlsConfig(values),
@@ -201,11 +208,28 @@ function OidcForm({
         />
       </div>
       <div className="param sf-field">
+        <label htmlFor={`${idPrefix}-scope`}>Scope</label>
+        <input
+          id={`${idPrefix}-scope`}
+          spellCheck={false}
+          value={values.scope}
+          onChange={(e) => setValues((v) => ({ ...v, scope: e.target.value }))}
+        />
+      </div>
+      <div className="param sf-field">
         <label htmlFor={`${idPrefix}-groups-claim`}>Groups claim</label>
         <input
           id={`${idPrefix}-groups-claim`}
           value={values.groups_claim}
           onChange={(e) => setValues((v) => ({ ...v, groups_claim: e.target.value }))}
+        />
+      </div>
+      <div className="param sf-field">
+        <label htmlFor={`${idPrefix}-required-group`}>Required group</label>
+        <input
+          id={`${idPrefix}-required-group`}
+          value={values.required_group}
+          onChange={(e) => setValues((v) => ({ ...v, required_group: e.target.value }))}
         />
       </div>
       <div className="param sf-field">
@@ -265,6 +289,7 @@ interface SamlValues extends TlsValues {
   idp_metadata_xml: string;
   username_attr: string;
   groups_attr: string;
+  required_group: string;
   default_role: DefaultRole;
   label: string;
 }
@@ -275,6 +300,7 @@ function samlInitial(config: Record<string, unknown> | undefined): SamlValues {
     idp_metadata_xml: asString(config, "idp_metadata_xml"),
     username_attr: asString(config, "username_attr"),
     groups_attr: asString(config, "groups_attr"),
+    required_group: asString(config, "required_group"),
     default_role: (asString(config, "default_role", "viewer") as DefaultRole) || "viewer",
     label: asString(config, "label"),
     ...tlsInitial(config),
@@ -319,6 +345,7 @@ function SamlForm({
       ...(values.idp_metadata_xml.trim() ? { idp_metadata_xml: values.idp_metadata_xml.trim() } : {}),
       username_attr: values.username_attr,
       groups_attr: values.groups_attr,
+      ...(values.required_group.trim() ? { required_group: values.required_group.trim() } : {}),
       default_role: values.default_role,
       ...(values.label.trim() ? { label: values.label.trim() } : {}),
       ...tlsConfig(values),
@@ -365,6 +392,14 @@ function SamlForm({
           id={`${idPrefix}-groups-attr`}
           value={values.groups_attr}
           onChange={(e) => setValues((v) => ({ ...v, groups_attr: e.target.value }))}
+        />
+      </div>
+      <div className="param sf-field">
+        <label htmlFor={`${idPrefix}-required-group`}>Required group</label>
+        <input
+          id={`${idPrefix}-required-group`}
+          value={values.required_group}
+          onChange={(e) => setValues((v) => ({ ...v, required_group: e.target.value }))}
         />
       </div>
       <div className="param sf-field">

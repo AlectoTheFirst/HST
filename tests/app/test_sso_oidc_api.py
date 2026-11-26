@@ -279,6 +279,36 @@ async def test_wrong_audience_is_refused(client, monkeypatch, idp):
     assert r.status_code == 302 and r.headers["location"] == "/login?error=sso"
 
 
+async def test_wrong_issuer_is_refused(client, store, monkeypatch, idp):
+    await _register_provider(client, idp, monkeypatch)
+    state, nonce = await _start_login(client)
+    claims = idp.claims(nonce=nonce, sub="sub-iss")
+    claims["iss"] = "https://other.example"
+    idp.pending_id_token = idp.sign_id_token(claims)
+    r = await _callback(client, state)
+    assert r.status_code == 302 and r.headers["location"] == "/login?error=sso"
+    assert await store.get_user_by_username("sub-iss") is None
+
+
+async def test_the_configured_issuer_is_the_issuer_of_the_id_token_check(client, store, monkeypatch, idp):
+    await _register_provider(client, idp, monkeypatch)
+    provider = await store.get_auth_provider("okta")
+    discovery = {**provider.config[sso_flow.DISCOVERY_KEY], "issuer": "https://other.example"}
+    await store.update_auth_provider("okta", config={**provider.config, sso_flow.DISCOVERY_KEY: discovery})
+
+    state, nonce = await _start_login(client)
+    claims = idp.claims(nonce=nonce, sub="sub-cache")
+    claims["iss"] = "https://other.example"
+    idp.pending_id_token = idp.sign_id_token(claims)
+    r = await _callback(client, state)
+    assert r.status_code == 302 and r.headers["location"] == "/login?error=sso"
+
+    state, nonce = await _start_login(client)
+    idp.pending_id_token = idp.sign_id_token(idp.claims(nonce=nonce, sub="sub-cache"))
+    r = await _callback(client, state)
+    assert r.status_code == 302 and r.headers["location"] == "/"
+
+
 async def test_expired_token_is_refused(client, monkeypatch, idp):
     await _register_provider(client, idp, monkeypatch)
     state, nonce = await _start_login(client)
@@ -303,11 +333,34 @@ async def test_jwks_key_rotation_is_refreshed_and_retried(client, store, monkeyp
     assert provider.config[sso_flow.JWKS_KEY] == idp.jwks()  # the refresh persisted
 
 
+async def test_a_key_rotation_with_another_discovery_issuer_refuses_the_login(
+    client, store, monkeypatch, idp
+):
+    await _register_provider(client, idp, monkeypatch)
+    cached = (await store.get_auth_provider("okta")).config[sso_flow.JWKS_KEY]
+    state, nonce = await _start_login(client)
+    claims = idp.claims(nonce=nonce, sub="sub-moved")
+    idp.rotate_key()
+    idp.pending_id_token = idp.sign_id_token(claims)
+    idp.issuer = "https://moved.example"
+
+    r = await _callback(client, state)
+    assert r.status_code == 302 and r.headers["location"] == "/login?error=sso"
+    assert await store.get_user_by_username("sub-moved") is None
+    assert (await store.get_auth_provider("okta")).config[sso_flow.JWKS_KEY] == cached
+
+
+async def test_the_authorization_request_has_the_scope_of_the_config(client, monkeypatch, idp):
+    await _register_provider(client, idp, monkeypatch, scope="openid profile email groups")
+    r = await client.get("/api/auth/okta/login")
+    assert parse_qs(urlsplit(r.headers["location"]).query)["scope"] == ["openid profile email groups"]
+
+
 async def test_userinfo_supplies_groups_absent_from_the_id_token(client, store, monkeypatch, idp):
     await _register_provider(client, idp, monkeypatch, default_role="viewer")
     provider = await store.get_auth_provider("okta")
     await store.put_group_mapping(provider.id, "engineers", "operator")
-    idp.userinfo_body = {"groups": ["engineers"]}
+    idp.userinfo_body = {"sub": "sub-6", "groups": ["engineers"]}
 
     state, nonce = await _start_login(client)
     idp.pending_id_token = idp.sign_id_token(idp.claims(nonce=nonce, sub="sub-6"))  # no groups claim
@@ -315,6 +368,23 @@ async def test_userinfo_supplies_groups_absent_from_the_id_token(client, store, 
     assert r.status_code == 302 and r.headers["location"] == "/"
     user = await store.get_user_by_username("sub-6")
     assert user is not None and user.role == "operator"
+
+
+@pytest.mark.parametrize("userinfo_sub", [{"sub": "sub-other"}, {}], ids=["another sub", "no sub"])
+async def test_userinfo_with_another_sub_or_no_sub_supplies_no_groups(
+    client, store, monkeypatch, idp, userinfo_sub
+):
+    await _register_provider(client, idp, monkeypatch, default_role="viewer")
+    provider = await store.get_auth_provider("okta")
+    await store.put_group_mapping(provider.id, "engineers", "operator")
+    idp.userinfo_body = {**userinfo_sub, "groups": ["engineers"]}
+
+    state, nonce = await _start_login(client)
+    idp.pending_id_token = idp.sign_id_token(idp.claims(nonce=nonce, sub="sub-7"))
+    r = await _callback(client, state)
+    assert r.status_code == 302 and r.headers["location"] == "/"
+    user = await store.get_user_by_username("sub-7")
+    assert user is not None and user.role == "viewer"
 
 
 async def test_disabled_provider_login_is_not_found(client, monkeypatch, idp):
@@ -472,3 +542,84 @@ async def test_the_token_request_redirect_uri_ignores_the_host_header(client, mo
     )
     assert r.status_code == 302 and r.headers["location"] == "/"
     assert [t["redirect_uri"] for t in token_requests] == [[REDIRECT_URI]]
+
+
+# --- required group ------------------------------------------------------------
+
+
+async def _login_as(client, idp, sub: str, **claims):
+    state, nonce = await _start_login(client)
+    idp.pending_id_token = idp.sign_id_token(idp.claims(nonce=nonce, sub=sub, **claims))
+    return await _callback(client, state)
+
+
+async def test_a_login_with_the_required_group_signs_in(client, store, monkeypatch, idp):
+    await _register_provider(client, idp, monkeypatch, required_group="hst-users")
+    r = await _login_as(client, idp, "sub-in", groups=["hst-users", "other"])
+    assert r.status_code == 302 and r.headers["location"] == "/"
+    user = await store.get_user_by_username("sub-in")
+    assert user is not None and user.role == "viewer" and user.disabled is False
+
+
+async def test_a_login_without_the_required_group_creates_no_account(client, store, monkeypatch, idp):
+    await _register_provider(client, idp, monkeypatch, required_group="hst-users")
+    provider = await store.get_auth_provider("okta")
+    await store.put_group_mapping(provider.id, "engineers", "admin")
+
+    r = await _login_as(client, idp, "sub-out", groups=["engineers"])
+    assert r.status_code == 302 and r.headers["location"] == "/login?error=sso"
+    assert "hst_session=" not in r.headers.get("set-cookie", "")
+    assert await store.get_user_by_username("sub-out") is None
+    assert await store.get_identity(provider.id, "sub-out") is None
+    events = [e for e in await store.list_login_events() if e.provider == "okta"]
+    assert [(e.username, e.user_id, e.outcome) for e in events] == [("", None, "failed")]
+
+
+async def test_an_account_signs_in_again_when_the_required_group_returns(client, store, monkeypatch, idp):
+    await _register_provider(client, idp, monkeypatch, required_group="hst-users", default_role="none")
+    provider = await store.get_auth_provider("okta")
+    await store.put_group_mapping(provider.id, "hst-users", "operator")
+
+    r = await _login_as(client, idp, "sub-back", groups=["hst-users"])
+    assert r.headers["location"] == "/"
+    await client.post("/api/logout")
+
+    r = await _login_as(client, idp, "sub-back", groups=[])
+    assert r.headers["location"] == "/login?error=sso"
+    user = await store.get_user_by_username("sub-back")
+    assert user is not None and user.disabled is False and user.role == "operator"
+
+    r = await _login_as(client, idp, "sub-back", groups=["hst-users"])
+    assert r.headers["location"] == "/"
+
+
+async def test_an_account_with_a_local_role_needs_the_required_group(client, store, monkeypatch, idp):
+    await _register_provider(client, idp, monkeypatch, required_group="hst-users")
+    r = await _login_as(client, idp, "sub-pinned", groups=["hst-users"])
+    assert r.headers["location"] == "/"
+    await client.post("/api/logout")
+    user = await store.get_user_by_username("sub-pinned")
+    assert user is not None
+    await login(client, "ada")
+    await client.patch(f"/api/users/{user.id}", json={"role": "admin"})
+    await client.post("/api/logout")
+
+    r = await _login_as(client, idp, "sub-pinned", groups=["engineers"])
+    assert r.headers["location"] == "/login?error=sso"
+    unchanged = await store.get_user_by_username("sub-pinned")
+    assert unchanged is not None and unchanged.role == "admin" and unchanged.role_source == "local"
+    assert unchanged.disabled is False
+
+
+async def test_userinfo_supplies_the_required_group(client, store, monkeypatch, idp):
+    await _register_provider(client, idp, monkeypatch, required_group="hst-users")
+    idp.userinfo_body = {"sub": "sub-userinfo", "groups": ["hst-users"]}
+    r = await _login_as(client, idp, "sub-userinfo")
+    assert r.headers["location"] == "/"
+    await client.post("/api/logout")
+
+    idp.userinfo_status = 500
+    r = await _login_as(client, idp, "sub-userinfo")
+    assert r.headers["location"] == "/login?error=sso"
+    user = await store.get_user_by_username("sub-userinfo")
+    assert user is not None and user.disabled is False

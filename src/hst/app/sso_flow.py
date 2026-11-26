@@ -46,6 +46,9 @@ AUTH_STATE_TTL = timedelta(minutes=5)
 CLOCK_SKEW_S = 60
 
 LOCAL_LOGIN_KEY = "auth.local_login_enabled"
+# The config key of the group that each login of a provider must have.
+REQUIRED_GROUP = "required_group"
+DEFAULT_SCOPE = "openid profile email"
 
 _USERNAME_JUNK = re.compile(r"[^a-z0-9_.-]+")
 
@@ -116,12 +119,17 @@ async def discover(issuer: str, *, trust: Trust) -> tuple[dict[str, Any], dict[s
     """Fetch the discovery document of `issuer` and its JWKS.
 
     A URL that fails the https check of app/egress.py raises ValueError.
+    A discovery document with an `issuer` other than `issuer` raises ValueError.
     """
     egress.check_https_url(issuer, what="issuer")
     async with _client(trust) as client:
         resp = await client.get(issuer.rstrip("/") + "/.well-known/openid-configuration")
         resp.raise_for_status()
         doc: dict[str, Any] = resp.json()
+        if doc.get("issuer") != issuer:
+            raise ValueError(
+                f"issuer {issuer!r} is not the issuer {doc.get('issuer')!r} of the discovery document"
+            )
         for field_name in ("authorization_endpoint", "token_endpoint", "jwks_uri", "userinfo_endpoint"):
             url = doc.get(field_name)
             if url:
@@ -138,8 +146,8 @@ async def refresh_discovery(config: dict[str, Any], *, trust: Trust) -> tuple[di
     under the private config keys. Returns the config to store and whether
     the fetch succeeded.
 
-    A scheme violation raises ValueError. On any other failure, the returned
-    config has no cache.
+    A scheme violation or an issuer mismatch raises ValueError. On any other
+    failure, the returned config has no cache.
     """
     issuer = config.get("issuer") or ""
     try:
@@ -165,6 +173,13 @@ def public_config(config: dict[str, Any]) -> dict[str, Any]:
     return {k: v for k, v in config.items() if not k.startswith("_")}
 
 
+def validate_required_group(config: dict[str, Any]) -> None:
+    """Raise ValueError unless `required_group` is absent or a string."""
+    value = config.get(REQUIRED_GROUP)
+    if value is not None and not isinstance(value, str):
+        raise ValueError(f"config.{REQUIRED_GROUP} must be a string")
+
+
 def validate_oidc_config(config: dict[str, Any]) -> None:
     """Shape check of an OIDC config before a save runs discovery."""
     if not isinstance(config.get("issuer"), str) or not config["issuer"]:
@@ -175,6 +190,12 @@ def validate_oidc_config(config: dict[str, Any]) -> None:
     allowed = (*ROLES, "none")
     if default_role not in allowed:
         raise ValueError(f"config.default_role must be one of {', '.join(allowed)}")
+    validate_required_group(config)
+    scope = config.get("scope")
+    if scope is not None and not isinstance(scope, str):
+        raise ValueError("config.scope must be a string")
+    if scope and "openid" not in scope.split():
+        raise ValueError("config.scope must include openid")
     if config.get(tls.CA_BUNDLE):
         tls.validate_ca_bundle(config[tls.CA_BUNDLE], what=f"config.{tls.CA_BUNDLE}")
 
@@ -338,6 +359,14 @@ async def provision_and_authorize(
 
     Raises SsoLoginError if login is refused.
     """
+    # The check runs before the account lookup. A login that it refuses
+    # creates no account and changes no account.
+    required_group = provider.config.get(REQUIRED_GROUP)
+    if required_group and required_group not in groups:
+        raise SsoLoginError(
+            f"the groups of subject {subject!r} do not include the required group {required_group!r}"
+        )
+
     identity = await store.get_identity(provider.id, subject)
     is_new = identity is None
     if identity is None:
@@ -439,7 +468,7 @@ async def complete_oidc_login(
     id_token = token_response.get("id_token")
     if not id_token:
         raise SsoLoginError("token response carried no id_token")
-    issuer = discovery.get("issuer") or config.get("issuer", "")
+    issuer = config.get("issuer", "")
     nonce = row.payload["nonce"]
 
     try:
@@ -471,6 +500,14 @@ async def complete_oidc_login(
                 userinfo = await _fetch_userinfo(discovery, access_token, trust=trust)
             except Exception as exc:
                 log.info("userinfo fetch failed for provider %r: %s", provider.name, exc)
+                userinfo = {}
+            if userinfo and userinfo.get("sub") != subject:
+                log.warning(
+                    "the userinfo reply of provider %r is discarded. Its sub is %r and the id token has %r",
+                    provider.name,
+                    userinfo.get("sub"),
+                    subject,
+                )
                 userinfo = {}
             groups = userinfo.get(groups_claim)
     group_set = set(groups) if isinstance(groups, list) else set()

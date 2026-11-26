@@ -98,7 +98,7 @@ async def start_login(name: str, request: Request) -> RedirectResponse:
         {"nonce": nonce, "code_verifier": verifier},
         now + sso_flow.AUTH_STATE_TTL,
     )
-    scope = provider.config.get("scope") or "openid profile email"
+    scope = provider.config.get("scope") or sso_flow.DEFAULT_SCOPE
     url = sso_flow.build_authorization_url(
         discovery,
         client_id=provider.config.get("client_id", ""),

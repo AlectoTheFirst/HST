@@ -283,9 +283,10 @@ without re-encryption of the data. HST has no external vault integration.
 
 Authentication uses local accounts with argon2id password hashing, or single
 sign-on through SAML 2.0 or OIDC. Single sign-on needs `HST_PUBLIC_URL`, the
-origin that users reach. Local login can be turned off only while an enabled
-single sign-on provider can sign a user in. While local login is off, the last
-such provider cannot be disabled or deleted.
+origin that users reach. A provider can have a required group. A single sign-on
+login without that group is refused. Local login can be turned off only while an
+enabled single sign-on provider can sign a user in. While local login is off,
+the last such provider cannot be disabled or deleted.
 
 Personal access tokens authenticate MCP clients on `/api/mcp` and clients of the
 read-only GraphQL endpoint `/api/graphql`. A token has the scope `read` or

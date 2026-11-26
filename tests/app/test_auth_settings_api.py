@@ -99,6 +99,122 @@ async def test_saml_provider_needs_no_oidc_fields(client, saml_idp):
     assert r.status_code == 201, r.text
 
 
+async def test_a_required_group_that_is_not_a_string_is_refused(client, idp):
+    await login(client, "ada")
+    r = await client.post(
+        "/api/settings/auth/providers",
+        json={
+            "name": "okta",
+            "kind": "oidc",
+            "config": {"issuer": idp.issuer, "client_id": idp.client_id, "required_group": ["hst-users"]},
+        },
+    )
+    assert r.status_code == 422
+    assert r.json()["error"] == "config.required_group must be a string"
+
+
+async def test_a_saml_required_group_that_is_not_a_string_is_refused(client, saml_idp):
+    await login(client, "ada")
+    r = await client.post(
+        "/api/settings/auth/providers",
+        json={
+            "name": "adfs",
+            "kind": "saml",
+            "config": {"idp_metadata_xml": saml_idp.metadata_xml(), "required_group": 7},
+        },
+    )
+    assert r.status_code == 422
+
+
+@pytest.mark.parametrize(
+    ("scope", "message"),
+    [
+        ("profile email", "config.scope must include openid"),
+        ("openidx profile", "config.scope must include openid"),
+        (["openid"], "config.scope must be a string"),
+    ],
+    ids=["no openid", "openid as a part of a word", "list"],
+)
+async def test_a_scope_without_openid_or_a_scope_that_is_not_a_string_is_refused(client, idp, scope, message):
+    await login(client, "ada")
+    r = await client.post(
+        "/api/settings/auth/providers",
+        json={
+            "name": "okta",
+            "kind": "oidc",
+            "config": {"issuer": idp.issuer, "client_id": idp.client_id, "scope": scope},
+        },
+    )
+    assert r.status_code == 422
+    assert r.json()["error"] == message
+
+
+async def test_a_discovery_document_with_another_issuer_is_refused_on_create(client, store, idp):
+    await login(client, "ada")
+    r = await client.post(
+        "/api/settings/auth/providers",
+        json={"name": "okta", "kind": "oidc", "config": {"issuer": idp.issuer + "/", "client_id": "c"}},
+    )
+    assert r.status_code == 422
+    assert r.json()["error"] == (
+        "issuer 'https://idp.example/' is not the issuer 'https://idp.example' of the discovery document"
+    )
+    assert await store.get_auth_provider("okta") is None
+
+
+async def test_a_discovery_document_with_another_issuer_is_refused_on_patch(client, store, idp):
+    await login(client, "ada")
+    config = {"issuer": idp.issuer, "client_id": idp.client_id}
+    r = await client.post(
+        "/api/settings/auth/providers",
+        json={"name": "okta", "kind": "oidc", "config": config, "secret": idp.client_secret},
+    )
+    assert r.status_code == 201, r.text
+    assert (
+        await client.patch("/api/settings/auth/providers/okta", json={"enabled": True})
+    ).status_code == 200
+    before = await store.get_auth_provider("okta")
+
+    r = await client.patch(
+        "/api/settings/auth/providers/okta",
+        json={"config": {**config, "issuer": idp.issuer + "/"}, "secret": idp.client_secret},
+    )
+    assert r.status_code == 422
+    after = await store.get_auth_provider("okta")
+    assert after.config == before.config and after.enabled is True
+
+
+async def test_the_test_endpoint_reports_a_discovery_document_with_another_issuer(client, idp):
+    await login(client, "ada")
+    r = await client.post(
+        "/api/settings/auth/providers",
+        json={"name": "okta", "kind": "oidc", "config": {"issuer": idp.issuer, "client_id": idp.client_id}},
+    )
+    assert r.status_code == 201, r.text
+    idp.issuer = "https://moved.example"
+
+    r = await client.post("/api/settings/auth/providers/okta/test")
+    assert r.json() == {
+        "ok": False,
+        "detail": "issuer 'https://idp.example' is not the issuer 'https://moved.example' "
+        "of the discovery document",
+    }
+
+
+async def test_the_required_group_is_in_the_provider_config(client, idp):
+    await login(client, "ada")
+    r = await client.post(
+        "/api/settings/auth/providers",
+        json={
+            "name": "okta",
+            "kind": "oidc",
+            "config": {"issuer": idp.issuer, "client_id": idp.client_id, "required_group": "hst-users"},
+        },
+    )
+    assert r.status_code == 201, r.text
+    assert r.json()["config"]["required_group"] == "hst-users"
+
+
 # --- SAML provider save, keypair, and metadata ------------------------------
 
 
