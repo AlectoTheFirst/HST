@@ -9,7 +9,7 @@ import json
 import uuid
 from collections.abc import AsyncIterator
 from contextlib import AbstractAsyncContextManager, asynccontextmanager
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field, replace
 from datetime import UTC, datetime, timedelta
 from typing import Any, Protocol
 
@@ -101,6 +101,26 @@ class ApplicationRevision:
 
 
 @dataclass(frozen=True)
+class ApplicationReview:
+    """A review flag of a Business Application. `opened_by` is None for a flag
+    that a saved revision opened. `revision` is the newest revision of the
+    application when the flag opened."""
+
+    id: str
+    application_id: str
+    state: str
+    reason: str
+    revision: int
+    opened_at: str
+    opened_by: int | None
+    closed_at: str | None = None
+    closed_by: int | None = None
+
+    def as_dict(self) -> dict:
+        return asdict(self)
+
+
+@dataclass(frozen=True)
 class AnalysisSessionRevision:
     id: str
     revision: int
@@ -177,6 +197,20 @@ class AssessmentStore(Protocol):
     async def list_analysis_session_revisions(
         self, session_id: str, limit: int = 100
     ) -> list[AnalysisSessionRevision]: ...
+    async def list_application_bound_sessions(
+        self, application_id: str | None = None, limit: int = 1000
+    ) -> list[AnalysisSessionRevision]: ...
+
+    async def open_application_review(
+        self, application_id: str, *, reason: str, revision: int, opened_by: int | None
+    ) -> ApplicationReview | None: ...
+    async def close_application_review(
+        self, application_id: str, *, closed_by: int | None
+    ) -> ApplicationReview | None: ...
+    async def list_application_reviews(
+        self, application_id: str, limit: int = 100
+    ) -> list[ApplicationReview]: ...
+    async def open_application_reviews(self, application_ids: list[str]) -> dict[str, ApplicationReview]: ...
 
     async def create_application_revision(
         self,
@@ -362,6 +396,32 @@ class AssessmentStoreMixin:
         filters = {"definition": {"input": {"kind": "connection", "connections": [selection]}}}
         async with self.assessment_transaction() as tx:
             values = await tx.list("analysis-session", filters=filters, limit=_limit(limit), latest=True)
+        return [AnalysisSessionRevision(**value) for value in values]
+
+    async def list_application_bound_sessions(
+        self, application_id: str | None = None, limit: int = 1000
+    ) -> list[AnalysisSessionRevision]:
+        """The newest revision of each Analysis session with a connection or a
+        protection that references Business Application `application_id`, or
+        any Business Application when `application_id` is None, newest first.
+        The connection sessions and the simulation sessions are each bounded
+        by `limit`."""
+        source: dict = {"kind": "application_connection"}
+        if application_id is not None:
+            source["reference"] = {"application": {"id": application_id}}
+        filters = (
+            {"definition": {"input": {"kind": "connection", "connections": [{"source": source}]}}},
+            {"definition": {"input": {"kind": "simulation", "protected": [source]}}},
+        )
+        async with self.assessment_transaction() as tx:
+            values = [
+                value
+                for wanted in filters
+                for value in await tx.list(
+                    "analysis-session", filters=wanted, limit=_limit(limit), latest=True
+                )
+            ]
+        values.sort(key=lambda value: (value.get("created_at", ""), value["id"]), reverse=True)
         return [AnalysisSessionRevision(**value) for value in values]
 
     async def list_analysis_session_revisions(
@@ -1306,9 +1366,65 @@ class MemoryAssessmentStore(AssessmentStoreMixin):
         super().__init__(*args, **kwargs)
         self._assessment_records: dict[tuple[str, str, int], dict] = {}
         self._assessment_lock = asyncio.Lock()
+        # The flags are in the order of opening. An application has at most 1 open flag.
+        self._application_reviews: list[ApplicationReview] = []
 
     async def get_job(self, job_id: int) -> Any:
         return copy.deepcopy(getattr(self, "jobs", {}).get(job_id))
+
+    def _open_review(self, application_id: str) -> ApplicationReview | None:
+        return next(
+            (
+                review
+                for review in self._application_reviews
+                if review.application_id == application_id and review.state == "open"
+            ),
+            None,
+        )
+
+    async def open_application_review(
+        self, application_id: str, *, reason: str, revision: int, opened_by: int | None
+    ) -> ApplicationReview | None:
+        """Open a flag. The method returns None when the application has an open flag."""
+        if self._open_review(application_id) is not None:
+            return None
+        review = ApplicationReview(
+            id=str(uuid.uuid4()),
+            application_id=application_id,
+            state="open",
+            reason=reason,
+            revision=revision,
+            opened_at=utcnow().isoformat(),
+            opened_by=opened_by,
+        )
+        self._application_reviews.append(review)
+        return review
+
+    async def close_application_review(
+        self, application_id: str, *, closed_by: int | None
+    ) -> ApplicationReview | None:
+        """Close the open flag. The method returns None when the application has no open flag."""
+        review = self._open_review(application_id)
+        if review is None:
+            return None
+        closed = replace(review, state="closed", closed_at=utcnow().isoformat(), closed_by=closed_by)
+        self._application_reviews[self._application_reviews.index(review)] = closed
+        return closed
+
+    async def list_application_reviews(
+        self, application_id: str, limit: int = 100
+    ) -> list[ApplicationReview]:
+        """The flags of the application, newest first."""
+        reviews = [review for review in self._application_reviews if review.application_id == application_id]
+        return list(reversed(reviews))[: _limit(limit)]
+
+    async def open_application_reviews(self, application_ids: list[str]) -> dict[str, ApplicationReview]:
+        wanted = set(application_ids)
+        return {
+            review.application_id: review
+            for review in self._application_reviews
+            if review.state == "open" and review.application_id in wanted
+        }
 
     @asynccontextmanager
     async def assessment_transaction(self) -> AsyncIterator[AssessmentTransaction]:

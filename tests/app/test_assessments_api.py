@@ -275,3 +275,40 @@ async def test_collection_prevalidates_all_targets_and_records_before_queue(clie
         },
     )
     assert response.status_code == 422
+
+
+async def test_the_exact_run_export_is_a_json_attachment_named_after_the_run(client, store):
+    await login(client, "otto")
+    item = await create(client)
+    await client.post(f"/api/assessments/{item['id']}/analyses", json={"kind": "evaluate"})
+    run = await finish(store, {"snapshot": "2000"})
+
+    response = await client.get(f"/api/assessments/{item['id']}/runs/{run.id}/export")
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("application/json")
+    assert response.headers["content-disposition"] == f'attachment; filename="assessment-{run.id}.json"'
+    assert json.loads(response.content)["run"]["id"] == run.id
+
+
+async def test_a_retry_of_a_failed_run_queues_a_new_run_and_keeps_the_failed_one(client, store):
+    await login(client, "otto")
+    item = await create(client)
+    await client.post(f"/api/assessments/{item['id']}/analyses", json={"kind": "evaluate"})
+    claimed = await store.claim_analysis("test")
+    assert await store.finish_analysis(
+        claimed.id, claimed.lease_token, result={"stop_reason": "execution-failed"}, state="failed"
+    )
+
+    response = await client.post(
+        f"/api/assessments/{item['id']}/analyses", json={"kind": "evaluate", "retry_of": claimed.id}
+    )
+
+    assert response.status_code == 202, response.text
+    retry = await store.get_analysis_run(response.json()["id"])
+    assert retry.id != claimed.id
+    assert retry.retry_of == claimed.id
+    assert retry.state == "queued"
+    failed = await store.get_analysis_run(claimed.id)
+    assert failed.state == "failed"
+    assert failed.result == {"stop_reason": "execution-failed"}

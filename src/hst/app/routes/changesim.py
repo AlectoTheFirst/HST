@@ -123,5 +123,6 @@ async def export_change_simulation(request: Request, body: ExportBody) -> Respon
             "X-HST-Snapshot": "" if cts is None else str(cts),
             "X-HST-Export-Trimmed": "true" if trimmed else "false",
             "X-HST-Degraded": "true" if status and status.get("degraded") else "false",
+            "X-HST-Export-Mode": "current-pointer",
         },
     )

@@ -44,7 +44,7 @@ export const VIEWS: ReadonlyArray<ViewSpec> = [
   { view: "equinix", label: "Equinix Fabric", icon: "equinix", open: (w) => w.openEquinix() },
   { view: "diff", label: "What changed", icon: "diff", open: (w) => w.openDiff() },
   { view: "applications", label: "Business applications", icon: "applications", open: (w) => w.openApplications() },
-  { view: "analysis", label: "Analysis", icon: "analysis", open: (w) => w.openAnalysis() },
+  { view: "analysis", label: "Analysis", icon: "analysis", open: (w) => w.dispatch({ type: "open-analysis", id: w.state.focus, restore: true }) },
   { view: "changesim", label: "Change simulation", icon: "changesim", open: (w) => w.openChangeSim(), section: "analysis" },
   { view: "assessments", label: "Assessments", icon: "assessments", open: (w) => w.openAssessments(), section: "analysis" },
 ];

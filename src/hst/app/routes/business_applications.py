@@ -18,6 +18,7 @@ from hst.app.permissions import permissions_for
 from hst.app.store import User
 from hst.applications import flows as application_flows
 from hst.applications import inventory_graph
+from hst.applications import review as application_review
 from hst.applications import service as application_service
 from hst.applications.models import (
     MAX_CONNECTIONS,
@@ -85,6 +86,10 @@ class ValidateBody(ApiModel):
     application_id: Identifier | None = None
     evaluate: bool = False
     record: bool = False
+
+
+class ReviewBody(ApiModel):
+    reason: str = Field(min_length=1, max_length=500)
 
 
 class ResolveBody(ApiModel):
@@ -203,6 +208,7 @@ async def commit_import(body: ImportCommitBody, request: Request, user: User = D
             mode=body.mode,
             origin=origin,
         )
+    await _flag_stale_bindings(store, saved, body.base_revision)
     return {**saved.as_dict(), **await _resolve_at_commit(request, saved, origin, body.base_revision)}
 
 
@@ -231,7 +237,16 @@ async def _save(request: Request, body: SaveApplication, expected_revision: int,
         saved = await application_service.save_definition(
             store, body.definition, expected_revision=expected_revision, actor=user.id, origin=origin
         )
+    await _flag_stale_bindings(store, saved, expected_revision)
     return {**saved.as_dict(), **await _resolve_at_commit(request, saved, origin, expected_revision)}
+
+
+async def _flag_stale_bindings(store: Any, saved: Any, base_revision: int) -> None:
+    """Open the review flag of a new revision whose older revisions an
+    Analysis session binds. A save equal to the newest revision returns
+    `base_revision` and opens nothing."""
+    if saved.revision != base_revision:
+        await application_review.flag_stale_bindings(store, saved.id, saved.revision)
 
 
 # Registered before the {application_id} routes, and `validate` is a reserved
@@ -307,7 +322,25 @@ def _evaluate_flow(settings: Any, reference: dict, request: dict) -> dict:
 
 @router.get("/business-applications", dependencies=READ)
 async def list_applications(request: Request, limit: int = Query(100, ge=1, le=1000)) -> dict:
-    return {"applications": [_served(item) for item in await _store(request).list_applications(limit)]}
+    """The newest revision of each application. `review` is `open` when the
+    application has an open review flag. `analyses` is the number of Analysis
+    sessions that reference the application. `connections` is the number of
+    connections of the newest revision."""
+    store = _store(request)
+    items = await store.list_applications(limit)
+    flagged = await store.open_application_reviews([item.id for item in items])
+    counts = await application_review.session_counts(store)
+    return {
+        "applications": [
+            {
+                **_served(item),
+                "review": "open" if item.id in flagged else None,
+                "analyses": counts[item.id],
+                "connections": len(item.definition.get("connections") or []),
+            }
+            for item in items
+        ]
+    }
 
 
 @router.post("/business-applications", dependencies=WRITE, status_code=201)
@@ -394,6 +427,83 @@ async def application_history(
             _served(item) for item in await _store(request).list_application_revisions(application_id, limit)
         ]
     }
+
+
+@router.get("/business-applications/{application_id}/analyses", dependencies=READ)
+async def application_analyses(application_id: str, request: Request) -> dict:
+    """The Analysis sessions that reference the application, newest first.
+    `stale` is true when a bound revision is older than `current_revision`."""
+    store = _store(request)
+    item = await _application(store, application_id)
+    return {"analyses": await application_review.analyses(store, item.id, item.revision)}
+
+
+async def _review_documents(store: Any, reviews: list[Any]) -> list[dict]:
+    """The `as_dict` of each review with `opened_by_name` and `closed_by_name`,
+    the username of `opened_by` and `closed_by`, or None."""
+    ids = {
+        user_id
+        for review in reviews
+        for user_id in (review.opened_by, review.closed_by)
+        if user_id is not None
+    }
+    names = {}
+    for user_id in ids:
+        user = await store.get_user(user_id)
+        names[user_id] = user.username if user else None
+    return [
+        {
+            **review.as_dict(),
+            "opened_by_name": names.get(review.opened_by),
+            "closed_by_name": names.get(review.closed_by),
+        }
+        for review in reviews
+    ]
+
+
+@router.get("/business-applications/{application_id}/review", dependencies=READ)
+async def application_review_flags(
+    application_id: str, request: Request, limit: int = Query(100, ge=1, le=1000)
+) -> dict:
+    """The open review flag of the application, and all its flags newest first."""
+    store = _store(request)
+    await _application(store, application_id)
+    history = await store.list_application_reviews(application_id, limit)
+    current = next((review for review in history if review.state == "open"), None)
+    if current is None:
+        current = (await store.open_application_reviews([application_id])).get(application_id)
+    documents = await _review_documents(store, [current, *history] if current else history)
+    return {
+        "current": documents[0] if current else None,
+        "history": documents[1:] if current else documents,
+    }
+
+
+@router.post("/business-applications/{application_id}/review", dependencies=WRITE, status_code=201)
+async def open_review(
+    application_id: str, body: ReviewBody, request: Request, user: User = Depends(current_user)
+) -> dict:
+    """Open a review flag by hand at the newest revision. The route answers 409
+    when a flag is open."""
+    store = _store(request)
+    item = await _application(store, application_id)
+    review = await store.open_application_review(
+        item.id, reason=body.reason, revision=item.revision, opened_by=user.id
+    )
+    if review is None:
+        raise HTTPException(409, "the application has an open review flag")
+    return (await _review_documents(store, [review]))[0]
+
+
+@router.post("/business-applications/{application_id}/review/close", dependencies=WRITE)
+async def close_review(application_id: str, request: Request, user: User = Depends(current_user)) -> dict:
+    """Close the open review flag. The route answers 409 when no flag is open."""
+    store = _store(request)
+    await _application(store, application_id)
+    review = await store.close_application_review(application_id, closed_by=user.id)
+    if review is None:
+        raise HTTPException(409, "the application has no open review flag")
+    return (await _review_documents(store, [review]))[0]
 
 
 @router.get("/business-applications/{application_id}/export", dependencies=READ)

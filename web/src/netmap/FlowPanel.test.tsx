@@ -170,3 +170,14 @@ describe("flowSelectionOf", () => {
     expect(flowSelectionOf(undefined)).toBeNull();
   });
 });
+
+describe("FlowPanel: an evaluation of an earlier application revision", () => {
+  it("marks the evaluation with its revision and keeps its result", async () => {
+    const body = flows();
+    body.connections[0].evaluation = { session_id: "s", run_id: "r", execution: "completed", snapshot: "7", revision: 2, finished_at: null, stale: { snapshot: false, revision: true } };
+    renderPanel({ application: "shop", connections: ["web"] }, body);
+    expect(await screen.findByRole("note")).toHaveTextContent("Evaluation of revision 2, not revision 3");
+    expect(screen.getByRole("note")).not.toHaveTextContent("run");
+    expect(screen.getByText("Fails")).toBeInTheDocument();
+  });
+});

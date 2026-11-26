@@ -116,7 +116,7 @@ export function ExportControl({ policy }: { policy: SimulatePolicyChangeResult }
           />
         </label>
         <button type="submit" disabled={pending}>
-          {pending ? "Generating" : "Download full detail"}
+          {pending ? "Generating" : "Download current data"}
         </button>
       </div>
       {differs && (

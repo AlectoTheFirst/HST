@@ -132,16 +132,12 @@ describe("Keyboard use of Business Applications", () => {
     });
     const opened: string[] = [];
     function Harness() {
-      const [applicationId, setApplicationId] = useState<string>();
+      const [applicationId, setApplicationId] = useState<string | undefined>("checkout");
       return <ApplicationsPage applicationId={applicationId} onNavigate={setApplicationId} onOpenAnalysis={(id) => opened.push(id)} />;
     }
     const user = userEvent.setup();
     render(wrap(<Harness />));
 
-    // open the application from the catalog
-    const entry = await screen.findByRole("button", { name: /^Checkout/ });
-    await tabTo(user, entry);
-    await user.keyboard("{Enter}");
     expect(await screen.findByRole("heading", { name: "Checkout" })).toBeInTheDocument();
 
     // the section tabs

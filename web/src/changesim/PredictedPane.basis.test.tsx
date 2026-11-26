@@ -18,7 +18,7 @@ import {
   type SimulatePolicyChangeResult,
 } from "./assessImpact";
 
-const BANNED_WORDS = /\b(reached|delivered|reachability|live|current|intended)\b/i;
+const BANNED_WORDS = /\b(reached|delivered|reachability|live|intended)\b/i;
 const REASON = "a routing calculation that did not settle decides this flow";
 
 const [FIRST, SECOND] = FIXTURE_SIMULATE_POLICY_CHANGE.flows;

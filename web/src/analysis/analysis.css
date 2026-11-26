@@ -10,4 +10,13 @@
 .analysis-flow { display: grid; grid-template-columns: repeat(4, minmax(120px, 1fr)) auto; gap: 8px; align-items: end; margin: 8px 0; }
 .analysis-flow label { display: grid; gap: 4px; }
 .analysis-session-detail pre { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 55vh; overflow: auto; }
+.analysis-run-comparison { width: 100%; margin: 8px 0; table-layout: fixed; }
+.analysis-run-comparison td { overflow-wrap: anywhere; }
+.analysis-session-detail .application-section-heading { display: flex; justify-content: space-between; align-items: start; flex-wrap: wrap; gap: 12px; height: auto; padding: 0; background: none; border-bottom: 0; }
 @media (max-width: 720px) { .analysis-workspace { grid-template-columns: 1fr; grid-template-rows: auto 1fr; } .analysis-session-list { max-height: 35vh; border-right: 0; border-bottom: 1px solid var(--line); } .analysis-flow { grid-template-columns: 1fr 1fr; } }
+@container (max-width: 720px) {
+  .analysis-workspace { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
+  .analysis-session-list { max-height: 35vh; border-right: 0; border-bottom: 1px solid var(--line); }
+  .analysis-flow { grid-template-columns: 1fr 1fr; }
+  .analysis-workspace .chgsim-compare { flex-direction: column; }
+}

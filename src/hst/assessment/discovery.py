@@ -25,6 +25,38 @@ KINDS = {
     "domain": "FailureDomain",
 }
 _LABEL_KINDS = {label: kind for kind, label in KINDS.items()}
+# The kinds of the context of a Business Application connection end. A search
+# of these kinds matches the name and the uid. `kind=all` leaves them out.
+CONTEXT_KINDS = {"identity": "IdentityGroup", "segment": "ZpaAppSegment"}
+_CONTEXT_LABEL_KINDS = {label: kind for kind, label in CONTEXT_KINDS.items()}
+# The address kinds of a Business Application member. A search of these kinds
+# matches the address and the name. `kind=all` leaves them out.
+ADDRESS_KINDS = {"ip": "IpAddress", "network": "Prefix"}
+_ADDRESS_LABEL_KINDS = {label: kind for kind, label in ADDRESS_KINDS.items()}
+
+_ADDRESS_OBJECTS = """
+MATCH (n:Obj)
+WHERE n.collection_ts = $snap AND NOT n:Retired
+  AND any(label IN labels(n) WHERE label IN $labels)
+  AND ($uid IS NULL OR n.uid = $uid)
+  AND ($q = '' OR toLower(coalesce(n.ip, n.cidr, '')) CONTAINS $q
+       OR toLower(coalesce(n.name, '')) CONTAINS $q)
+RETURN n.uid AS uid, labels(n) AS labels, coalesce(n.ip, n.cidr, n.name, n.uid) AS name,
+       coalesce(n.ip, n.cidr) AS address
+ORDER BY toLower(coalesce(n.ip, n.cidr, n.name, n.uid)), n.uid
+LIMIT $limit
+"""
+
+_CONTEXT_OBJECTS = """
+MATCH (n:Obj)
+WHERE n.collection_ts = $snap AND NOT n:Retired
+  AND any(label IN labels(n) WHERE label IN $labels)
+  AND ($uid IS NULL OR n.uid = $uid)
+  AND ($q = '' OR toLower(coalesce(n.name, '')) CONTAINS $q OR toLower(n.uid) CONTAINS $q)
+RETURN n.uid AS uid, labels(n) AS labels, coalesce(n.name, n.uid) AS name, n.idp_name AS idp_name
+ORDER BY toLower(coalesce(n.name, n.uid)), n.uid
+LIMIT $limit
+"""
 
 _OBJECTS = """
 MATCH (n:Obj)
@@ -203,6 +235,64 @@ def _kind(labels: list[str]) -> str:
     return next((_LABEL_KINDS[label] for label in labels if label in _LABEL_KINDS), "unsupported")
 
 
+def _read_context_options(session: Any, kinds: list[str], q: str, uid: str | None, limit: int) -> dict:
+    rows = path._read(
+        session,
+        _CONTEXT_OBJECTS,
+        labels=[CONTEXT_KINDS[k] for k in kinds],
+        q=q.casefold(),
+        uid=uid,
+        limit=limit + 1,
+    )
+    items = [
+        {
+            "uid": row["uid"],
+            "name": row.get("name") or row["uid"],
+            "kind": next(
+                (_CONTEXT_LABEL_KINDS[label] for label in row["labels"] if label in _CONTEXT_LABEL_KINDS),
+                "unsupported",
+            ),
+            # The identity provider of an IdentityGroup.
+            "source": row.get("idp_name"),
+            "selectable": True,
+        }
+        for row in rows[:limit]
+    ]
+    return {"items": items, "truncated": len(rows) > limit}
+
+
+def _read_address_options(session: Any, kinds: list[str], q: str, uid: str | None, limit: int) -> dict:
+    rows = path._read(
+        session,
+        _ADDRESS_OBJECTS,
+        labels=[ADDRESS_KINDS[k] for k in kinds],
+        q=q.casefold(),
+        uid=uid,
+        limit=limit + 1,
+    )
+    items = [
+        {
+            "uid": row["uid"],
+            "name": row.get("name") or row["uid"],
+            "kind": next(
+                (_ADDRESS_LABEL_KINDS[label] for label in row["labels"] if label in _ADDRESS_LABEL_KINDS),
+                "unsupported",
+            ),
+            "addresses": [row["address"]] if row.get("address") else [],
+            "selectable": True,
+        }
+        for row in rows[:limit]
+    ]
+    return {"items": items, "truncated": len(rows) > limit}
+
+
+def _merged(left: dict, right: dict, limit: int) -> dict:
+    """The items of 2 reads in the order of the name and the uid, at most `limit`."""
+    items = sorted([*left["items"], *right["items"]], key=lambda item: (item["name"].casefold(), item["uid"]))
+    truncated = left["truncated"] or right["truncated"] or len(items) > limit
+    return {"items": items[:limit], "truncated": truncated}
+
+
 def _suggested(dependencies: list[dict], snapshot: str) -> set[str]:
     return {
         str(ref["uid"])
@@ -372,8 +462,11 @@ def search_options(
     if not 1 <= limit <= 100:
         raise ValueError("Discovery limit must be between 1 and 100.")
     kinds = list(KINDS) if kind == "all" else list(dict.fromkeys(kind.split(",")))
-    if not kinds or any(k not in KINDS for k in kinds):
-        raise ValueError("Object kind must be one of: " + ", ".join(KINDS))
+    context = bool(kinds) and all(k in CONTEXT_KINDS for k in kinds)
+    addresses = [k for k in kinds if k in ADDRESS_KINDS]
+    objects = [k for k in kinds if k not in ADDRESS_KINDS]
+    if not kinds or (not context and any(k not in KINDS and k not in ADDRESS_KINDS for k in kinds)):
+        raise ValueError("Object kind must be one of: " + ", ".join([*KINDS, *ADDRESS_KINDS, *CONTEXT_KINDS]))
     if any(len(value) > 500 for value in (destination, client, location, application)):
         raise ValueError("Service clues must not exceed 500 characters.")
     if any((destination, client, location, application)) and kinds != ["service"]:
@@ -382,7 +475,16 @@ def search_options(
     with db.session(settings) as raw:
         snap = snapshotmod.resolve(raw, settings, int(reference["snapshot"]))
         session = path.pinned(raw, snap)
-        if kinds == ["service"] and uid is None:
+        if context:
+            result = _read_context_options(session, kinds, q, uid, limit)
+        elif addresses:
+            result = _read_address_options(session, addresses, q, uid, limit)
+            if objects:
+                found = _read_options(
+                    session, objects, q, uid, _suggested(dependencies or [], str(snap.cts)), limit
+                )
+                result = _merged(found, result, limit)
+        elif kinds == ["service"] and uid is None:
             from hst.assessment.service_discovery import scan_services
 
             result = scan_services(

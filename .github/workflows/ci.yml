@@ -63,7 +63,7 @@ jobs:
               README.md|CONTRIBUTING.md|SECURITY.md|docs/*)
                 ;;
               # The web files that Python tests read. tests/test_ci_workflows.py checks the list.
-              web/src/api/inventory.ts|web/src/results/words.ts|web/src/settings/schema.fixtures.json)
+              web/src/analysis/contracts.ts|web/src/api/inventory.ts|web/src/results/words.ts|web/src/settings/schema.fixtures.json)
                 code=true; web=true ;;
               web/*)
                 web=true ;;

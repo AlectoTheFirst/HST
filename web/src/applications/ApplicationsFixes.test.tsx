@@ -186,7 +186,7 @@ describe("Applications page", () => {
         </MemoryRouter>
       </QueryClientProvider>,
     );
-    await screen.findByRole("button", { name: /Checkout/ });
+    await waitFor(() => expect(screen.getByText("Import YAML").closest("details")).not.toHaveAttribute("open"));
     await user.click(screen.getByText("Import YAML"));
     await user.click(await screen.findByRole("textbox", { name: "Definition YAML" }));
     await user.paste("id: checkout\n");

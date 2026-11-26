@@ -57,6 +57,10 @@
   justify-content: space-between;
   gap: 12px;
   flex-wrap: wrap;
+  height: auto;
+  padding: 0;
+  background: none;
+  border-bottom: 0;
 }
 
 .inv-head-title {

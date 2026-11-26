@@ -381,6 +381,7 @@ class AppSaveApplicationResult(BaseModel):
 
 
 def app_save_application(ctx: ToolContext, params: AppSaveApplicationInput) -> str:
+    from hst.applications import review as application_review
     from hst.applications import service as application_service
     from hst.applications.models import BusinessApplicationDefinition
 
@@ -396,9 +397,12 @@ def app_save_application(ctx: ToolContext, params: AppSaveApplicationInput) -> s
             require(store, "create_application_revision", "Business Applications")
             # The revision records the origin of a direct API save, as the routes do by default.
             origin = await application_service.revision_origin(store, "api")
-            return await application_service.save_definition(
+            saved = await application_service.save_definition(
                 store, definition, expected_revision=params.expected_revision, actor=actor, origin=origin
             )
+            if saved.revision != params.expected_revision:
+                await application_review.flag_stale_bindings(store, saved.id, saved.revision)
+            return saved
 
         saved = _write(ctx, work)
         return call.finish(

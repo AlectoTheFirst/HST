@@ -6,7 +6,7 @@ import { ServiceImpactPane, conditionText } from "./ServiceImpactPane";
 import { parseEvaluateServiceImpact } from "./assessImpact";
 import type { EvaluateServiceImpactResult } from "./assessImpact";
 
-const BANNED_WORDS = /\b(reached|reachability|delivered|delivery|live|current|intended)\b/i;
+const BANNED_WORDS = /\b(reached|reachability|delivered|delivery|live|intended)\b/i;
 
 function bucket(items: string[]) {
   return { count: items.length, items, truncated: false };

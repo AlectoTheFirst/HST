@@ -31,6 +31,7 @@ function mount(path: string, { active = true, viewer = false } = {}) {
               <Route path="*" element={<p>Inventory content</p>} />
             </Route>
             <Route path="/settings/*" element={<p>Settings content</p>} />
+            <Route path="/applications/*" element={<p>Applications content</p>} />
           </Routes>
         </AuthProvider>
       </MemoryRouter>
@@ -77,6 +78,16 @@ describe("Workspace navigation", () => {
       expect(link).not.toHaveClass("on");
     }
     expect(screen.getByRole("link", { name: "Settings" })).toHaveClass("on");
+  });
+
+  it("opens the applications page from the top bar", async () => {
+    mount("/");
+    const user = userEvent.setup();
+    const nav = within(await screen.findByRole("navigation", { name: "Workspaces" }));
+    expect(nav.getAllByRole("link").map((link) => link.textContent)).toEqual(["Analysis", "Inventory", "Applications"]);
+    await user.click(nav.getByRole("link", { name: "Applications" }));
+    expect(await screen.findByText("Applications content")).toBeInTheDocument();
+    expect(nav.getByRole("link", { name: "Applications" })).toHaveAttribute("aria-current", "page");
   });
 
   it("preserves the activation gate on existing installations", async () => {

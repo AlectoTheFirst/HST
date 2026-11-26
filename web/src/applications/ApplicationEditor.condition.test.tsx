@@ -32,7 +32,7 @@ it("keeps an advanced destination condition when the destination group changes",
   render(<QueryClientProvider client={new QueryClient()}><ApplicationEditor record={record} canEdit onSaved={() => undefined} /></QueryClientProvider>);
   const user = userEvent.setup();
   await user.selectOptions(screen.getByLabelText("Destination"), "api-dr");
-  expect(screen.getByLabelText("Required destination")).toBeDisabled();
+  expect(screen.queryByLabelText("Required destination")).not.toBeInTheDocument();
   await user.click(screen.getByRole("button", { name: "Save revision" }));
   await waitFor(() => expect(saved).toHaveLength(1));
   const body = saved[0] as { definition: { connections: Array<{ destination: string; destination_condition: unknown }> } };

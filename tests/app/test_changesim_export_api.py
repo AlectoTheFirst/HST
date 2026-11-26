@@ -386,3 +386,11 @@ async def test_a_flow_without_an_mtu_request_carries_the_columns_empty_and_no_mt
     for line in data_lines:
         assert line.split(",")[before_idx] == ""
     assert "MTU:" not in markdown_text
+
+
+async def test_the_export_names_the_current_pointer_as_its_mode(client, monkeypatch):
+    _seam(monkeypatch)
+    await login(client, "vera")
+    r = await _post(client)
+    assert r.status_code == 200, r.text
+    assert r.headers["x-hst-export-mode"] == "current-pointer"
