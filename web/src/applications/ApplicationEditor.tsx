@@ -1,4 +1,4 @@
-import { Fragment, useState, type ReactNode } from "react";
+import { Fragment, useEffect, useState, type ReactNode } from "react";
 import { MtuRequirementFields } from "../assessments/MtuRequirementFields";
 import { ObjectPicker } from "../assessments/ObjectPicker";
 import { PinnedSnapshotPicker } from "../assessments/PinnedSnapshotPicker";
@@ -94,13 +94,18 @@ export function ApplicationEditor({
   record,
   canEdit,
   onSaved,
+  onDirtyChange,
 }: {
   record: ApplicationRevision;
   canEdit: boolean;
   onSaved: (record: ApplicationRevision) => void;
+  onDirtyChange?: (dirty: boolean) => void;
 }) {
   const editor = useApplicationDraft(record, onSaved);
   const { draft, busy, dirty } = editor;
+  useEffect(() => {
+    onDirtyChange?.(dirty);
+  }, [dirty, onDirtyChange]);
   const [inventorySnapshot, setInventorySnapshot] = useState("");
   const locked = !canEdit || busy;
 

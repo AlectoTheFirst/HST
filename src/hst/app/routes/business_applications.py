@@ -438,6 +438,29 @@ async def application_analyses(application_id: str, request: Request) -> dict:
     return {"analyses": await application_review.analyses(store, item.id, item.revision)}
 
 
+async def _review_documents(store: Any, reviews: list[Any]) -> list[dict]:
+    """The `as_dict` of each review with `opened_by_name` and `closed_by_name`,
+    the username of `opened_by` and `closed_by`, or None."""
+    ids = {
+        user_id
+        for review in reviews
+        for user_id in (review.opened_by, review.closed_by)
+        if user_id is not None
+    }
+    names = {}
+    for user_id in ids:
+        user = await store.get_user(user_id)
+        names[user_id] = user.username if user else None
+    return [
+        {
+            **review.as_dict(),
+            "opened_by_name": names.get(review.opened_by),
+            "closed_by_name": names.get(review.closed_by),
+        }
+        for review in reviews
+    ]
+
+
 @router.get("/business-applications/{application_id}/review", dependencies=READ)
 async def application_review_flags(
     application_id: str, request: Request, limit: int = Query(100, ge=1, le=1000)
@@ -449,9 +472,10 @@ async def application_review_flags(
     current = next((review for review in history if review.state == "open"), None)
     if current is None:
         current = (await store.open_application_reviews([application_id])).get(application_id)
+    documents = await _review_documents(store, [current, *history] if current else history)
     return {
-        "current": current.as_dict() if current else None,
-        "history": [review.as_dict() for review in history],
+        "current": documents[0] if current else None,
+        "history": documents[1:] if current else documents,
     }
 
 
@@ -468,7 +492,7 @@ async def open_review(
     )
     if review is None:
         raise HTTPException(409, "the application has an open review flag")
-    return review.as_dict()
+    return (await _review_documents(store, [review]))[0]
 
 
 @router.post("/business-applications/{application_id}/review/close", dependencies=WRITE)
@@ -479,7 +503,7 @@ async def close_review(application_id: str, request: Request, user: User = Depen
     review = await store.close_application_review(application_id, closed_by=user.id)
     if review is None:
         raise HTTPException(409, "the application has no open review flag")
-    return review.as_dict()
+    return (await _review_documents(store, [review]))[0]
 
 
 @router.get("/business-applications/{application_id}/export", dependencies=READ)

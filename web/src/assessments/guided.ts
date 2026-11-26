@@ -8,7 +8,7 @@ interface NamedObject {
   name: string;
 }
 export interface DiscoveryObject extends NamedObject {
-  kind: ObjectKind | ContextKind | "service";
+  kind: ObjectKind | ContextKind | "service" | "ip" | "network";
   device?: NamedObject;
   devices?: NamedObject[];
   device_uid?: string;

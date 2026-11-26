@@ -244,3 +244,33 @@ async def test_a_flag_opened_by_hand_is_closed_by_mark_reviewed(client, store):
     assert review.status_code == 200
     assert review.json() == {"current": None, "history": [closed.json()]}
     assert (await client.get(missing)).status_code == 404
+
+
+async def test_each_review_answer_holds_the_usernames_of_its_users(client, store):
+    await login(client, "otto")
+    await create(client)
+    await save_session(store, connection_session("bound", [(APPLICATION, 1)]))
+    await revise(client, "Checkout 2", 1)
+    automatic = (await client.get(f"{URL}/review")).json()["current"]
+    assert (automatic["opened_by_name"], automatic["closed_by_name"]) == (None, None)
+
+    await login(client, "ada")
+    closed = (await client.post(f"{URL}/review/close")).json()
+    assert (closed["opened_by_name"], closed["closed_by_name"]) == (None, "ada")
+
+    await login(client, "otto")
+    opened = (await client.post(f"{URL}/review", json={"reason": "owner changed"})).json()
+    assert (opened["opened_by_name"], opened["closed_by_name"]) == ("otto", None)
+
+    review = (await client.get(f"{URL}/review")).json()
+    assert review["current"] == opened
+    assert review["history"] == [opened, closed]
+
+
+async def test_a_review_of_a_removed_user_has_no_username(client, store):
+    await login(client, "otto")
+    await create(client)
+    opened = await store.open_application_review(APPLICATION, reason="old", revision=1, opened_by=999)
+    review = (await client.get(f"{URL}/review")).json()
+    assert review["current"]["id"] == opened.id
+    assert (review["current"]["opened_by"], review["current"]["opened_by_name"]) == (999, None)

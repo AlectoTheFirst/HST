@@ -1,13 +1,13 @@
 import { lazy, Suspense, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../../api/client";
-import { ObjectPicker } from "../../assessments/ObjectPicker";
 import { PinnedSnapshotPicker } from "../../assessments/PinnedSnapshotPicker";
 import { GroupFields } from "../ApplicationEditor";
 import { memberSource, memberStateOf } from "../structureModel";
 import type { ApplicationMember, ApplicationRevision, InventoryReference, ResolvedApplication } from "../types";
 import { nextId, type ApplicationDraft } from "../useApplicationDraft";
 import { groupName, portText } from "./connectionText";
+import { MemberSearch, useMemberSnapshot, type FoundMember } from "./MemberSearch";
 
 const ComponentGraph = lazy(() => import("./ComponentGraph"));
 
@@ -174,11 +174,11 @@ function AddMember({
   onAdd: (member: ApplicationMember) => void;
 }) {
   const [mode, setMode] = useState<"inventory" | "address">("inventory");
-  const [kind, setKind] = useState<"device" | "interface">("interface");
-  const [found, setFound] = useState<{ uid: string; name: string } | null>(null);
+  const [found, setFound] = useState<FoundMember | null>(null);
   const [address, setAddress] = useState("");
   const [name, setName] = useState("");
   const [role, setRole] = useState<InventoryReference["role"]>("component");
+  const searchSnapshot = useMemberSnapshot(snapshot);
   const ready = mode === "inventory" ? !!found : !!address.trim();
 
   function add() {
@@ -186,7 +186,7 @@ function AddMember({
     const label = name.trim() || (mode === "inventory" ? found?.name : undefined);
     onAdd(
       mode === "inventory"
-        ? { id, ...(label ? { name: label } : {}), inventory: { kind, uid: found!.uid, role } }
+        ? { id, ...(label ? { name: label } : {}), inventory: { kind: found!.kind, uid: found!.uid, role } }
         : { id, ...(label ? { name: label } : {}), address: address.trim() },
     );
     setFound(null);
@@ -206,31 +206,7 @@ function AddMember({
         </button>
       </div>
       {mode === "inventory" ? (
-        <>
-          <label className="inv-field">
-            <span>Kind</span>
-            <select
-              value={kind}
-              onChange={(event) => {
-                setKind(event.target.value as typeof kind);
-                setFound(null);
-              }}
-            >
-              <option value="interface">Interface</option>
-              <option value="device">Device</option>
-            </select>
-          </label>
-          {snapshot && (
-            <ObjectPicker
-              snapshot={snapshot}
-              kind={kind}
-              label={`Find ${kind}`}
-              selectedUids={found ? [found.uid] : []}
-              onSelect={(item) => setFound({ uid: item.uid, name: item.name })}
-            />
-          )}
-          {found && <p>{found.name}</p>}
-        </>
+        <MemberSearch snapshot={searchSnapshot} selected={found?.uid ?? null} onSelect={setFound} />
       ) : (
         <label className="inv-field">
           <span>Address or network</span>
@@ -246,10 +222,10 @@ function AddMember({
           <label>
             Role
             <select value={role} onChange={(event) => setRole(event.target.value as typeof role)}>
-              <option value="component">component</option>
-              <option value="source">source</option>
-              <option value="destination">destination</option>
-              <option value="shared">shared</option>
+              <option value="component">Component</option>
+              <option value="source">Source</option>
+              <option value="destination">Destination</option>
+              <option value="shared">Shared</option>
             </select>
           </label>
         )}

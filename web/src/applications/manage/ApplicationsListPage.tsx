@@ -63,8 +63,8 @@ export function ApplicationsListPage({ reviewOnly = false }: { reviewOnly?: bool
           <span>State</span>
           <select value={state} onChange={(event) => setState(event.target.value as typeof state)}>
             <option value="">All</option>
-            <option value="ready">ready</option>
-            <option value="draft">draft</option>
+            <option value="ready">Ready</option>
+            <option value="draft">Draft</option>
           </select>
         </label>
         {canReview && !reviewOnly && (
@@ -75,7 +75,7 @@ export function ApplicationsListPage({ reviewOnly = false }: { reviewOnly?: bool
               onChange={(event) => setReviewFilter(event.target.value as typeof reviewFilter)}
             >
               <option value="">All</option>
-              <option value="open">needs review</option>
+              <option value="open">Needs review</option>
             </select>
           </label>
         )}

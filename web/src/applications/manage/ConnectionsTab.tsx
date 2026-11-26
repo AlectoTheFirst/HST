@@ -89,7 +89,7 @@ export function ConnectionsTab({ editor, locked }: { editor: ApplicationDraft; l
                 value={serviceOf(draft, connection.id)?.id ?? ""}
                 onChange={(event) => editor.setConnectionService(connection.id, event.target.value)}
               >
-                <option value="">none</option>
+                <option value="">None</option>
                 {draft.services.map((service) => (
                   <option key={service.id} value={service.id}>
                     {service.name}

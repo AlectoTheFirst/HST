@@ -30,8 +30,12 @@ export interface Review {
   opened_at: string;
   /** null on a flag that a saved revision opened */
   opened_by: number | null;
+  /** the username of `opened_by`, or null */
+  opened_by_name: string | null;
   closed_at: string | null;
   closed_by: number | null;
+  /** the username of `closed_by`, or null */
+  closed_by_name: string | null;
 }
 
 export const catalogKey = ["business-applications"] as const;
@@ -81,9 +85,11 @@ export function closeReview(id: string) {
 
 export const REASON_MAX = 500;
 
-/** The user of a review event: "user 3", or "automatic" for a flag without a user. */
-export function byText(user: number | null): string {
-  return user == null ? "automatic" : `user ${user}`;
+/** The user of a review event: the username, "user 3" for a user without a
+ *  username, or "automatic" for a flag without a user. */
+export function byText(user: number | null, name: string | null = null): string {
+  if (user == null) return "automatic";
+  return name ?? `user ${user}`;
 }
 
 /** A local time as `YYYY-MM-DD HH:MM`. */

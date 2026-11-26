@@ -76,8 +76,10 @@ const OPEN_REVIEW: Review = {
   revision: 2,
   opened_at: "2026-11-20T14:02:00Z",
   opened_by: null,
+  opened_by_name: null,
   closed_at: null,
   closed_by: null,
+  closed_by_name: null,
 };
 const CLOSED_REVIEW: Review = {
   ...OPEN_REVIEW,
@@ -499,5 +501,114 @@ describe("Application detail", () => {
     await user.click(screen.getByRole("tab", { name: "Revisions" }));
     expect(await screen.findByRole("button", { name: "Export revision 2" })).toBeInTheDocument();
     expect(screen.getByRole("status", { name: "Location" })).toHaveTextContent("/applications/webshop?tab=revisions");
+  });
+});
+
+describe("Member search", () => {
+  it("searches devices, interfaces, IP addresses and networks at the current snapshot and adds a result with its kind", async () => {
+    const puts: MockRequest[] = [];
+    mockApi(
+      routes(ME_OPERATOR, {
+        "GET /api/snapshots": () => ({ body: { snapshots: [], current: 300, truncated: false } }),
+        "GET /api/assessment-options": () => ({
+          body: {
+            snapshot: "300",
+            truncated: false,
+            items: [
+              { uid: "prefix:home:10.1.20.0/24", name: "10.1.20.0/24", kind: "network", selectable: true },
+              { uid: "ip:home:10.1.20.12", name: "10.1.20.12", kind: "ip", selectable: true },
+              { uid: "device:api-02", name: "api-02", kind: "device", selectable: true },
+              { uid: "interface:api-02:eth0", name: "eth0", kind: "interface", device_name: "api-02", selectable: true },
+            ],
+          },
+        }),
+        "PUT /api/business-applications/webshop": (req) => {
+          puts.push(req);
+          return { body: { ...WEBSHOP, revision: 3, definition: (req.body as { definition: BusinessApplicationDefinition }).definition } };
+        },
+      }),
+    );
+    mount("/applications/webshop?tab=components");
+    const user = userEvent.setup();
+    await user.click(await within(await screen.findByRole("region", { name: "Components" })).findByRole("button", { name: "API" }));
+    const add = screen.getByRole("region", { name: "Add member" });
+    expect(within(add).queryByRole("combobox", { name: "Kind" })).not.toBeInTheDocument();
+
+    await user.type(within(add).getByRole("searchbox", { name: "Find member" }), "10");
+    const results = await within(add).findByRole("list", { name: "Member results" });
+    await waitFor(() =>
+      expect(within(results).getAllByRole("button").map((button) => button.textContent)).toEqual([
+        "10.1.20.0/24 network",
+        "10.1.20.12 IP address",
+        "api-02 device",
+        "eth0 interface api-02",
+      ]),
+    );
+    const searches = (fetch as unknown as { mock: { calls: Array<[RequestInfo | URL]> } }).mock.calls
+      .map(([input]) => new URL(String(input), "http://localhost"))
+      .filter((url) => url.pathname === "/api/assessment-options");
+    expect(searches.at(-1)!.searchParams.get("snapshot")).toBe("300");
+    expect(searches.at(-1)!.searchParams.get("kind")).toBe("device,interface,ip,network");
+    expect(searches.at(-1)!.searchParams.get("q")).toBe("10");
+
+    await user.click(within(results).getByRole("button", { name: /^10\.1\.20\.12/ }));
+    await user.click(within(add).getByRole("button", { name: "Add member" }));
+    await user.click(screen.getByRole("button", { name: "Save revision 3" }));
+    await waitFor(() => expect(puts).toHaveLength(1));
+    expect((puts[0].body as { definition: BusinessApplicationDefinition }).definition.groups[1].members[1]).toEqual({
+      id: "member-2",
+      name: "10.1.20.12",
+      inventory: { kind: "ip", uid: "ip:home:10.1.20.12", role: "component" },
+    });
+  });
+
+  it("searches at the snapshot chosen on the page", async () => {
+    mockApi(
+      routes(ME_OPERATOR, {
+        "GET /api/snapshots": () => ({
+          body: {
+            snapshots: [{ id: "200", ts_ms: 200, kind: "full", degraded: false }],
+            current: 300,
+            truncated: false,
+          },
+        }),
+        "GET /api/assessment-options": () => ({ body: { snapshot: "200", truncated: false, items: [] } }),
+        "POST /api/business-applications/webshop/resolve": () => ({ body: { groups: [], connections: [] } }),
+      }),
+    );
+    mount("/applications/webshop?tab=components");
+    const user = userEvent.setup();
+    const components = await screen.findByRole("region", { name: "Components" });
+    await user.selectOptions(await within(components).findByRole("combobox", { name: "Snapshot" }), "200");
+    await user.click(within(components).getByRole("button", { name: "API" }));
+    const add = screen.getByRole("region", { name: "Add member" });
+    expect(await within(add).findByText("No matching objects")).toBeInTheDocument();
+    const searches = (fetch as unknown as { mock: { calls: Array<[RequestInfo | URL]> } }).mock.calls
+      .map(([input]) => new URL(String(input), "http://localhost"))
+      .filter((url) => url.pathname === "/api/assessment-options");
+    expect(searches.map((url) => url.searchParams.get("snapshot"))).toEqual(["200"]);
+  });
+});
+
+describe("Review user names", () => {
+  it("shows the username of each review event", async () => {
+    const opened: Review = { ...OPEN_REVIEW, opened_by: 5, opened_by_name: "otto" };
+    const closed: Review = { ...CLOSED_REVIEW, opened_by: 3, opened_by_name: "ada", closed_by: 4, closed_by_name: null };
+    mockApi(
+      routes(ME_OPERATOR, {
+        "GET /api/business-applications/webshop/review": () => ({ body: { current: opened, history: [opened, closed] } }),
+      }),
+    );
+    mount("/applications/webshop");
+    const review = await screen.findByRole("region", { name: "Review" });
+    expect(await within(review).findByText(/^Opened 2026-11-20/)).toHaveTextContent(/ by otto$/);
+    const history = screen.getByRole("region", { name: "Review history" });
+    await waitFor(() => expect(within(history).getAllByRole("row")).toHaveLength(4));
+    const events = within(history).getAllByRole("row").slice(1).map((row) => within(row).getAllByRole("cell").slice(1, 4).map((cell) => cell.textContent));
+    expect(events).toEqual([
+      ["opened", "2", "otto"],
+      ["closed", "1", "user 4"],
+      ["opened", "1", "ada"],
+    ]);
   });
 });

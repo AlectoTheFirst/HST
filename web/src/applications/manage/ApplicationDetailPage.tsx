@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "../../api/client";
@@ -30,6 +30,7 @@ import {
 } from "./api";
 import { ComponentsTab } from "./ComponentsTab";
 import { ConnectionsTab } from "./ConnectionsTab";
+import { LeaveGuard } from "./LeaveGuard";
 import { useReviewActions } from "./reviewActions";
 
 const TABS = [
@@ -47,6 +48,12 @@ export function ApplicationDetailPage() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const canEdit = !!user && atLeast(user.role, "operator");
+  const [newDirty, setNewDirty] = useState(false);
+  // `saved` is true after a new application is saved, before the page navigates to it.
+  const saved = useRef(false);
+  useEffect(() => {
+    saved.current = false;
+  }, [id]);
   const detail = useQuery({
     queryKey: ["business-application", id],
     queryFn: () => api<{ application: ApplicationRevision }>(`/business-applications/${encodeURIComponent(id)}`),
@@ -58,13 +65,16 @@ export function ApplicationDetailPage() {
       <section className="ops-page inv-page apps-page" aria-label="New application">
         <Link className="inv-back" to="/applications">Applications</Link>
         <h1>New application</h1>
+        <LeaveGuard when={newDirty} allow={saved} />
         <ApplicationEditor
           record={newApplication()}
           canEdit={canEdit}
-          onSaved={(saved) => {
-            queryClient.setQueryData(["business-application", saved.id], { application: saved });
+          onDirtyChange={setNewDirty}
+          onSaved={(record) => {
+            queryClient.setQueryData(["business-application", record.id], { application: record });
             void queryClient.invalidateQueries({ queryKey: catalogKey });
-            navigate(`/applications/${encodeURIComponent(saved.id)}`);
+            saved.current = true;
+            navigate(`/applications/${encodeURIComponent(record.id)}`);
           }}
         />
       </section>
@@ -108,6 +118,7 @@ function DetailBody({ record, canEdit }: { record: ApplicationRevision; canEdit:
 
   return (
     <>
+      <LeaveGuard when={editor.dirty} />
       <header className="inv-head">
         <div className="inv-head-title">
           <span className="eyebrow">
@@ -287,7 +298,7 @@ function ReviewPanel({ id }: { id: string }) {
           <span>{current.reason}</span>
           <span>
             Opened {formatTime(current.opened_at)}
-            {current.opened_by != null && ` by ${byText(current.opened_by)}`}
+            {current.opened_by != null && ` by ${byText(current.opened_by, current.opened_by_name)}`}
           </span>
           <button
             type="button"
@@ -324,9 +335,9 @@ function ReviewPanel({ id }: { id: string }) {
 function reviewEvents(history: Review[]) {
   return history
     .flatMap((item) => [
-      { key: `${item.id}:opened`, time: item.opened_at, event: "opened", by: item.opened_by, reason: item.reason, revision: item.revision },
+      { key: `${item.id}:opened`, time: item.opened_at, event: "opened", by: item.opened_by, name: item.opened_by_name, reason: item.reason, revision: item.revision },
       ...(item.closed_at
-        ? [{ key: `${item.id}:closed`, time: item.closed_at, event: "closed", by: item.closed_by, reason: "", revision: item.revision }]
+        ? [{ key: `${item.id}:closed`, time: item.closed_at, event: "closed", by: item.closed_by, name: item.closed_by_name, reason: "", revision: item.revision }]
         : []),
     ])
     .sort((left, right) => right.time.localeCompare(left.time));
@@ -357,7 +368,7 @@ function ReviewHistory({ id }: { id: string }) {
                   <td>{formatTime(item.time)}</td>
                   <td>{item.event}</td>
                   <td>{item.revision}</td>
-                  <td>{item.event === "opened" || item.by != null ? byText(item.by) : ""}</td>
+                  <td>{item.event === "opened" || item.by != null ? byText(item.by, item.name) : ""}</td>
                   <td>{item.reason}</td>
                 </tr>
               ))}
