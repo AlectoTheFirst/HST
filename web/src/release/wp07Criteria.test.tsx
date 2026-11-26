@@ -114,10 +114,10 @@ describe("Saved run export and legacy export", () => {
     const urls = vi.mocked(globalThis.fetch).mock.calls.map(([input]) => String(input));
     expect(urls).toContain("/api/analysis-sessions/sim-1/export?revision=2");
     expect(urls.some((url) => url.includes("/changesim/export"))).toBe(false);
-    expect(screen.queryByRole("button", { name: /Download full detail/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Download current data/ })).not.toBeInTheDocument();
   });
 
-  it("offers Download full detail for a chat simulation and posts its change set to the legacy export", async () => {
+  it("offers Download current data for a chat simulation and posts its change set to the legacy export", async () => {
     const seen: MockRequest[] = [];
     mockApi({
       "POST /api/changesim/export": (req) => {
@@ -128,7 +128,7 @@ describe("Saved run export and legacy export", () => {
     render(<ExportControl policy={FIXTURE_SIMULATE_POLICY_CHANGE} />);
 
     expect(screen.queryByRole("button", { name: "Export run" })).not.toBeInTheDocument();
-    await userEvent.setup().click(screen.getByRole("button", { name: "Download full detail" }));
+    await userEvent.setup().click(screen.getByRole("button", { name: "Download current data" }));
 
     await waitFor(() => expect(seen).toHaveLength(1));
     expect(seen[0].path).toBe("/api/changesim/export");

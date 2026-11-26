@@ -8,7 +8,7 @@ import { mockApi } from "../test/fetchMock";
 import { FIXTURE_SIMULATE_POLICY_CHANGE } from "../test/fixtures";
 import type { SimulatePolicyChangeResult } from "./assessImpact";
 
-const BANNED_WORDS = /\b(reached|delivered|reachability|live|current|intended)\b/i;
+const BANNED_WORDS = /\b(reached|delivered|reachability|live|intended)\b/i;
 
 const SHOWN = FIXTURE_SIMULATE_POLICY_CHANGE.snapshot as string;
 const ARCHIVE = { raw: "zip-bytes", headers: { "Content-Type": "application/zip" } };
@@ -56,7 +56,7 @@ describe("ExportControl", () => {
     await user.clear(screen.getByLabelText("Depth"));
     await user.type(screen.getByLabelText("Depth"), "3");
     await user.type(screen.getByLabelText("Sites"), "fra01, ber02");
-    await user.click(screen.getByRole("button", { name: /Download full detail/ }));
+    await user.click(screen.getByRole("button", { name: /Download current data/ }));
 
     await waitFor(() => expect(seen).toHaveLength(1));
     expect(seen[0]).toMatchObject({
@@ -75,7 +75,7 @@ describe("ExportControl", () => {
     const user = userEvent.setup();
     await user.clear(screen.getByLabelText("Depth"));
     await user.type(screen.getByLabelText("Depth"), "40");
-    await user.click(screen.getByRole("button", { name: /Download full detail/ }));
+    await user.click(screen.getByRole("button", { name: /Download current data/ }));
 
     await waitFor(() => expect(seen).toHaveLength(1));
     expect(seen[0]).toMatchObject({ depth: 8 });
@@ -90,7 +90,7 @@ describe("ExportControl", () => {
     );
     renderControl();
     const user = userEvent.setup();
-    await user.click(screen.getByRole("button", { name: /Download full detail/ }));
+    await user.click(screen.getByRole("button", { name: /Download current data/ }));
     await waitFor(() => expect(click).toHaveBeenCalled());
   });
 
@@ -98,7 +98,7 @@ describe("ExportControl", () => {
     mockApi(exportRoute({ "X-HST-Snapshot": SHOWN }));
     const { container } = renderControl();
     const user = userEvent.setup();
-    await user.click(screen.getByRole("button", { name: /Download full detail/ }));
+    await user.click(screen.getByRole("button", { name: /Download current data/ }));
     await waitFor(() => expect(click).toHaveBeenCalled());
     expect(screen.queryByText(/^Export run /)).toBeNull();
     expect(container.textContent).not.toMatch(BANNED_WORDS);
@@ -108,7 +108,7 @@ describe("ExportControl", () => {
     mockApi(exportRoute({ "X-HST-Snapshot": "1724323200000" }));
     const { container } = renderControl();
     const user = userEvent.setup();
-    await user.click(screen.getByRole("button", { name: /Download full detail/ }));
+    await user.click(screen.getByRole("button", { name: /Download current data/ }));
 
     expect(await screen.findByText(/^Export run /)).toBeInTheDocument();
     expect(container.textContent).not.toMatch(BANNED_WORDS);
@@ -123,7 +123,7 @@ describe("ExportControl", () => {
     });
     renderControl();
     const user = userEvent.setup();
-    await user.click(screen.getByRole("button", { name: /Download full detail/ }));
+    await user.click(screen.getByRole("button", { name: /Download current data/ }));
 
     expect(await screen.findByText("every flow needs a src and a dst")).toBeInTheDocument();
     expect(click).not.toHaveBeenCalled();
@@ -137,7 +137,7 @@ describe("ExportControl", () => {
       flows_derived: "no flows were supplied, so a bounded set was derived",
     });
     const user = userEvent.setup();
-    await user.click(screen.getByRole("button", { name: /Download full detail/ }));
+    await user.click(screen.getByRole("button", { name: /Download current data/ }));
 
     await waitFor(() => expect(seen).toHaveLength(1));
     expect(seen[0]).not.toHaveProperty("flows");

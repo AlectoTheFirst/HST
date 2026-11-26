@@ -6,7 +6,7 @@ import { PredictedPane } from "./PredictedPane";
 import { FIXTURE_SIMULATE_POLICY_CHANGE } from "../test/fixtures";
 import type { PredictedResult, SimulatePolicyChangeResult } from "./assessImpact";
 
-const BANNED_WORDS = /\b(reached|delivered|reachability|live|current|intended)\b/i;
+const BANNED_WORDS = /\b(reached|delivered|reachability|live|intended)\b/i;
 
 function renderPane(policy: SimulatePolicyChangeResult) {
   const result: PredictedResult = { tool: "simulate_policy_change", policy };

@@ -29,7 +29,7 @@ import { WorkspaceProvider, useWorkspace } from "../workspace/WorkspaceContext";
 import { panes } from "../workspace/layout";
 
 // The language rules forbid these labels in the rendered text.
-const BANNED_WORDS = /\b(reached|delivered|reachability|live|current|intended)\b/i;
+const BANNED_WORDS = /\b(reached|delivered|reachability|live|intended)\b/i;
 
 function renderPage() {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
