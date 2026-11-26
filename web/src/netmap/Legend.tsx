@@ -42,7 +42,7 @@ export interface Look {
   segments: boolean;
   /** the client badges per attachment point */
   clients: boolean;
-  /** the exits to a CDP or LLDP neighbor with no device in the graph */
+  /** the exits to a CDP or LLDP neighbor with no device in the graph, and the LAG members with no cable */
   undiscovered: boolean;
 }
 

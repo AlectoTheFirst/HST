@@ -219,6 +219,7 @@ describe("LAGs at level 4", () => {
         cables: ["swc-01~swd-01", "swc-02~swd-01"],
         far: ["swc-01", "swc-02"],
         ports_without_cable: ["Eth1/3"],
+        neighbors_without_cable: [],
         multi_chassis: true,
         basis: "inferred",
       },
@@ -254,6 +255,7 @@ describe("loose LAG members", () => {
           cables: [],
           far: [],
           ports_without_cable: ["Eth1/5", "Eth1/6"],
+          neighbors_without_cable: [],
           multi_chassis: false,
           basis: "collector",
         },
@@ -264,6 +266,39 @@ describe("loose LAG members", () => {
     expect(loose.map((e) => e.data.label)).toEqual(["Po51, 2 members, no cable"]);
     const line = elements.find((e) => e.data.id === "loose:lag:swd-01:po51:Eth1/5,Eth1/6:cable")!;
     expect(line.data.sourcePort).toBe("Eth1/5, Eth1/6");
+  });
+
+  it("draws a loose member with a neighbor as its own stub with the neighbor and the far port", async () => {
+    const model: TopologyModel = {
+      ...MODEL,
+      lags: [
+        {
+          id: "lag:swd-01:po51",
+          dev: "swd-01",
+          name: "Po51",
+          cables: [],
+          far: [],
+          ports_without_cable: ["Eth1/5", "Eth1/6", "Eth1/7"],
+          neighbors_without_cable: [
+            { port: "Eth1/6", far_name: "swc-01", far_port: "Gi0/1", source: "cdp, no cable" },
+            { port: "Eth1/7", far_name: "swc-02", far_port: null, source: "lldp, no cable" },
+          ],
+          multi_chassis: false,
+          basis: "collector",
+        },
+      ],
+    };
+    const elements = toElements(model, await new ELK().layout(toElkGraph(model)));
+    const loose = elements.filter((e) => String(e.classes).includes("exit loose"));
+    expect(loose.map((e) => e.data.label)).toEqual([
+      "Po51 member, no cable",
+      "Po51 member, no cable, swc-01 Gi0/1",
+      "Po51 member, no cable, swc-02",
+    ]);
+    const line = elements.find((e) => e.data.id === "loose:lag:swd-01:po51:Eth1/6:cable")!;
+    expect(String(line.classes)).toContain("loose");
+    expect(line.data.sourcePort).toBe("Eth1/6");
+    expect(line.data.targetPort).toBe("Gi0/1");
   });
 
   it("marks an exit to a neighbor with no device as undiscovered", async () => {

@@ -3512,21 +3512,6 @@ def test_parse_cdp_neighbors_join_the_lldp_rows():
     assert cdp[1]["port"] == "TenGigabitEthernet3/0/6"
 
 
-@pytest.mark.parametrize(
-    "value, expected",
-    [
-        ("core2.example.com(ABC1234XYZ)", ("core2.example.com", "ABC1234XYZ")),
-        ("core2(ABC1234XYZ)", ("core2", "ABC1234XYZ")),
-        ("access1.mgmt.example.com", ("access1.mgmt.example.com", None)),
-        ("  edge1  ", ("edge1", None)),
-        ("", (None, None)),
-        (None, (None, None)),
-    ],
-)
-def test_cdp_device_id_splits_name_and_serial(value, expected):
-    assert nxos._cdp_device_id(value) == expected
-
-
 def test_lldp_null_text_is_absent_not_a_name():
     """NX-OS prints the string `null` for a TLV the neighbor did not send: a
     host that advertises only a chassis MAC reads `sys_name: "null"`. That

@@ -1011,7 +1011,7 @@ export function Diagram({
       core.nodes(".exit").forEach((stub) => {
         const owners = stub.neighborhood("node.device");
         const ownerHidden = owners.nonempty() && owners.filter(".hid").length === owners.length;
-        stub.toggleClass("hid", ownerHidden || (!look.undiscovered && stub.hasClass("undiscovered")));
+        stub.toggleClass("hid", ownerHidden || (!look.undiscovered && stub.is(".undiscovered, .loose")));
       });
       devices.toggleClass("noaddr", !look.addresses);
       cables.toggleClass("noports", !look.ports);
@@ -1315,7 +1315,7 @@ export function Diagram({
               <dt>A end</dt>
               <dd>{nameOf(stub.dev)} {stub.port ?? ""}</dd>
               <dt>B end</dt>
-              <dd>{stub.farName !== null ? `${stub.farName} ${stub.farPort ?? ""}, outside this drawing` : stub.label}</dd>
+              <dd>{stub.kind === "exit" ? `${stub.farName} ${stub.farPort ?? ""}, outside this drawing` : stub.label}</dd>
               <dt>Source</dt>
               <dd>{stub.source ?? "not stated"}</dd>
             </dl>

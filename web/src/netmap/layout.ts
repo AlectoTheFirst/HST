@@ -60,14 +60,15 @@ const COMPOUND_OPTIONS: Record<string, LayoutOptions> = {
 const exitId = (index: number) => `exit:${index}`;
 
 /** A small box beside a device that a line ends at: a cable whose far end is
- *  outside the drawing (an exit), or the member ports of a LAG with no cable,
- *  one box per LAG. */
+ *  outside the drawing (an exit), or the member ports of a LAG with no cable.
+ *  The member ports with no neighbor share one box per LAG. A member port with
+ *  a neighbor has its own box. */
 interface Stub {
   id: string;
   dev: string;
   port: string | null;
   label: string;
-  /** the device at the far end of an exit; none for a loose LAG member */
+  /** the device at the far end of an exit, or the neighbor of a loose LAG member */
   farName: string | null;
   /** the label at the stub's end of the line */
   farPort: string | null;
@@ -90,20 +91,35 @@ export function stubs(model: TopologyModel): Stub[] {
     undiscovered: e.far_dev === "",
   }));
   for (const lag of model.lags) {
-    const ports = lag.ports_without_cable;
-    if (ports.length === 0) continue;
     const name = lag.name ?? "LAG";
-    out.push({
-      id: `loose:${lag.id}:${ports.join(",")}`,
-      dev: lag.dev,
-      port: ports.join(", "),
-      label: ports.length === 1 ? `${name} member, no cable` : `${name}, ${ports.length} members, no cable`,
-      farName: null,
-      farPort: null,
-      source: null,
-      kind: "loose",
-      undiscovered: false,
-    });
+    const withNeighbor = new Set(lag.neighbors_without_cable.map((n) => n.port));
+    const ports = lag.ports_without_cable.filter((p) => !withNeighbor.has(p));
+    if (ports.length > 0) {
+      out.push({
+        id: `loose:${lag.id}:${ports.join(",")}`,
+        dev: lag.dev,
+        port: ports.join(", "),
+        label: ports.length === 1 ? `${name} member, no cable` : `${name}, ${ports.length} members, no cable`,
+        farName: null,
+        farPort: null,
+        source: null,
+        kind: "loose",
+        undiscovered: false,
+      });
+    }
+    for (const n of lag.neighbors_without_cable) {
+      out.push({
+        id: `loose:${lag.id}:${n.port}`,
+        dev: lag.dev,
+        port: n.port,
+        label: `${name} member, no cable, ${n.far_name}${n.far_port ? ` ${n.far_port}` : ""}`,
+        farName: n.far_name,
+        farPort: n.far_port,
+        source: n.source,
+        kind: "loose",
+        undiscovered: false,
+      });
+    }
   }
   return out;
 }

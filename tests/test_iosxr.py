@@ -819,6 +819,12 @@ class TestParsed:
             }
         ]
 
+    def test_parse_cdp_neighbor_of_a_nexus_gives_the_name_and_the_serial(self):
+        device_id = "core2.example.com(FDO12345678)"
+        inter = iosxr.parse({**RAW, CMD_CDP: CDP_TEXT.replace("core1.example.com", device_id)})
+        [cdp] = [n for n in inter["neighbors"] if n["proto"] == "cdp"]
+        assert (cdp["name"], cdp["serial"]) == ("core2.example.com", "FDO12345678")
+
     def test_parse_rib_rows_include_non_default_vrf(self):
         inter = iosxr.parse(RAW)
         assert inter["rib"] == [
