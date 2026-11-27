@@ -424,14 +424,20 @@ def expand_aci_contracts(
     `vrf_enforcement`). An unenforced VRF shared by both EPGs permits the pair
     before any contract is consulted. When the enforcement mode cannot be
     determined for the pair, the flows that no contract permits are unknown.
-    A flow with only one ACI endpoint is unknown.
 
-    The gate runs where the request enters, in `context.vrf`, and the endpoints
-    are scoped to that VRF (`_AciIndex.scope`). A source endpoint is one of that
-    VRF. A destination endpoint is one of a VRF of the same fabric. A packet that
-    enters in a context outside every ACI fabric has no ACI source. An address
-    that two EPGs of one side hold is unknown, as an endpoint with several EPG
-    identities is in the trace and the symbolic gate.
+    An address that no endpoint and no subnet of a fabric holds has the
+    external EPG of the VRF whose longest subnet matches it
+    (`_AciIndex._scope`). A flow with 1 end at an endpoint and no EPG and no
+    external EPG at its other end is unknown.
+
+    The gates run where the request enters. The first gate is the gate of
+    `context.vrf`, with the endpoints scoped to that VRF (`_AciIndex.scope`). A
+    source endpoint is one of that VRF. A destination is an endpoint of a VRF
+    of the same fabric or an external EPG of the fabric. 1 gate for each other
+    fabric follows (`_AciIndex.external_scopes`). It judges the packets to an
+    endpoint of that fabric, and their source is an external EPG of that
+    fabric. An address that two EPGs of one side hold is unknown, as an
+    endpoint with several EPG identities is in the trace and the symbolic gate.
 
     The EPG index is built once per graph. With the `sources` and `destinations`
     of the request given, a request whose sources hold no source endpoint and
@@ -1165,8 +1171,8 @@ class _AciIndex:
         self.epg_vrf = {epg: _aci_epg_vrf(graph, epg) for epg in self.epg_intervals}
         # The external EPGs with 1 VRF and a subnet, and the addresses that
         # each classifies in its VRF. The longest subnet of the VRF wins. The
-        # addresses of the endpoints of a fabric are no part of them (`scope`,
-        # `external_scopes`).
+        # addresses of the endpoints and of the subnets of a fabric are no
+        # part of them (`_scope`).
         self.external_intervals: dict[str, tuple[tuple[int, int], ...]] = {}
         external_vrf: dict[str, Any] = {}
         subnets: dict[str, dict[str, list[tuple[int, int]]]] = {}
@@ -1234,6 +1240,21 @@ class _AciIndex:
             vrf: frozenset({vrf, *(other for other, names in fabrics.items() if names & fabrics[vrf])})
             for vrf in self.aci_vrfs
         }
+        # The subnets of each fabric VRF: the subnets of its bridge domains and
+        # its connected prefixes. No external EPG classifies their addresses.
+        fabric_subnets: dict[str, list[tuple[int, int]]] = {}
+        for bd in graph.labels.get("BridgeDomain", ()):
+            held = [item for prefix in graph.sources(bd, "IN") for item in _node_intervals(prefix, af)]
+            for vrf in graph.targets(bd, "IN_VRF"):
+                fabric_subnets.setdefault(vrf.uid, []).extend(held)
+        for vrf_uid in self.aci_vrfs:
+            fabric_subnets.setdefault(vrf_uid, []).extend(
+                item
+                for relation in graph.outgoing.get((vrf_uid, "ORIGINATES"), ())
+                if relation.props.get("proto") == "connected" and relation.end in graph.nodes
+                for item in _node_intervals(graph.nodes[relation.end], af)
+            )
+        self.fabric_subnets = {vrf: _merge_intervals(values) for vrf, values in fabric_subnets.items()}
         self._scopes: dict[str, _AciScope] = {}
         self._external_scopes: dict[str, tuple[_AciScope, ...]] = {}
         self._filters: dict[str, Predicate | None] = {}
@@ -1250,9 +1271,9 @@ class _AciIndex:
         the destination endpoints are those of the VRFs of the same fabric. An
         address that the entry VRF holds is the endpoint of that VRF. An EPG
         whose VRF does not resolve counts on both sides, and its pairs have no
-        known enforcement mode. Outside every fabric no source is an ACI
-        endpoint, and every ACI endpoint is a destination. A flow into the
-        fabric is unknown."""
+        known enforcement mode. The external EPGs of the fabric are
+        destinations (`_scope`). A VRF outside every fabric has an empty
+        scope, and `external_scopes` holds the fabrics of its packets."""
         cached = self._scopes.get(context_vrf)
         if cached is not None:
             return cached
@@ -1318,11 +1339,20 @@ class _AciIndex:
     ) -> _AciScope:
         """The scope of the endpoint `sources` and `destinations` of the VRFs
         `fabric`. The external EPGs of these VRFs classify the addresses that
-        no endpoint of the 2 sides holds. They are destinations in the scope of
-        the entry context and sources in an external scope."""
+        no endpoint of the 2 sides and no subnet of these VRFs holds. They are
+        destinations in the scope of the entry context and sources in an
+        external scope."""
         vrf_of = {epg: vrf for epg, (vrf, _pref) in self.epg_vrf.items()}
         endpoints = _merge_intervals(
-            value for group in (sources, destinations) for values in group.values() for value in values
+            (
+                *(
+                    value
+                    for group in (sources, destinations)
+                    for values in group.values()
+                    for value in values
+                ),
+                *(value for vrf in fabric for value in self.fabric_subnets.get(vrf, ())),
+            )
         )
         destination_endpoint_all = _merge_intervals(
             value for values in destinations.values() for value in values

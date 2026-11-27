@@ -1033,3 +1033,32 @@ def test_a_packet_to_an_endpoint_of_another_fabric_has_the_gate_of_that_fabric()
     graph = _graph(nodes, relations)
     assert _model_in(graph, "vrf-1", **flow)[0] == {"pass"}
     assert _model_in(graph, "vrf-1", **flow, port=80)[0] == {"deny"}
+
+
+@pytest.mark.parametrize("shape", ["bridge-domain-subnet", "connected-prefix-of-the-vrf"])
+def test_an_address_of_a_subnet_of_the_fabric_has_no_external_epg(shape):
+    """10.1.2.99 is in the subnet 10.1.2.0/24 of the fabric and is no endpoint.
+    The external EPG matches 10.0.0.0/8 and provides the contract."""
+    nodes, relations = _contracted_fabric()
+    nodes += [
+        ("out", {"L3Out"}, {}),
+        ("ext", {"ExtEpg"}, {}),
+        ("pfx-ext", {"Prefix"}, {"cidr": "10.0.0.0/8"}),
+        ("pfx-bd", {"Prefix"}, {"cidr": "10.1.2.0/24"}),
+    ]
+    relations += [
+        ("IN_VRF", "out", "vrf"),
+        ("HAS", "out", "ext"),
+        ("MATCHES", "ext", "pfx-ext"),
+        ("PROVIDES", "ext", "ct"),
+        ("CONSUMES", "ext", "ct"),
+        ("IN", "pfx-bd", "bd")
+        if shape == "bridge-domain-subnet"
+        else ("ORIGINATES", "vrf", "pfx-bd", {"proto": "connected"}),
+    ]
+    graph = _graph(nodes, relations)
+    assert _model_in(graph, "vrf", source="10.1.1.10", destination="10.1.2.99")[0] == {"unknown"}
+    assert _model_in(graph, "outside", source="10.1.2.99", destination="10.1.2.10")[0] == {"unknown"}
+    # an address outside the subnets of the fabric has the external EPG
+    assert _model_in(graph, "vrf", source="10.1.1.10", destination="10.7.0.1")[0] == {"pass"}
+    assert _model_in(graph, "outside", source="10.7.0.1", destination="10.1.2.10")[0] == {"pass"}
