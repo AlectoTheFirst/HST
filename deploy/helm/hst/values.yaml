@@ -163,7 +163,8 @@ ingress:
 # holds it at /usr/share/hst/demo-enterprise. With a value an admin can load the estate
 # from the Runs page as a `demo` run. The load writes 3 runs for the 3 estate versions,
 # the sites and the business applications. With "" the instance offers no demo load. The
-# app and the worker receive the value as HST_DEMO_FIXTURES.
+# app and the worker receive the value as HST_DEMO_FIXTURES. A value requires an analysis
+# profile with the engine symbolic-v2 (analysis.profile: enterprise).
 demo:
   fixtures: ""
 

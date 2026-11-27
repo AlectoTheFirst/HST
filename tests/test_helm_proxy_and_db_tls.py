@@ -267,3 +267,29 @@ def test_a_server_secret_without_the_client_side_fails_the_render(args, message)
     out = _render(*args)
     assert out.returncode != 0
     assert message in out.stderr
+
+
+DEMO_FIXTURES = ["--set", "demo.fixtures=/usr/share/hst/demo-enterprise"]
+
+
+def test_a_demo_instance_with_the_engine_legacy_v1_fails_the_render():
+    result = _render(*DEMO_FIXTURES)
+    assert result.returncode != 0
+    assert "demo.fixtures requires an analysis profile with the engine symbolic-v2" in result.stderr
+
+
+def test_a_demo_instance_with_the_enterprise_profile_renders_the_engine_symbolic_v2():
+    result = _render(*DEMO_FIXTURES, "--set", "analysis.profile=enterprise")
+    assert result.returncode == 0, result.stderr
+    app = next(
+        doc
+        for doc in yaml.safe_load_all(result.stdout)
+        if doc and doc["kind"] == "Deployment" and doc["metadata"]["name"] == "r-hst"
+    )
+    env = {
+        item["name"]: item.get("value") for item in app["spec"]["template"]["spec"]["containers"][0]["env"]
+    }
+    assert (env["ANALYSIS_ENGINE"], env["HST_DEMO_FIXTURES"]) == (
+        "symbolic-v2",
+        "/usr/share/hst/demo-enterprise",
+    )

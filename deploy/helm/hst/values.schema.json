@@ -150,7 +150,7 @@
       "properties": {
         "fixtures": {
           "type": "string",
-          "description": "The demo estate folder in the image; empty offers no demo load"
+          "description": "The demo estate folder in the image; empty offers no demo load; a value requires an analysis profile with the engine symbolic-v2"
         }
       }
     },

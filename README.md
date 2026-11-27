@@ -135,13 +135,15 @@ these settings through `app.extraEnv`.
 ### Demo estate
 
 The image holds a synthetic estate in `/usr/share/hst/demo-enterprise`. It needs
-no network hardware. This `compose.override.yaml` turns the demo load on:
+no network hardware. This `compose.override.yaml` turns the demo load on and
+selects the engine `symbolic-v2` of a demo instance:
 
 ```
 services:
   app:
     environment:
       HST_DEMO_FIXTURES: /usr/share/hst/demo-enterprise
+      ANALYSIS_ENGINE: symbolic-v2
 ```
 
 On the Runs page, an admin then has the card "Demo estate" with the button "Load

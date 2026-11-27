@@ -16,6 +16,9 @@ template, so every render runs it.
 {{- if and (ne (default "bounded-window" $analysis.evidenceConsistency) "stable-window-assumption") $analysis.evidenceStableWindowAssumption -}}
 {{- fail "analysis.profiles.<profile>.evidenceStableWindowAssumption requires evidenceConsistency=stable-window-assumption." -}}
 {{- end -}}
+{{- if and .Values.demo.fixtures (ne $analysis.engine "symbolic-v2") -}}
+{{- fail "demo.fixtures requires an analysis profile with the engine symbolic-v2. Set analysis.profile=enterprise." -}}
+{{- end -}}
 {{- if and .Values.backup.enabled (not .Values.postgres.enabled) -}}
 {{- fail "backup.enabled=true requires postgres.enabled=true: the recovery-set job must produce and verify its own identity-store dump." -}}
 {{- end -}}

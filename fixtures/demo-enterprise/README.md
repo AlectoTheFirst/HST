@@ -101,8 +101,10 @@ against the current snapshot.
 
 ## A demo instance
 
-Set the chart value `demo.fixtures=/usr/share/hst/demo-enterprise` (the app and
-the worker read it as `HST_DEMO_FIXTURES`). The Runs page then shows a Demo
+Set the chart values `demo.fixtures=/usr/share/hst/demo-enterprise` (the app and
+the worker read it as `HST_DEMO_FIXTURES`) and `analysis.profile=enterprise`. A
+demo instance runs the engine `symbolic-v2`, and the chart does not render
+`demo.fixtures` with another engine. The Runs page then shows a Demo
 estate card to an admin, and Load demo estate starts a `demo` run: it creates the
 sites of `sites.yaml` that do not exist, loads the three versions as three runs
 with their map tables, under the cycle lock as a collection run, and imports the

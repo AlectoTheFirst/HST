@@ -228,7 +228,7 @@ podman inspect <cluster>-control-plane --format '{{json .HostConfig.PortBindings
 | `neo4j.externalUri` | `""` | Required when `neo4j.enabled=false` |
 | `image.digest` | `""` | `sha256:<digest>`. Wins over `image.tag`. See "Pinning by digest" |
 | `imagePullSecrets` | `[]` | Required for a private registry. See "Private registries" |
-| `demo.fixtures` | `""` | A demo instance only: `/usr/share/hst/demo-enterprise`, the folder the image holds the synthetic demo estate in. Set, an admin can load the estate from the Runs page as a `demo` run (fixtures/demo-enterprise/README.md). Leave it empty on any other instance |
+| `demo.fixtures` | `""` | A demo instance only: `/usr/share/hst/demo-enterprise`, the folder the image holds the synthetic demo estate in. Set, an admin can load the estate from the Runs page as a `demo` run (fixtures/demo-enterprise/README.md). A value requires `analysis.profile=enterprise`; the render fails otherwise. Leave it empty on any other instance |
 | `analysis.profiles.<name>.clockQuality` / `clockAssumption` | `unknown` / `""` | The collector host's clock declaration (`COLLECTOR_CLOCK_QUALITY`, `COLLECTOR_CLOCK_ASSUMPTION`), set in both pods. `trusted` requires the assumption that states the basis for the trust; the render fails otherwise |
 | `analysis.profiles.<name>.evidenceMaxAgeSeconds` / `evidenceMaxSkewSeconds` / `evidenceConsistency` / `evidenceStableWindowAssumption` | `3600` / `300` / `bounded-window` / `""` | The symbolic analysis's evidence policy (`ANALYSIS_EVIDENCE_*`). `stable-window-assumption` requires its assumption |
 | `app.extraEnv` / `app.envFrom` | `[]` | Anything `core/config.py` reads that the chart does not model |
