@@ -108,6 +108,61 @@ def interface_scope_matches(scope: str, observed: str) -> bool:
     return False if observed == LOCAL_INTERFACE else _iface_name_matches(scope, observed)
 
 
+def _binding_matches(
+    graph: GraphInventory, base: GraphNode, ingress: str | None, egress: str | None
+) -> list[bool | None]:
+    """One entry for each binding of an interface ACL.
+
+    An inbound binding is compared with `ingress` and an outbound binding with `egress`. An entry
+    is True when the binding is on that interface, and None when the hop has no name for that
+    side. An `unreported_bindings` entry is "<name> <direction>" for an interface the device did
+    not report."""
+    pairs: list[tuple[str | None, str]] = []
+    for relation in graph.incoming.get((base.uid, "PROTECTED_BY"), ()):
+        interface = graph.nodes.get(relation.start)
+        direction = relation.props.get("direction")
+        if interface is not None and "Interface" in interface.labels and direction in ("in", "out"):
+            pairs.append((interface.props.get("name"), str(direction)))
+    unreported = base.props.get("unreported_bindings")
+    for entry in unreported if isinstance(unreported, (list, tuple)) else ():
+        spelled, _sep, side = str(entry).rpartition(" ")
+        if spelled and side in ("in", "out"):
+            pairs.append((spelled, side))
+    return [
+        None
+        if (observed := ingress if direction == "in" else egress) is None
+        else name == observed and observed != LOCAL_INTERFACE
+        for name, direction in pairs
+    ]
+
+
+def acl_governs(
+    graph: GraphInventory, base: GraphNode, ingress: str | None, egress: str | None
+) -> bool | None:
+    """Whether an interface ACL judges a hop that enters by `ingress` and leaves by `egress`.
+
+    `ingress` and `egress` are interface names. The result is True when a binding is on the
+    interface of its side (`_binding_matches`). It is False when each binding is on another
+    interface, and for a list with no binding. It is None when no binding is on the interface of
+    its side and the hop has no name for the side of a binding.
+
+    A list with no binding takes its bindings from the `in_interface` and `out_interface` of its
+    rules (`hst.path.gates.firewall._legacy_acl_bindings`)."""
+    matches = _binding_matches(graph, base, ingress, egress)
+    if not matches:
+        matches = [
+            None
+            if (observed := ingress if direction == "in" else egress) is None
+            else interface_scope_matches(str(rule.props[field]), observed)
+            for rule in graph.targets(base.uid, "HAS_RULE")
+            for field, direction in (("in_interface", "in"), ("out_interface", "out"))
+            if rule.props.get(field)
+        ]
+    if True in matches:
+        return True
+    return None if None in matches else False
+
+
 def _plain(value: Any) -> Any:
     if isinstance(value, Mapping):
         return {key: _plain(item) for key, item in value.items()}
@@ -254,29 +309,14 @@ class GraphPolicyNormalizer:
     def _binding_scope(
         self, base: GraphNode, rules: tuple[GraphNode, ...], *, ingress: str | None, egress: str | None
     ) -> Predicate | None:
-        """An `unreported_bindings` entry is "<name> <direction>" for an interface the device did not
-        report."""
-        pairs: list[tuple[str | None, str]] = []
-        for relation in self.graph.incoming.get((base.uid, "PROTECTED_BY"), ()):
-            interface = self.graph.nodes.get(relation.start)
-            direction = relation.props.get("direction")
-            if interface is not None and "Interface" in interface.labels and direction in ("in", "out"):
-                pairs.append((interface.props.get("name"), str(direction)))
-        unreported = base.props.get("unreported_bindings")
-        for entry in unreported if isinstance(unreported, (list, tuple)) else ():
-            spelled, _sep, side = str(entry).rpartition(" ")
-            if spelled and side in ("in", "out"):
-                pairs.append((spelled, side))
-        if not pairs and any(r.props.get("in_interface") or r.props.get("out_interface") for r in rules):
+        """One term for each binding of the list (`_binding_matches`)."""
+        matches = _binding_matches(self.graph, base, ingress, egress)
+        if not matches and any(r.props.get("in_interface") or r.props.get("out_interface") for r in rules):
             return None
-        terms: list[Predicate] = []
-        for name, direction in pairs:
-            observed = ingress if direction == "in" else egress
-            terms.append(
-                Constant(name == observed and observed != LOCAL_INTERFACE)
-                if observed is not None
-                else Unknown("GRAPH_RULE_INTERFACE_UNKNOWN", base.uid)
-            )
+        terms: list[Predicate] = [
+            Unknown("GRAPH_RULE_INTERFACE_UNKNOWN", base.uid) if match is None else Constant(match)
+            for match in matches
+        ]
         return AnyOf(tuple(terms)) if terms else Constant(False)
 
     def _rule(

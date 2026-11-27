@@ -15,7 +15,7 @@ from hst.impact.evaluate import Interface, Member, Network, RequestSet, _Overlay
 from hst.path.gates.routing import _rib_route
 from hst.path.trace import _exit_key
 from hst.path.verdict import DENY, INDETERMINATE, classify_action
-from hst.policy.graph import INTRA_ZONE, ZONE_INGRESS_UNKNOWN, GraphPolicyNormalizer
+from hst.policy.graph import INTRA_ZONE, ZONE_INGRESS_UNKNOWN, GraphPolicyNormalizer, acl_governs
 from hst.policy.ir import (
     AllOf,
     AnyOf,
@@ -219,7 +219,9 @@ def _bindings(
     device. Such a zone-pair rulebase has no ENFORCES relation (a VyOS named
     ruleset, a UniFi zone policy). A rulebase of the other address family is
     no candidate. An input or output chain is no candidate. These chains
-    judge traffic to and from the device itself. Beside a zone pair that
+    judge traffic to and from the device itself. An interface ACL with each
+    binding on another interface than those of the flow is no candidate
+    (`_acl_governs`). Beside a zone pair that
     receives the flow, a device-wide rulebase is bound only when the graph
     records its chain. A zone pair has no installation relation. Its policy
     establishes a permit proof only when the rulebase records its own
@@ -238,6 +240,7 @@ def _bindings(
     candidates: list[tuple[str, list[Mapping[str, Any]]]] = []
     zone_received = False
     zone_pair_bound = False
+    ingress_name, egress_name = _interface_name(graph, ingress), _interface_name(graph, egress)
     for rulebase_uid in graph.labels.get("FwRulebase", ()):
         base = graph.nodes[rulebase_uid]
         if base.props.get("kind") == "nat" or _rulebase_af(base) not in (None, af):
@@ -276,6 +279,8 @@ def _bindings(
             else:
                 zone_received = True
             zone_pair_bound = True
+        if _acl_governs(graph, rulebase_uid, ingress_name, egress_name) is False:
+            continue
         candidates.append((rulebase_uid, applicable))
     source_zone, destination_zone = _zone_of(graph, ingress), _zone_of(graph, egress)
     if (
@@ -355,6 +360,24 @@ def _bindings(
     if scope_gaps:
         installation = AllOf((installation, *scope_gaps))
     return tuple(sorted(bound)), installation
+
+
+def _acl_governs(
+    graph: GraphInventory, rulebase_uid: str, ingress_name: str | None, egress_name: str | None
+) -> bool | None:
+    """Return `acl_governs` for the interface ACL `rulebase_uid` and the
+    interface names of a flow.
+
+    The result is True for a rulebase that is no interface ACL and for a
+    Check Point rulebase."""
+    base = graph.nodes.get(rulebase_uid)
+    if (
+        base is None
+        or base.props.get("match_context") != "interface-acl"
+        or base.props.get("vendor") == "checkpoint"
+    ):
+        return True
+    return acl_governs(graph, base, ingress_name, egress_name)
 
 
 def _unreported_elsewhere(
@@ -596,13 +619,27 @@ def _access_policy(graph, context, device_uid, ingress, egress, af, state):
             else:
                 # The walk identifies interfaces by uid. Rule scopes and ACL
                 # bindings use the interface name.
+                ingress_name, egress_name = _interface_name(graph, ingress), _interface_name(graph, egress)
                 policy = GraphPolicyNormalizer(graph, context).policy(
                     rulebases,
                     installation=installation,
-                    ingress=_interface_name(graph, ingress),
-                    egress=_interface_name(graph, egress),
+                    ingress=ingress_name,
+                    egress=egress_name,
                     state=state,
                 )
+                # The default action of an interface ACL is unknown when the
+                # flow has no interface name on the side of its binding.
+                undecided = {
+                    uid for uid in rulebases if _acl_governs(graph, uid, ingress_name, egress_name) is None
+                }
+                if undecided:
+                    policy = replace(
+                        policy,
+                        layers=tuple(
+                            replace(layer, default="unknown") if layer.uid in undecided else layer
+                            for layer in policy.layers
+                        ),
+                    )
     else:
         firewall_node = graph.nodes.get(context.firewall_instance)
         device_node = graph.nodes.get(device_uid)

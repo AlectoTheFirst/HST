@@ -283,15 +283,19 @@ def test_the_explanation_scope_of_a_local_ruleset_ends_at_the_gateway():
 
 
 def test_a_wan_ruleset_unreported_binding_leaves_a_lan_to_lan_flow_installed():
-    """WAN_IN's binding is unreported ("wan in"), so its ENFORCES row
-    is partial. A flow between two reported LAN interfaces cannot enter by
-    the unreported WAN, so the model proves installation for it; a side the
-    walk does not know keeps it unproven."""
+    """The binding of WAN_IN is unreported ("wan in"), and its ENFORCES row is
+    partial. A flow that enters by a reported LAN interface does not enter by
+    the WAN. WAN_IN is not bound to it, and its installation is proven. A
+    flow with no known ingress keeps WAN_IN bound, and its installation is
+    not proven."""
     from hst.policy.ir import Constant
 
     graph = _inventory(_batch())
     context = ExecutionContext("estate", "unifi", "home", "dev:gateway", "vrf:dev:gateway:default", 4)
+    lan_in, wan_in = "unifi:default:fw:lan_in", "unifi:default:fw:wan_in"
     bound, installation = _bindings(graph, context, BR1, BR30, 4)
-    assert {"unifi:default:fw:lan_in", "unifi:default:fw:wan_in"} <= set(bound)
+    assert lan_in in bound and wan_in not in bound
     assert installation == Constant(True)
-    assert _bindings(graph, context, None, BR30, 4)[1] != Constant(True)
+    bound, installation = _bindings(graph, context, None, BR30, 4)
+    assert {lan_in, wan_in} <= set(bound)
+    assert installation != Constant(True)

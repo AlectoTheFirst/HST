@@ -1,10 +1,15 @@
 """A Cisco interface ACL in the graph policy normalization: its rules carry no interface,
-and its PROTECTED_BY edges scope every rule."""
+and its PROTECTED_BY edges scope every rule. A device binds only the lists that are bound on
+an interface of the flow."""
 
 from types import MappingProxyType
 
+from tests.support.batch_inventory import inventory
+from tests.test_cisco_common import _PERMIT_ANY_ACE, _acl_batch
+
 from hst.analysis_model.graph import GraphInventory, GraphNode, GraphRelation
-from hst.policy.graph import GraphPolicyNormalizer
+from hst.analysis_model.network import _access_policy, _bindings, _context
+from hst.policy.graph import GraphPolicyNormalizer, acl_governs
 from hst.policy.ir import AllOf, AnyOf, Constant, ExecutionContext, Unknown
 
 CONTEXT = ExecutionContext("estate", "authority", "domain", "fw", "vrf", 4)
@@ -137,3 +142,104 @@ def test_a_rulebase_without_a_binding_edge_keeps_the_interface_scope_its_rules_c
     assert Constant(True) in on and Constant(False) not in on
     assert Constant(False) in off
     assert Unknown("GRAPH_RULE_INTERFACE_UNKNOWN", "rule") in _terms(graph, None)
+
+
+def _governs(graph: GraphInventory, ingress: str | None, egress: str | None) -> bool | None:
+    return acl_governs(graph, graph.nodes["rb"], ingress, egress)
+
+
+def test_a_list_governs_a_hop_that_uses_a_bound_interface_on_the_side_of_the_binding():
+    graph = _graph([("Gi1", "in"), ("Gi2", "out")])
+    assert _governs(graph, "Gi1", "Gi9") is True
+    assert _governs(graph, "Gi9", "Gi2") is True
+    assert _governs(graph, "Gi1", None) is True
+
+
+def test_a_list_does_not_govern_a_hop_that_uses_other_interfaces():
+    graph = _graph([("Gi1", "in"), ("Gi2", "out")])
+    assert _governs(graph, "Gi2", "Gi1") is False
+    assert _governs(_graph([]), "Gi1", "Gi2") is False
+    unreported = _graph([], rulebase_props={"unreported_bindings": ["GigabitEthernet9/9/9 in"]})
+    assert _governs(unreported, "Gi1", "Gi2") is False
+
+
+def test_a_hop_with_no_interface_on_the_side_of_a_binding_leaves_the_list_undecided():
+    graph = _graph([("Gi1", "in"), ("Gi2", "out")])
+    assert _governs(graph, None, "Gi9") is None
+    assert _governs(graph, "Gi9", None) is None
+
+
+def test_a_list_with_no_binding_edge_governs_by_the_interface_of_its_rules():
+    graph = _graph([], rule_props={"in_interface": "Gi1"})
+    assert _governs(graph, "Gi1", None) is True
+    assert _governs(graph, "Gi2", None) is False
+    assert _governs(graph, None, "Gi2") is None
+
+
+DEVICE, VRF = "dev:sw1", "vrf:dev:sw1:default"
+ETH, VLAN = "dev:sw1/if/eth1-1", "dev:sw1/if/vlan10"
+_DENY_ANY_ACE = {**_PERMIT_ANY_ACE, "action": "deny"}
+
+
+def _device(lists: dict[str, list[dict]], bindings: list[tuple[str, str, str]], role: str = "switch"):
+    batch = _acl_batch(
+        {
+            "lists": lists,
+            "bindings": [
+                {"interface": interface, "direction": direction, "acl": name}
+                for name, interface, direction in bindings
+            ],
+        }
+    )
+    next(node for node in batch.nodes if node.label == "Device").props["role"] = role
+    graph = inventory(batch)
+    return graph, _context({}, graph, VRF, "estate", 4, DEVICE)
+
+
+def _uid(graph: GraphInventory, name: str) -> str:
+    return next(uid for uid in graph.labels["FwRulebase"] if graph.nodes[uid].props["name"] == name)
+
+
+def test_a_list_bound_inbound_on_another_interface_gives_the_flow_no_policy():
+    graph, context = _device({"EDGE": [_DENY_ANY_ACE]}, [("EDGE", "Vlan10", "in")])
+    assert _bindings(graph, context, ETH, None, 4)[0] == ()
+    assert _access_policy(graph, context, DEVICE, ETH, None, 4, "new") is None
+    assert _access_policy(graph, context, DEVICE, ETH, VLAN, 4, "new") is None
+
+
+def test_a_firewall_with_a_list_on_another_interface_has_the_policy_of_a_firewall_with_no_list():
+    graph, context = _device({"EDGE": [_DENY_ANY_ACE]}, [("EDGE", "Vlan10", "in")], role="firewall")
+    bare, bare_context = _device({}, [], role="firewall")
+    policy = _access_policy(graph, context, DEVICE, ETH, None, 4, "new")
+    expected = _access_policy(bare, bare_context, DEVICE, ETH, None, 4, "new")
+    assert (policy.layers, policy.installation) == (expected.layers, expected.installation)
+    assert policy.installation == Unknown("INSTALLATION_UNKNOWN", DEVICE)
+
+
+def test_the_policy_of_a_flow_holds_only_the_list_of_its_ingress():
+    graph, context = _device(
+        {"EDGE": [_PERMIT_ANY_ACE], "SERVERS": [_DENY_ANY_ACE]},
+        [("EDGE", "Ethernet1/1", "in"), ("SERVERS", "Vlan10", "in")],
+    )
+    policy = _access_policy(graph, context, DEVICE, ETH, None, 4, "new")
+    assert policy.ordered_layers == (_uid(graph, "EDGE"),)
+    assert policy.installation == Constant(True)
+    policy = _access_policy(graph, context, DEVICE, VLAN, None, 4, "new")
+    assert policy.ordered_layers == (_uid(graph, "SERVERS"),)
+
+
+def test_an_outbound_list_is_bound_for_the_flow_that_leaves_by_its_interface():
+    graph, context = _device({"EDGE": [_PERMIT_ANY_ACE]}, [("EDGE", "Vlan10", "out")])
+    edge = _uid(graph, "EDGE")
+    assert _bindings(graph, context, ETH, VLAN, 4) == ((edge,), Constant(True))
+    assert _bindings(graph, context, VLAN, ETH, 4)[0] == ()
+
+
+def test_the_default_action_of_an_outbound_list_is_unknown_for_a_flow_with_no_egress():
+    graph, context = _device({"EDGE": [_PERMIT_ANY_ACE]}, [("EDGE", "Vlan10", "out")])
+    edge = _uid(graph, "EDGE")
+    assert _bindings(graph, context, ETH, None, 4) == ((edge,), Constant(True))
+    (layer,) = _access_policy(graph, context, DEVICE, ETH, None, 4, "new").layers
+    assert layer.default == "unknown"
+    (layer,) = _access_policy(graph, context, DEVICE, ETH, VLAN, 4, "new").layers
+    assert layer.default == "deny"

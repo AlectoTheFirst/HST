@@ -470,8 +470,11 @@ def test_fetch_records_the_api_version_published_session_and_implied_rule_covera
 
 
 def _cisco_acl(bindings: list[dict[str, str]]):
+    from hst.core import uid as uids
+
     b = GraphBuilder()
     b.node("Device", "dev:r1", hostname="r1", role="router")
+    b.node("Interface", uids.interface("dev:r1", "Gi1"), name="Gi1")
     inter = {"interfaces": [{"name": "Gi1"}], "acl": {"lists": {"EDGE": []}, "bindings": bindings}}
     acl_stage(b, inter, dev="dev:r1", scope="cisco:r1")
     return b.batch("cisco", "cisco:r1")
