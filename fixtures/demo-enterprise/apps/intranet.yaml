@@ -30,6 +30,17 @@ groups:
     members:
       - id: intranet-vip
         address: 10.2.30.12
+  - id: web
+    name: Web tier
+    members:
+      - id: intranet-web-01
+        address: 10.2.14.11
+      - id: intranet-web-02
+        address: 10.2.14.12
+      - id: intranet-web-03
+        address: 10.2.14.13
+      - id: intranet-web-04
+        address: 10.2.14.14
   - id: db
     name: MariaDB
     members:
@@ -56,7 +67,7 @@ connections:
       member: intranet-vip
   - id: web-to-db
     name: Web to MariaDB
-    source: frontend
+    source: web
     destination: db
     protocol: tcp
     destination_ports:
@@ -67,7 +78,7 @@ connections:
       member: intranet-db-01
   - id: web-to-search
     name: Web to Azure search
-    source: frontend
+    source: web
     destination: search
     protocol: tcp
     destination_ports:

@@ -3343,6 +3343,7 @@ def write_apps(est: Estate) -> dict[str, dict]:
         [
             group("office-clients", "Finance clients", clients[:2]),
             group("frontend", "Payments VIP", [("payments-vip", addr(est.vip_ip[("payments", "web", 443)]))]),
+            group("web", "Web tier", tier_members("payments", "web")),
             group("api", "Payments API", tier_members("payments", "api")),
             group("db", "Oracle database", tier_members("payments", "db")),
         ],
@@ -3350,7 +3351,7 @@ def write_apps(est: Estate) -> dict[str, dict]:
             conn(
                 "clients-to-vip", "Finance clients to VIP", "office-clients", "frontend", 443, "payments-vip"
             ),
-            conn("vip-to-api", "Web tier to API", "frontend", "api", 9443, "payments-api-01", "round-trip"),
+            conn("web-to-api", "Web tier to API", "web", "api", 9443, "payments-api-01", "round-trip"),
             conn("api-to-db", "API to Oracle", "api", "db", 1521, "payments-db-01"),
         ],
     )
@@ -3361,6 +3362,7 @@ def write_apps(est: Estate) -> dict[str, dict]:
         [
             group("agents", "Claims agents", clients),
             group("frontend", "Claims VIP", [("claims-vip", addr(est.vip_ip[("claims", "web", 443)]))]),
+            group("web", "Web tier", tier_members("claims", "web")),
             group("app", "Application tier", tier_members("claims", "app")),
             group("db", "Database in dc2", tier_members("claims", "db")),
         ],
@@ -3369,7 +3371,7 @@ def write_apps(est: Estate) -> dict[str, dict]:
             conn(
                 "web-to-app",
                 "Web to application tier",
-                "frontend",
+                "web",
                 "app",
                 8009,
                 "claims-app-01",
@@ -3385,16 +3387,17 @@ def write_apps(est: Estate) -> dict[str, dict]:
         [
             group("employees", "Employees", clients),
             group("frontend", "Intranet VIP", [("intranet-vip", addr(est.vip_ip[("intranet", "web", 443)]))]),
+            group("web", "Web tier", tier_members("intranet", "web")),
             group("db", "MariaDB", tier_members("intranet", "db")),
             group("search", "Azure search", [("intranet-search", addr(est.az_ips["az-intranet-search-01"]))]),
         ],
         [
             conn("employees-to-vip", "Employees to VIP", "employees", "frontend", 443, "intranet-vip"),
-            conn("web-to-db", "Web to MariaDB", "frontend", "db", 3306, "intranet-db-01"),
+            conn("web-to-db", "Web to MariaDB", "web", "db", 3306, "intranet-db-01"),
             conn(
                 "web-to-search",
                 "Web to Azure search",
-                "frontend",
+                "web",
                 "search",
                 443,
                 "intranet-search",

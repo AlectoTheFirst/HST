@@ -30,6 +30,17 @@ groups:
     members:
       - id: claims-vip
         address: 10.1.30.12
+  - id: web
+    name: Web tier
+    members:
+      - id: claims-web-01
+        address: 10.1.13.11
+      - id: claims-web-02
+        address: 10.1.13.12
+      - id: claims-web-03
+        address: 10.1.13.13
+      - id: claims-web-04
+        address: 10.1.13.14
   - id: app
     name: Application tier
     members:
@@ -64,7 +75,7 @@ connections:
       member: claims-vip
   - id: web-to-app
     name: Web to application tier
-    source: frontend
+    source: web
     destination: app
     protocol: tcp
     destination_ports:

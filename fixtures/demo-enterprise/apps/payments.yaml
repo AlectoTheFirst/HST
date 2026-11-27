@@ -10,7 +10,7 @@ services:
     name: Payments service
     connection_ids:
       - clients-to-vip
-      - vip-to-api
+      - web-to-api
       - api-to-db
     component_roles:
       - group_id: frontend
@@ -28,6 +28,17 @@ groups:
     members:
       - id: payments-vip
         address: 10.2.30.10
+  - id: web
+    name: Web tier
+    members:
+      - id: payments-web-01
+        address: 10.2.10.11
+      - id: payments-web-02
+        address: 10.2.10.12
+      - id: payments-web-03
+        address: 10.2.10.13
+      - id: payments-web-04
+        address: 10.2.10.14
   - id: api
     name: Payments API
     members:
@@ -62,9 +73,9 @@ connections:
     destination_condition:
       kind: member
       member: payments-vip
-  - id: vip-to-api
+  - id: web-to-api
     name: Web tier to API
-    source: frontend
+    source: web
     destination: api
     protocol: tcp
     destination_ports:
