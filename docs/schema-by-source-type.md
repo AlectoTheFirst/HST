@@ -221,6 +221,9 @@
 | Relationship | Properties |
 |---|---|
 | `(ExtEpg)-[:PART_OF]->(L3Out)` |  |
+| `(ExtEpg)-[:MATCHES]->(Prefix)` |  |
+| `(ExtEpg)-[:PROVIDES]->(Contract)` |  |
+| `(ExtEpg)-[:CONSUMES]->(Contract)` |  |
 
 ### L3Out of `apic`
 
@@ -231,6 +234,7 @@
 | Relationship | Properties |
 |---|---|
 | `(L3Out)-[:PART_OF]->(Tenant)` |  |
+| `(L3Out)-[:IN_VRF]->(VrfInstance)` |  |
 
 ### Contract of `apic`
 

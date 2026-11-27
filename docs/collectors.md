@@ -53,7 +53,7 @@ Each section gives the fields that the `ConfigModel` adds to the base models of 
 
 | Item | Values |
 |---|---|
-| Classes of `CLASSES` | `fabricNode`, `topSystem`, `l1PhysIf`, `lldpAdjEp`, `pcAggrIf`, `cdpAdjEp`, `fvTenant`, `fvAp`, `fvAEPg`, `fvBD`, `fvSubnet`, `fvCtx`, `fvRsCtx`, `fvRsBd`, `vzBrCP`, `vzSubj`, `vzRsSubjFiltAtt`, `vzRsFiltAtt`, `vzRsSubjGraphAtt`, `vzFilter`, `vzEntry`, `fvRsProv`, `fvRsCons`, `l3extOut`, `l3extInstP`, `vnsAbsGraph`, `vnsGraphInst`, `vnsSvcRedirectPol`, `vnsRedirectDest`, `fvCEp`, `fvIp`, `fvRsPathAtt`, `fvRsDomAtt`, `ospfDom`, `ospfArea`, `ospfIf`, `ospfAdjEp` |
+| Classes of `CLASSES` | `fabricNode`, `topSystem`, `l1PhysIf`, `lldpAdjEp`, `pcAggrIf`, `cdpAdjEp`, `fvTenant`, `fvAp`, `fvAEPg`, `fvBD`, `fvSubnet`, `fvCtx`, `fvRsCtx`, `fvRsBd`, `vzBrCP`, `vzSubj`, `vzRsSubjFiltAtt`, `vzRsFiltAtt`, `vzRsSubjGraphAtt`, `vzFilter`, `vzEntry`, `fvRsProv`, `fvRsCons`, `l3extOut`, `l3extInstP`, `l3extRsEctx`, `l3extSubnet`, `vnsAbsGraph`, `vnsGraphInst`, `vnsSvcRedirectPol`, `vnsRedirectDest`, `fvCEp`, `fvIp`, `fvRsPathAtt`, `fvRsDomAtt`, `ospfDom`, `ospfArea`, `ospfIf`, `ospfAdjEp` |
 | Classes of `CONTRACT_BYPASS_CLASSES` | `vzAny`, `vzRsAnyToProv`, `vzRsAnyToCons`, `vzRsAnyToConsIf`, `fvESg`, `fvRsScope` |
 | Classes of `BGP_CLASSES`, unless `capture_bgp` is `none` | `bgpPeerEntry`, `bgpPeerAfEntry` |
 | Classes of `MTU_CLASSES`, with `capture_mtu` | `l2InstPol`, `l3extRsPathL3OutAtt`, `l3extVirtualLIfP`, `pcRsMbrIfs` |
@@ -79,7 +79,7 @@ Limits:
 - A `bgp_sessions` row has no uptime, no prefix count and no capability list. `_BGP_AF_SAFI` holds the address families `ipv4-ucast` and `ipv6-ucast`.
 - The collector does not read the intra-EPG isolation of an EPG. `src/hst/path/gates/aci.py` `aci_contract_verdict` gives an intra-EPG flow the reason `intra-EPG flow; intra-EPG isolation is not collected`.
 - The collector reads `vzAny` with its preferred group and the ESG scope only as flags in `contract_bypass`.
-- From an L3Out, the collector reads `l3extOut` and `l3extInstP`. With `capture_mtu`, it also reads `l3extRsPathL3OutAtt` and `l3extVirtualLIfP`.
+- From an L3Out, the collector reads `l3extOut`, `l3extInstP`, `l3extRsEctx` and `l3extSubnet`. An external EPG matches each subnet that has the scope `import-security`. With `capture_mtu`, it also reads `l3extRsPathL3OutAtt` and `l3extVirtualLIfP`.
 - The section `mtu:operational` and the section `mtu:member_state` always get `unsupported`.
 
 ### `checkpoint`

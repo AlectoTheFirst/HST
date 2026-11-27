@@ -92,7 +92,7 @@ The class lists are `src/hst/collectors/apic.py` `CLASSES`, `src/hst/collectors/
 
 | Constant | Classes |
 |---|---|
-| `CLASSES` | `fabricNode`, `topSystem`, `l1PhysIf`, `lldpAdjEp`, `pcAggrIf`, `cdpAdjEp`, `fvTenant`, `fvAp`, `fvAEPg`, `fvBD`, `fvSubnet`, `fvCtx`, `fvRsCtx`, `fvRsBd`, `vzBrCP`, `vzSubj`, `vzRsSubjFiltAtt`, `vzRsFiltAtt`, `vzRsSubjGraphAtt`, `vzFilter`, `vzEntry`, `fvRsProv`, `fvRsCons`, `l3extOut`, `l3extInstP`, `vnsAbsGraph`, `vnsGraphInst`, `vnsSvcRedirectPol`, `vnsRedirectDest`, `fvCEp`, `fvIp`, `fvRsPathAtt`, `fvRsDomAtt`, `ospfDom`, `ospfArea`, `ospfIf`, `ospfAdjEp` |
+| `CLASSES` | `fabricNode`, `topSystem`, `l1PhysIf`, `lldpAdjEp`, `pcAggrIf`, `cdpAdjEp`, `fvTenant`, `fvAp`, `fvAEPg`, `fvBD`, `fvSubnet`, `fvCtx`, `fvRsCtx`, `fvRsBd`, `vzBrCP`, `vzSubj`, `vzRsSubjFiltAtt`, `vzRsFiltAtt`, `vzRsSubjGraphAtt`, `vzFilter`, `vzEntry`, `fvRsProv`, `fvRsCons`, `l3extOut`, `l3extInstP`, `l3extRsEctx`, `l3extSubnet`, `vnsAbsGraph`, `vnsGraphInst`, `vnsSvcRedirectPol`, `vnsRedirectDest`, `fvCEp`, `fvIp`, `fvRsPathAtt`, `fvRsDomAtt`, `ospfDom`, `ospfArea`, `ospfIf`, `ospfAdjEp` |
 | `CONTRACT_BYPASS_CLASSES` | `vzAny`, `vzRsAnyToProv`, `vzRsAnyToCons`, `vzRsAnyToConsIf`, `fvESg`, `fvRsScope` |
 | `BGP_CLASSES` | `bgpPeerEntry`, `bgpPeerAfEntry` |
 | `MTU_CLASSES` | `l2InstPol`, `l3extRsPathL3OutAtt`, `l3extVirtualLIfP`, `pcRsMbrIfs` |

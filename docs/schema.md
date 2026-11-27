@@ -1347,6 +1347,9 @@ The start of each `HAS` relationship is the parent DN of the child object.
 | Relationship | Properties | Written by |
 |---|---|---|
 | `(ExtEpg)-[:PART_OF]->(L3Out)` | | `apic` |
+| `(ExtEpg)-[:MATCHES]->(Prefix)` | | `apic` |
+| `(ExtEpg)-[:PROVIDES]->(Contract)` | | `apic` |
+| `(ExtEpg)-[:CONSUMES]->(Contract)` | | `apic` |
 
 #### L3Out
 
@@ -1357,6 +1360,7 @@ The start of each `HAS` relationship is the parent DN of the child object.
 | Relationship | Properties | Written by |
 |---|---|---|
 | `(L3Out)-[:PART_OF]->(Tenant)` | | `apic` |
+| `(L3Out)-[:IN_VRF]->(VrfInstance)` | | `apic` |
 
 #### Contract
 
@@ -2444,7 +2448,6 @@ A name in the 2 tables is in `src/hst/core/labels.py` `LABELS` or `src/hst/core/
 | `IN_REGION` | `fixtures/mini-enterprise.yaml` |
 | `JUMPS_TO` | none |
 | `L3_ADJACENT` | `fixtures/mini-enterprise.yaml` |
-| `MATCHES` | `fixtures/mini-enterprise.yaml` |
 | `OF` | `fixtures/mini-enterprise.yaml` |
 | `PLUGGED_INTO` | `fixtures/mini-dc.yaml` |
 | `PROPAGATES` | `fixtures/mini-enterprise.yaml` |
