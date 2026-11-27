@@ -112,7 +112,7 @@ def _request(source: str, destination: str, *, source_context: str | None = None
         "server",
         (Member("server", _ivals(destination)),),
         member("server"),
-        Service(frozenset({6}), ((4, 443, 443),)),
+        Service(frozenset({6}), ((0, 443, 443),)),
         source_context=source_context,
     )
 

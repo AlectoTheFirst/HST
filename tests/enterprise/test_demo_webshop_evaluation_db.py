@@ -80,7 +80,7 @@ def _api_to_db(port: int = 5432):
         "db",
         (Member("webshop-db-01", _ivals("10.1.12.11")),),
         member("webshop-db-01"),
-        Service(frozenset({6}), ((4, port, port),)),
+        Service(frozenset({6}), ((0, port, port),)),
         success="session",
     )
 
@@ -94,7 +94,7 @@ def _clients_to_vip():
         "frontend",
         (Member("webshop-vip", _ivals("10.1.30.10")),),
         member("webshop-vip"),
-        Service(frozenset({6}), ((4, 443, 443),)),
+        Service(frozenset({6}), ((0, 443, 443),)),
         success="session",
     )
 
@@ -183,7 +183,7 @@ def test_vienna_clients_with_their_source_context_are_attached(demo):
         "webshop-vip",
         (Member("vip", _ivals("10.1.30.10")),),
         member("vip"),
-        Service(frozenset({6}), ((4, 443, 443),)),
+        Service(frozenset({6}), ((0, 443, 443),)),
         source_context="vrf:dev:vie01-core-01:corp",
     )
     network = load_network(session, request)
