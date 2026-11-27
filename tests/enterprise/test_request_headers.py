@@ -116,3 +116,12 @@ def test_the_answer_names_the_initial_fragment_assumption_when_it_was_made():
         assert answer_assumptions(manager, request) == assumptions
     stated = _request_from_body(_body(port="0-100", header_constraints={"fragment_offset": [[0, 0]]}))
     assert answer_assumptions(manager, stated) == (SPREAD_ASSUMPTION,)
+
+
+def test_the_answer_names_the_contexts_whose_computed_routes_it_follows():
+    manager = type("Manager", (), {"schema": _Schema()})()
+    request = _request_from_body(_body(port="443"))
+    assert answer_assumptions(manager, request, {"vrf:b", "vrf:a"}) == (
+        SPREAD_ASSUMPTION,
+        "COMPUTED_ROUTES: no collected routing table confirms the computed routes of vrf:a, vrf:b",
+    )

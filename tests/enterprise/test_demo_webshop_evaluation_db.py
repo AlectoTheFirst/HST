@@ -99,13 +99,18 @@ def _clients_to_vip():
     )
 
 
-def _verdict(network, graph, request) -> tuple[str, tuple[str, ...]]:
+def _answer(network, graph, request) -> tuple[str, tuple[str, ...], tuple[str, ...]]:
+    """The verdict, the gaps and the assumptions of the answer."""
     from hst.assessment.symbolic_evaluation import SymbolicEvaluation
     from hst.assessment.symbolic_results import outcome
 
     with SymbolicEvaluation(graph, "demo") as engine:
         answer = engine.answer_network(network, request, "possible")
-        return outcome(answer)["verdict"], tuple(sorted(answer.gaps))
+        return outcome(answer)["verdict"], tuple(sorted(answer.gaps)), answer.assumptions
+
+
+def _verdict(network, graph, request) -> tuple[str, tuple[str, ...]]:
+    return _answer(network, graph, request)[:2]
 
 
 def _forward_walk(network, graph, request):
@@ -134,17 +139,30 @@ def _forward_walk(network, graph, request):
         return source, result.gap_refs, gaps, result.bounds.lower.is_empty()
 
 
-def test_the_webshop_connections_evaluate_to_not_established(demo):
+@pytest.mark.parametrize("success", ["forward", "session"])
+def test_api_to_db_holds_on_the_computed_routes_of_the_fabric(demo, success):
     from hst.assessment.evaluation import load_network
 
     session, graph = demo
-    for request in (_api_to_db(), _clients_to_vip()):
-        for success in ("forward", "session"):
-            stated = replace(request, success=success)
-            network = load_network(session, stated)
-            verdict, gaps = _verdict(network, graph, stated)
-            # no routing observation in a fixture run: nothing is proven either way
-            assert verdict == "not-established", (request.name, success, verdict, gaps)
+    request = replace(_api_to_db(), success=success)
+    network = load_network(session, request)
+    verdict, gaps, assumptions = _answer(network, graph, request)
+    assert (verdict, gaps) == ("holds", ()), (verdict, gaps)
+    # a fixture run collects no routing table
+    (computed,) = [text for text in assumptions if text.startswith("COMPUTED_ROUTES:")]
+    assert CTX1 in computed
+
+
+@pytest.mark.parametrize("success", ["forward", "session"])
+def test_clients_to_vip_is_not_established(demo, success):
+    from hst.assessment.evaluation import load_network
+
+    session, graph = demo
+    request = replace(_clients_to_vip(), success=success)
+    network = load_network(session, request)
+    verdict, gaps = _verdict(network, graph, request)
+    # the office cores have no computed route to the data center
+    assert verdict == "not-established", (verdict, gaps)
 
 
 def test_api_to_db_starts_on_the_leaf_that_holds_the_api_subnet(demo):
@@ -163,12 +181,10 @@ def test_api_to_db_starts_on_the_leaf_that_holds_the_api_subnet(demo):
     )
     fabric_state = f"routing:{CTX1}:ingress:{LEAF}/if/vlan111"
     assert any(node.key.location == fabric_state for node in source.nodes)
-    # CTX1 is observed by no single device and the fixture run records no routing observation
-    assert any("ambiguous-device" in reason for reason in network.incomplete(CTX1)), network.incomplete(CTX1)
-    assert ("MODEL_SCOPE_INCOMPLETE", fabric_state, "forward", LEAF) in gaps, sorted(map(str, gaps))
-    assert not any(
-        code == "MODEL_SCOPE_INCOMPLETE" and stage == "aci-contract" for code, _, stage, _ in gaps
-    ), sorted(map(str, gaps))
+    # CTX1 spans 4 leafs, and no routing table of it is collected
+    assert any("ambiguous-device" in reason for reason in network.unobserved(CTX1)), network.unobserved(CTX1)
+    assert network.incomplete(CTX1) == network.unobserved(CTX1)
+    assert not any(code == "MODEL_SCOPE_INCOMPLETE" for code, _, _, _ in gaps), sorted(map(str, gaps))
     assert "SOURCE_ATTACHMENT_UNKNOWN" not in gap_refs, gap_refs
 
 
@@ -205,35 +221,10 @@ def test_api_to_db_on_a_port_the_contract_does_not_list_is_proven_denied(demo):
     assert verdict == "does-not-hold", (verdict, gaps)
 
 
-def test_api_to_db_is_proven_permitted_once_the_fabric_routing_is_observed(demo, monkeypatch):
+def test_api_to_db_session_has_each_forwarding_choice(demo):
     from hst.assessment.evaluation import load_network
-    from hst.impact.evaluate import Network
 
     session, graph = demo
-    observed = Network.incomplete
-
-    def incomplete(self, context_uid, destinations=None):
-        # the routing observation of the fabric VRF that a fixture run does not publish
-        return () if context_uid == CTX1 else observed(self, context_uid, destinations)
-
-    monkeypatch.setattr(Network, "incomplete", incomplete)
-    request = replace(_api_to_db(), success="forward", header_constraints=FIRST_FRAGMENTS)
-    network = load_network(session, request)
-    verdict, gaps = _verdict(network, graph, request)
-    assert verdict == "holds", (verdict, gaps)
-
-
-def test_api_to_db_session_with_the_fabric_routing_observed_holds(demo, monkeypatch):
-    from hst.assessment.evaluation import load_network
-    from hst.impact.evaluate import Network
-
-    session, graph = demo
-    observed = Network.incomplete
-
-    def incomplete(self, context_uid, destinations=None):
-        return () if context_uid == CTX1 else observed(self, context_uid, destinations)
-
-    monkeypatch.setattr(Network, "incomplete", incomplete)
     request = replace(_api_to_db(), header_constraints=FIRST_FRAGMENTS)
     network = load_network(session, request)
     verdict, gaps = _verdict(network, graph, request)

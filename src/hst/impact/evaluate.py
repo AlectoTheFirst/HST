@@ -170,6 +170,12 @@ _UNSETTLED = frozenset({"no-routing-fixed-point", "no-rib-fixed-point"})
 _OPEN_GAPS = frozenset(
     {rib.HISTORY_DEPENDENT, rib.NOT_OBSERVED, certainty.UNIQUENESS, certainty.EXTERNAL_RESPONSE}
 )
+# The coverage values of a context with no collected routing table
+# (`Network.unobserved`). `core.ribsource.DeviceEvidence` lists the values of a
+# device. `app.simul_read` sets `ambiguous-device` for a context that spans devices.
+_UNOBSERVED_COVERAGE = frozenset({None, "unsupported", "ambiguous-device"})
+# The model error of a context that spans devices (`app.simul_read`).
+_UNOBSERVED_ERROR = "context-observation-ambiguous"
 # The mark `apply` leaves on an overlay whose routing is its observed
 # baseline's (`Network._routing_as_observed`). `dataclasses.replace` never copies it.
 _ROUTING_AS_OBSERVED = "_routing_as_observed_mark"
@@ -1239,7 +1245,9 @@ class Network:
         )
 
     @cached_property
-    def _incomplete_cache(self) -> dict[tuple[str, tuple[tuple[int, int, int], ...] | None], tuple[str, ...]]:
+    def _incomplete_cache(
+        self,
+    ) -> dict[tuple[str, tuple[tuple[int, int, int], ...] | None], tuple[tuple[str, bool], ...]]:
         return {}
 
     @cached_property
@@ -1279,10 +1287,24 @@ class Network:
         whose paths are not captured, a link-state database that is not
         complete). A peer whose routes are not collected leaves the context
         open only where the collected table of the context cannot answer for
-        it (`_peer_supply_answered`).
+        it (`_peer_supply_answered`). `unobserved` returns the reasons that the
+        symbolic model does not end a routing state for.
 
         The answer is kept per context and destination set. The walk asks for
         it at every device of every branch."""
+        return tuple(reason for reason, _unobserved in self._reasons(context_uid, destinations))
+
+    def unobserved(self, context_uid: str, destinations: Ivals | None = None) -> tuple[str, ...]:
+        """The reasons of `incomplete` that state only that no routing table of
+        the context is collected. The context is on a platform with no table
+        collector, on a device that the run manifest does not record, or it
+        spans devices. The table of a family that the collector does not read
+        is such a reason too. A collection that failed or is partial is no
+        such reason. The computed routes of such a context are not
+        contradicted. A destination with no computed route is not decided."""
+        return tuple(reason for reason, unobserved in self._reasons(context_uid, destinations) if unobserved)
+
+    def _reasons(self, context_uid: str, destinations: Ivals | None) -> tuple[tuple[str, bool], ...]:
         key = (context_uid, None if destinations is None else tuple(destinations))
         known = self._incomplete_cache.get(key)
         if known is None:
@@ -1324,9 +1346,10 @@ class Network:
             return False
         return {af for af, _lo, _hi in destinations} <= set(observed_afs)
 
-    def _incomplete(self, context_uid: str, destinations: Ivals | None) -> tuple[str, ...]:
+    def _incomplete(self, context_uid: str, destinations: Ivals | None) -> tuple[tuple[str, bool], ...]:
+        """Each reason of `incomplete`, with True for a reason of `unobserved`."""
         index = self._result_index
-        out = list(index.unsettled)
+        out = [(reason, False) for reason in index.unsettled]
         answered = self._peer_supply_answered(context_uid, destinations)
         # The sessions with a PEER_SUPPLY gap in this context. The
         # `unpaired-bgp-session` error of such a session repeats the gap and is
@@ -1352,9 +1375,9 @@ class Network:
                 and not _intersect(list(destinations), _intervals([str(prefix)]))
             ):
                 continue
-            out.append(str(gap.get("detail")))
+            out.append((str(gap.get("detail")), gap.get("model_error_kind") == _UNOBSERVED_ERROR))
         out.extend(
-            str(e["detail"])
+            (str(e["detail"]), e.get("kind") == _UNOBSERVED_ERROR)
             for e in self.proof_errors.get(context_uid, ())
             if not (e.get("kind") == "unpaired-bgp-session" and str(e.get("subject")) in peer_sessions)
         )
@@ -1362,21 +1385,24 @@ class Network:
         calibration = owner._calibration
         baseline_input = owner.routing
         context = calibration.contexts.get(context_uid, {})
+        coverage = baseline_input.rib_coverage.get(context_uid)
+        no_table = coverage in _UNOBSERVED_COVERAGE
         if "observed_rib_afs" in context:
             observed_afs = context["observed_rib_afs"]
             requested_afs = {af for af, _lo, _hi in destinations or ()}
             if observed_afs is None or requested_afs - set(observed_afs):
+                # `unread_rib_afs` holds the families whose table read failed.
+                unread = requested_afs & set(context.get("unread_rib_afs") or ())
                 out.append(
-                    "baseline forwarding observations do not cover the requested "
-                    f"address family in {context_uid}"
+                    (
+                        "baseline forwarding observations do not cover the requested "
+                        f"address family in {context_uid}",
+                        (no_table or coverage in {"complete", "complete-empty"}) and not unread,
+                    )
                 )
-        if context_uid in baseline_input.rib_coverage and baseline_input.rib_coverage[context_uid] not in {
-            "complete",
-            "complete-empty",
-        }:
+        if context_uid in baseline_input.rib_coverage and coverage not in {"complete", "complete-empty"}:
             out.append(
-                f"baseline forwarding coverage for {context_uid} is "
-                f"{baseline_input.rib_coverage[context_uid] or 'not observed'}"
+                (f"baseline forwarding coverage for {context_uid} is {coverage or 'not observed'}", no_table)
             )
         for item, prefix in calibration.unverified.get(context_uid, ()):
             # A pure model has no observation contract.
@@ -1395,7 +1421,12 @@ class Network:
                     remaining = _subtract(remaining, _intervals([str(other)]))
                 if not remaining:
                     continue
-            out.append(f"baseline routing is not calibrated: {item.get('detail')}")
+            out.append(
+                (
+                    f"baseline routing is not calibrated: {item.get('detail')}",
+                    no_table and item.get("status") == rib.NOT_OBSERVED,
+                )
+            )
         return tuple(out)
 
     @cached_property

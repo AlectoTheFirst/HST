@@ -1,14 +1,16 @@
 """A routing state of the symbolic model is incomplete only for a gap that can change
-the route of a destination the model routes (`normalize_network`, `Network.incomplete`)."""
+the route of a destination the model routes (`normalize_network`, `Network.incomplete`).
+A context with no collected routing table keeps its computed routes (`Network.unobserved`)."""
 
 from __future__ import annotations
 
 from dataclasses import replace
+from ipaddress import ip_network
 
 import pytest
 from tests.enterprise import test_network_compile as nc
 
-from hst.analysis_model.network import normalize_network
+from hst.analysis_model.network import ROUTE_NOT_OBSERVED, normalize_network
 from hst.impact.evaluate import Member, RequestSet, member
 from hst.simul import rib
 
@@ -58,6 +60,9 @@ REQUEST = RequestSet(
 )
 
 
+DESTINATION = ((4, *nc._ivals("203.0.113.10")[0][1:]),)
+
+
 def _complete(net, **kwargs):
     model = normalize_network(net, nc._graph(), REQUEST, REQUEST.members[0], "estate", **kwargs)
     return {
@@ -89,20 +94,73 @@ def test_a_gap_that_cannot_change_the_flows_route_leaves_the_routing_state_compl
         ({"extra": [_row("203.0.113.0/25", "192.0.2.9", 4)]}, "203.0.113.0/25"),
         ({"drop": "203.0.113.0/24"}, "203.0.113.0/24"),
         ({"coverage": "partial"}, "coverage for c1 is partial"),
-        ({"afs": [6]}, "do not cover the requested address family"),
     ],
     ids=[
         "more-specific-route-uncalibrated",
         "flows-route-not-held",
         "table-read-partial",
-        "family-not-observed",
     ],
 )
 def test_a_gap_that_can_change_the_flows_route_keeps_the_routing_state_incomplete(kwargs, reason):
     net = network(**kwargs)
     assert _complete(net) == {"routing:c1:ingress:none": False, "routing:c1:ingress:if:r1:lan": False}
-    (detail,) = net.incomplete("c1", ((4, *nc._ivals("203.0.113.10")[0][1:]),))
+    (detail,) = net.incomplete("c1", DESTINATION)
     assert reason in detail
+    assert net.unobserved("c1", DESTINATION) == ()
+
+
+@pytest.mark.parametrize(
+    ("kwargs", "reason"),
+    [
+        ({"afs": [6]}, "do not cover the requested address family"),
+        ({"coverage": None}, "coverage for c1 is not observed"),
+        ({"coverage": "unsupported"}, "coverage for c1 is unsupported"),
+        ({"coverage": "ambiguous-device"}, "coverage for c1 is ambiguous-device"),
+    ],
+    ids=["family-not-read", "no-table-recorded", "no-table-collector", "context-spans-devices"],
+)
+def test_a_context_with_no_collected_table_keeps_its_computed_routes(kwargs, reason):
+    net = network(**kwargs)
+    (detail,) = net.unobserved("c1", DESTINATION)
+    assert reason in detail
+    assert net.incomplete("c1", DESTINATION) == (detail,)
+    model = normalize_network(net, nc._graph(), REQUEST, REQUEST.members[0], "estate")
+    nodes = {node.key.location: node for node in model.nodes}
+    for location in ("routing:c1:ingress:none", "routing:c1:ingress:if:r1:lan"):
+        assert nodes[location].complete
+        # the destinations that no computed route holds end at the unknown terminal
+        (unrouted,) = [edge for edge in nodes[location].edges if edge.uid == "unrouted:c1"]
+        terminal = nodes[unrouted.target.location]
+        assert unrouted.target.location == f"{ROUTE_NOT_OBSERVED}{location}"
+        assert (terminal.terminal, terminal.complete, terminal.incomplete_reasons) == (
+            "unknown",
+            False,
+            (detail,),
+        )
+        covered = {(atom.value, atom.other) for atom in unrouted.predicate.term.terms}
+        route = ip_network("203.0.113.0/24")
+        assert (int(route.network_address), int(route.broadcast_address)) in covered
+
+
+@pytest.mark.parametrize("coverage", ["failed", "partial", "missing", "unknown"])
+def test_a_table_read_that_did_not_complete_is_no_reason_of_unobserved(coverage):
+    net = network(coverage=coverage)
+    assert net.incomplete("c1", DESTINATION)
+    assert net.unobserved("c1", DESTINATION) == ()
+
+
+def test_a_family_whose_table_read_failed_is_no_reason_of_unobserved():
+    net = network(afs=[6])
+    contexts = [{**context, "unread_rib_afs": [4]} for context in net.routing.contexts]
+    net = replace(net, routing=replace(net.routing, contexts=contexts))
+    assert net.incomplete("c1", DESTINATION)
+    assert net.unobserved("c1", DESTINATION) == ()
+    assert _complete(net) == {"routing:c1:ingress:none": False, "routing:c1:ingress:if:r1:lan": False}
+
+
+def test_a_context_with_a_complete_table_has_no_unknown_route_terminal():
+    model = normalize_network(network(afs=[4]), nc._graph(), REQUEST, REQUEST.members[0], "estate")
+    assert not [node for node in model.nodes if node.key.location.startswith(ROUTE_NOT_OBSERVED)]
 
 
 def test_a_model_of_every_route_counts_every_gap():

@@ -1361,6 +1361,11 @@ def request_devices(network: Network, request: RequestSet) -> frozenset[str]:
     return frozenset(devices)
 
 
+# The location prefix of the unknown terminal of a routing state whose context
+# has no collected routing table (`Network.unobserved`).
+ROUTE_NOT_OBSERVED = "terminal:route-not-observed:"
+
+
 class _LongestMatch:
     """The rows of one context sorted on (family, network address)."""
 
@@ -1896,7 +1901,32 @@ def normalize_network(
         # holds no such destination, or to a route of the other family, is
         # left out. A gap of the whole context counts (an unread table, a run
         # that did not settle). With `scope` None, every gap counts.
-        reasons = tuple(dict.fromkeys(network.incomplete(context_uid, scope)))
+        #
+        # The gaps of `Network.unobserved` leave the state complete. The model
+        # follows the computed routes of the context. A destination that no
+        # computed route and no address of the device holds ends at an unknown
+        # terminal.
+        unobserved = tuple(dict.fromkeys(network.unobserved(context_uid, scope)))
+        reasons = tuple(
+            reason
+            for reason in dict.fromkeys(network.incomplete(context_uid, scope))
+            if reason not in unobserved
+        )
+        if unobserved:
+            covered = tuple(
+                Atom(
+                    "destination_address", "range", int(prefix.network_address), int(prefix.broadcast_address)
+                )
+                for prefix in longest.parsed
+                if prefix.version == af
+            )
+            unrouted_key = StateKey(f"{ROUTE_NOT_OBSERVED}{key.location}", key.context)
+            nodes.append(
+                NodeSpec(unrouted_key, terminal="unknown", complete=False, incomplete_reasons=unobserved)
+            )
+            edges.append(
+                EdgeSpec(f"unrouted:{context_uid}", unrouted_key, Not(AnyOf((*covered, *held.terms))))
+            )
         incomplete = bool(reasons) or not choices_complete
         node_evidence = (
             refs_for_context(evidence, device_uid, frozenset({"interfaces", "routes", "access", "nat"}))

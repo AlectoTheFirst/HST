@@ -1169,6 +1169,30 @@ def _observed_rib_afs(
     return None
 
 
+def _unread_rib_afs(session: Any, device_uid: str, platform: str | None) -> list[int]:
+    """The address families whose routing table read of a VyOS device is recorded
+    and did not complete. A family with no recorded read is not in the result."""
+    snapshot = getattr(session, "snapshot", None)
+    manifest = snapshot.manifest if snapshot is not None else None
+    if manifest is None or str(platform or "").lower() != "vyos":
+        return []
+    entries = [
+        entry for entry in manifest.devices if device_uid in (getattr(entry, "device_uids", None) or ())
+    ]
+    if len(entries) != 1:
+        return []
+    sections = entries[0].sections
+    return [
+        family
+        for family, base in ((4, "routes"), (6, "routes6"))
+        if any(
+            outcome.status not in _COMPLETE_SECTION
+            for name, outcome in sections.items()
+            if name == base or name.startswith(f"{base}_table_")
+        )
+    ]
+
+
 def _bgp_path_supported(row: Mapping[str, Any]) -> bool:
     """Whether one observed row has enough provenance to seed the IP RIB."""
     direction = str(row.get("direction") or "")
@@ -1631,7 +1655,14 @@ def read_rib_input(
                 "observations cannot be attributed to the shared context without provenance"
             )
             errors.report("context-observation-ambiguous", detail, uid)
-            observation_gaps.append({"kind": "not-observed", "context_uid": uid, "detail": detail})
+            observation_gaps.append(
+                {
+                    "kind": "not-observed",
+                    "context_uid": uid,
+                    "detail": detail,
+                    "model_error_kind": "context-observation-ambiguous",
+                }
+            )
         elif device_uid is None:
             detail = (
                 f"{uid} has no recorded owning Device or interface on a Device in this snapshot, "
@@ -1735,6 +1766,9 @@ def read_rib_input(
             )
             if device_uid
             else None
+        )
+        context["unread_rib_afs"] = (
+            _unread_rib_afs(session, str(device_uid), context.get("platform")) if device_uid else []
         )
 
     pbr: list[dict[str, Any]] = []

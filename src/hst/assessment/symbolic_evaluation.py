@@ -10,7 +10,7 @@ from __future__ import annotations
 import hashlib
 import json
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 from dataclasses import asdict, replace
 from typing import Literal, cast
 
@@ -25,7 +25,7 @@ from hst.analysis_model.graph import GraphInventory
 from hst.analysis_model.incremental import ModelDependencyState, plan_model_incremental
 from hst.analysis_model.model import ModelInput, semantic_fingerprint
 from hst.analysis_model.model_cache import CompiledModelCache
-from hst.analysis_model.network import normalize_request_network
+from hst.analysis_model.network import ROUTE_NOT_OBSERVED, normalize_request_network
 from hst.assessment.result_artifacts import MAX_ARTIFACT_BYTES, ResultArtifactStore
 from hst.assessment.symbolic_results import (
     SymbolicAnswer,
@@ -79,10 +79,29 @@ def initial_fragments_assumed(manager: SymbolicManager, request: RequestSet, mem
     return "fragment_offset" not in stated and not _ports_exclude_zero(member.service or request.service)
 
 
-def answer_assumptions(manager: SymbolicManager, request: RequestSet) -> tuple[str, ...]:
-    """What an answer to the request assumes beyond the evidence."""
+def computed_routes_assumption(contexts: Iterable[str]) -> str:
+    """The entry of `SymbolicAnswer.assumptions` for the forwarding contexts of the
+    models of an answer whose routing table the run did not read (`Network.unobserved`).
+    The models follow the computed routes of these contexts. A flow of the request
+    can pass by none of them."""
+    return (
+        "COMPUTED_ROUTES: no collected routing table confirms the computed routes of "
+        f"{', '.join(sorted(contexts))}"
+    )
+
+
+def answer_assumptions(
+    manager: SymbolicManager, request: RequestSet, computed_routes: Iterable[str] = ()
+) -> tuple[str, ...]:
+    """What an answer to the request assumes beyond the evidence. `computed_routes`
+    holds the forwarding contexts of `computed_routes_assumption`."""
     assumed = any(initial_fragments_assumed(manager, request, member) for member in request.members)
-    return (SPREAD_ASSUMPTION, INITIAL_FRAGMENTS_ASSUMPTION) if assumed else (SPREAD_ASSUMPTION,)
+    contexts = sorted(set(computed_routes))
+    return (
+        SPREAD_ASSUMPTION,
+        *((INITIAL_FRAGMENTS_ASSUMPTION,) if assumed else ()),
+        *((computed_routes_assumption(contexts),) if contexts else ()),
+    )
 
 
 def member_packets(manager: SymbolicManager, request: RequestSet, member: Member) -> PacketSet:
@@ -137,6 +156,9 @@ class SymbolicEvaluation:
         self.evidence, self.result_store = evidence, result_store
         self.model_cache = model_cache
         self._managers: dict[int, SymbolicManager] = {}
+        # The forwarding contexts of `computed_routes_assumption` in the models
+        # that `compile` got since `answer_network` started.
+        self._computed_routes: set[str] = set()
         self._models: dict[tuple[int, str, frozenset[str]], AnalysisModel] = {}
         self._closed = False
         self.compile_seconds = 0.0
@@ -176,6 +198,11 @@ class SymbolicEvaluation:
         self, source: ModelInput, manager: SymbolicManager, known_fields: frozenset[str]
     ) -> AnalysisModel:
         self._check()
+        self._computed_routes.update(
+            str(node.key.context.vrf)
+            for node in source.nodes
+            if node.key.location.startswith(ROUTE_NOT_OBSERVED)
+        )
         key = id(manager), semantic_fingerprint(source), known_fields
         model = self._models.get(key)
         if model is None:
@@ -287,6 +314,7 @@ class SymbolicEvaluation:
         )
         identity = request_identity(request)
         results = {}
+        self._computed_routes = set()
         for member in request.members:
             self._check()
             packets = member_packets(manager, request, member)
@@ -324,7 +352,7 @@ class SymbolicEvaluation:
         # Equal-cost paths, load balancer members and connectors are the
         # joint choices of this engine.
         answer = aggregate(request, results, mode=cast(ChoiceMode, mode), choice_mode=cast(ChoiceMode, mode))
-        answer = replace(answer, assumptions=answer_assumptions(manager, request))
+        answer = replace(answer, assumptions=answer_assumptions(manager, request, self._computed_routes))
         return replace(answer, evidence=selected_evidence)
 
     def compare_networks(

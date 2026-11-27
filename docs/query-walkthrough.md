@@ -822,6 +822,8 @@ An answer without a leg holds the reason in `detail`.
 
 `answer` adds a gap with the code `MTU_PATH_COVERAGE_INCOMPLETE` for a request with an MTU requirement. `src/hst/impact/evaluate.py` `scoped_model_errors` leaves out an error of the kind `rib-route-mismatch` on a prefix that holds no requested address.
 
+`src/hst/impact/evaluate.py` `Network.incomplete` returns the reasons why no route decision of a forwarding context is an answer. `Network.unobserved` returns the reasons among them that state only that the run read no routing table of the context. A table read that failed or is partial is no such reason. With `legacy-v1`, each reason ends the part as not established. With `symbolic-v2`, a context whose reasons are all in `Network.unobserved` has a complete routing state. The model follows the computed routes of the context. A destination that no computed route holds ends at an unknown terminal. The answer has an `assumptions` entry that starts with `COMPUTED_ROUTES` and lists these contexts of the model.
+
 If the request has `population_complete` false, `EvaluationContext._population_result` changes the answer.
 
 - It sets `complete` to false and `completion_status` to `incomplete`.

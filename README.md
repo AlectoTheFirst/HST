@@ -74,7 +74,9 @@ uses the native symbolic backend that the image holds.
 point gives the forwarding choices. Packet sets, ordered policies, NAT, session
 state, routing and evidence form one model. An analysis answers each request
 with success, failure or unknown. The model accepts Check Point policy of
-release R81.20.
+release R81.20. For a forwarding context whose routing table the run did not
+read, the model follows the computed routes, and the answer lists the context
+in an `assumptions` entry that starts with `COMPUTED_ROUTES`.
 
 ## Requirements
 
