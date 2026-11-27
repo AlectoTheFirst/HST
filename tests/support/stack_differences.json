@@ -1,0 +1,24 @@
+{
+  "causes": [
+    "installation | checkpoint | deny | indeterminate |  | INSTALLATION_UNKNOWN",
+    "installation | checkpoint | permit | indeterminate |  | INSTALLATION_UNKNOWN",
+    "precision | checkpoint | permit | indeterminate |  | CP_MATCH_COLUMN_MISSING",
+    "precision | cisco | indeterminate | deny | this side is not Any and lists no address object | ",
+    "precision | cisco | permit | indeterminate |  | GRAPH_RULE_COLUMN_MISSING",
+    "precision | ubiquiti | indeterminate | permit | the rule also matches on a source MAC address, which is not modeled | ",
+    "precision | ubiquiti | indeterminate | permit | the rule matches on a source port the flow does not carry | ",
+    "precision | ubiquiti | permit | indeterminate |  | GRAPH_RULE_COLUMN_MISSING",
+    "precision | vyos | indeterminate | deny | rule N of jumped ruleset GUARD returns on a match, which is not modeled | ",
+    "precision | vyos | indeterminate | deny | this side is not Any and lists no address object | "
+  ],
+  "answers": {
+    "cisco-deny-list-on-the-ingress-routing-not-observed": [
+      "not-established",
+      "does-not-hold"
+    ],
+    "vyos-return-rule": [
+      "not-established",
+      "holds"
+    ]
+  }
+}
