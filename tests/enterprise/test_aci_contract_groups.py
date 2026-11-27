@@ -65,7 +65,9 @@ def test_the_demo_estate_contract_gate_has_one_group_per_epg_pair_with_a_contrac
     context = ExecutionContext("estate", "graph", "domain", "dev", vrf, 4)
     downstream = StateKey("routing", context)
     expansion = expand_aci_contracts(graph, context, downstream)
+    # the gate of the entry VRF is the entry, and the gate of the dc2 fabric follows it
     (gate,) = [item for item in expansion.nodes if item.key == expansion.entry]
+    targets = {edge.target for edge in gate.edges}
     epgs = {
         epgs[0].uid
         for uid in graph.labels["Endpoint"]
@@ -74,20 +76,22 @@ def test_the_demo_estate_contract_gate_has_one_group_per_epg_pair_with_a_contrac
         and gates._aci_epg_vrf(graph, epgs[0].uid)[0] == vrf
     }
     assert epgs
+    external = {uid for uid in graph.labels["ExtEpg"] if vrf in gates._aci_external_vrfs(graph, uid)}
+    assert external
     contracted = {
         (source, destination)
         for source in epgs
-        for destination in epgs
+        for destination in epgs | external
         if source != destination
         and {item.uid for item in graph.targets(source, "CONSUMES")}
         & {item.uid for item in graph.targets(destination, "PROVIDES")}
     }
     endpoints = len(graph.labels["Endpoint"])
     # One intra edge and at most one deny edge per EPG, two edges per contracted
-    # EPG pair, and the non-endpoint edge.
-    # The one-endpoint and enforcement-unknown terminals add two nodes.
-    assert len(gate.edges) <= 2 * len(epgs) + 2 * len(contracted) + 1
-    assert len(expansion.nodes) <= 2 * len(epgs) + len(contracted) + 3
+    # pair of an EPG and an EPG or an external EPG, and the reverse-contract,
+    # the non-endpoint and the one-endpoint edge.
+    assert len(gate.edges) <= 2 * len(epgs) + 2 * len(contracted) + 3
+    assert len(targets) <= 2 * len(epgs) + len(contracted) + 3
     assert any(edge.uid.startswith("aci:permit:") for edge in gate.edges)
     assert len(gate.edges) < endpoints
     assert endpoints**2 > 50 * len(gate.edges)

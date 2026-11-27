@@ -441,18 +441,42 @@ def expand_aci_contracts(
     index = _aci_index(graph, context.address_family)
     if not index.epg_intervals:
         return GateExpansion(downstream, (), (), True)
-    scope = index.scope(context.vrf)
     af = context.address_family
-    if (
-        sources is not None
-        and destinations is not None
-        and not _intervals_meet(scope.source_all, [(lo, hi) for family, lo, hi in sources if family == af])
-        and not _intervals_meet(
-            scope.destination_all, [(lo, hi) for family, lo, hi in destinations if family == af]
-        )
-    ):
-        return GateExpansion(downstream, (), (), True)
-    key = StateKey(f"gate:aci:{context.vrf}", context, "aci-contract")
+    entry = downstream
+    nodes: list[NodeSpec] = []
+    gap_refs: set[str] = set()
+    for scope in reversed((index.scope(context.vrf), *index.external_scopes(context.vrf))):
+        if not scope.source_all and not scope.destination_endpoint_all:
+            continue
+        if (
+            sources is not None
+            and destinations is not None
+            and not _intervals_meet(
+                scope.source_all if scope.external is None else (),
+                [(lo, hi) for family, lo, hi in sources if family == af],
+            )
+            and not _intervals_meet(
+                scope.destination_endpoint_all, [(lo, hi) for family, lo, hi in destinations if family == af]
+            )
+        ):
+            continue
+        expansion = _expand_aci_scope(graph, index, scope, context, entry)
+        entry = expansion.entry
+        nodes.extend(expansion.nodes)
+        gap_refs.update(expansion.gaps)
+    return GateExpansion(entry, tuple(nodes), (), not gap_refs, tuple(sorted(gap_refs)))
+
+
+def _expand_aci_scope(
+    graph: GraphInventory,
+    index: _AciIndex,
+    scope: _AciScope,
+    context: ExecutionContext,
+    downstream: StateKey,
+) -> GateExpansion:
+    """The gate of 1 scope of `expand_aci_contracts`."""
+    where = context.vrf if scope.external is None else f"{context.vrf}:external:{scope.external}"
+    key = StateKey(f"gate:aci:{where}", context, "aci-contract")
     edges: list[EdgeSpec] = []
     terminals: list[NodeSpec] = []
     gaps: set[str] = set()
@@ -563,38 +587,46 @@ def expand_aci_contracts(
                 )
             )
     if undecided:
-        unknown = StateKey(f"gate:aci:enforcement-unknown:{context.vrf}", context, "aci-contract")
+        unknown = StateKey(f"gate:aci:enforcement-unknown:{where}", context, "aci-contract")
         terminals.append(NodeSpec(unknown, terminal="unknown", complete=False))
         edges.append(EdgeSpec("aci:enforcement-unknown", unknown, AnyOf(tuple(undecided))))
         gaps.add("ACI_VRF_ENFORCEMENT_UNKNOWN")
     if reversed_pairs:
-        unknown = StateKey(f"gate:aci:reverse-contract:{context.vrf}", context, "aci-contract")
+        unknown = StateKey(f"gate:aci:reverse-contract:{where}", context, "aci-contract")
         terminals.append(NodeSpec(unknown, terminal="unknown", complete=False))
         edges.append(EdgeSpec("aci:reverse-contract", unknown, AnyOf(tuple(reversed_pairs))))
         gaps.add("ACI_REVERSE_CONTRACT_UNEVALUATED")
     if bypassed:
-        unknown = StateKey(f"gate:aci:contract-bypass:{context.vrf}", context, "aci-contract")
+        unknown = StateKey(f"gate:aci:contract-bypass:{where}", context, "aci-contract")
         terminals.append(NodeSpec(unknown, terminal="unknown", complete=False))
         edges.append(EdgeSpec("aci:contract-bypass", unknown, AnyOf(tuple(bypassed))))
         gaps.add("ACI_CONTRACT_BYPASS_UNKNOWN")
     any_source, any_destination = scope.source_any, scope.destination_any
     if scope.source_all and scope.destination_all and scope.ambiguous is not None:
         # the endpoint pairs above leave out the addresses two EPGs of one side hold
-        ambiguous = StateKey(f"gate:aci:ambiguous:{context.vrf}", context, "aci-contract")
+        ambiguous = StateKey(f"gate:aci:ambiguous:{where}", context, "aci-contract")
         terminals.append(NodeSpec(ambiguous, terminal="unknown", complete=False))
         edges.append(
             EdgeSpec("aci:ambiguous", ambiguous, AllOf((any_source, any_destination, scope.ambiguous)))
         )
         gaps.add("ACI_ENDPOINT_IDENTITY_UNKNOWN")
     # The endpoint pairs and the ambiguous addresses cover exactly the product
-    # of all source endpoints and all destination endpoints. A flow with
-    # exactly one end at an endpoint is unknown, as in path/gates/aci.py.
-    edges.append(EdgeSpec("aci:non-endpoint", downstream, AllOf((Not(any_source), Not(any_destination)))))
-    one_end = StateKey(f"gate:aci:one-endpoint:{context.vrf}", context, "aci-contract")
+    # of all sources and all destinations. An address that an external EPG
+    # classifies is a source or a destination. A flow with exactly 1 end at
+    # an endpoint and no class at its other end is unknown, as in
+    # path/gates/aci.py. An external scope judges only the packets to an
+    # endpoint of its fabric.
+    to_endpoint = scope.destination_endpoint_any
+    if scope.external is None:
+        edges.append(EdgeSpec("aci:non-endpoint", downstream, AllOf((Not(any_source), Not(to_endpoint)))))
+        one_end_guard: Predicate = AnyOf(
+            (AllOf((any_source, Not(any_destination))), AllOf((Not(any_source), to_endpoint)))
+        )
+    else:
+        edges.append(EdgeSpec("aci:non-endpoint", downstream, Not(to_endpoint)))
+        one_end_guard = AllOf((Not(any_source), to_endpoint))
+    one_end = StateKey(f"gate:aci:one-endpoint:{where}", context, "aci-contract")
     terminals.append(NodeSpec(one_end, terminal="unknown", complete=False))
-    one_end_guard = AnyOf(
-        (AllOf((any_source, Not(any_destination))), AllOf((Not(any_source), any_destination)))
-    )
     edges.append(EdgeSpec("aci:one-endpoint", one_end, one_end_guard))
     gaps.add("ACI_ONE_ENDPOINT_UNKNOWN")
     # The unknown EPG pairs end in their own unknown terminals.
@@ -1104,6 +1136,12 @@ class _AciScope:
     source_any: Predicate
     destination_any: Predicate
     ambiguous: Predicate | None
+    # The destination endpoints, without the addresses of the external EPGs.
+    destination_endpoint_all: tuple[tuple[int, int], ...]
+    destination_endpoint_any: Predicate
+    # The name of the fabric of an external scope (`_AciIndex.external_scopes`),
+    # None for the scope of the entry context.
+    external: str | None = None
 
 
 class _AciIndex:
@@ -1125,11 +1163,42 @@ class _AciIndex:
                 grouped.setdefault(membership.uid, []).extend(intervals)
         self.epg_intervals = {epg: _merge_intervals(values) for epg, values in grouped.items()}
         self.epg_vrf = {epg: _aci_epg_vrf(graph, epg) for epg in self.epg_intervals}
+        # The external EPGs with 1 VRF and a subnet, and the addresses that
+        # each classifies in its VRF. The longest subnet of the VRF wins. The
+        # addresses of the endpoints of a fabric are no part of them (`scope`,
+        # `external_scopes`).
+        self.external_intervals: dict[str, tuple[tuple[int, int], ...]] = {}
+        external_vrf: dict[str, Any] = {}
+        subnets: dict[str, dict[str, list[tuple[int, int]]]] = {}
+        for uid in graph.labels.get("ExtEpg", ()):
+            vrfs = _aci_external_vrfs(graph, uid)
+            matched = [
+                item for target in graph.targets(uid, "MATCHES") for item in _node_intervals(target, af)
+            ]
+            if len(vrfs) == 1 and matched:
+                external_vrf[uid] = next(iter(vrfs.values()))
+                subnets.setdefault(external_vrf[uid].uid, {})[uid] = matched
+        for groups in subnets.values():
+            for uid, matched in groups.items():
+                longer = [
+                    (low, high)
+                    for other, values in groups.items()
+                    if other != uid
+                    for low, high in values
+                    if any(outer != (low, high) and outer[0] <= low and high <= outer[1] for outer in matched)
+                ]
+                self.external_intervals[uid] = _subtract_intervals(
+                    _merge_intervals(matched), _merge_intervals(longer)
+                )
+        self.epg_vrf.update(
+            {uid: (vrf.uid, vrf.props.get("pc_enf_pref")) for uid, vrf in external_vrf.items()}
+        )
+        members = (*self.epg_intervals, *self.external_intervals)
         self.consumes = {
-            epg: frozenset(item.uid for item in graph.targets(epg, "CONSUMES")) for epg in self.epg_intervals
+            epg: frozenset(item.uid for item in graph.targets(epg, "CONSUMES")) for epg in members
         }
         self.provides = {
-            epg: frozenset(item.uid for item in graph.targets(epg, "PROVIDES")) for epg in self.epg_intervals
+            epg: frozenset(item.uid for item in graph.targets(epg, "PROVIDES")) for epg in members
         }
         providers: dict[str, set[str]] = {}
         for epg, contracts in self.provides.items():
@@ -1143,6 +1212,9 @@ class _AciIndex:
         self.consumers = {contract: frozenset(epgs) for contract, epgs in consumers.items()}
         # The reason why an enforced VRF cannot implicitly deny the pairs of the EPG.
         self.epg_bypass = {epg: _aci_epg_bypass(graph, epg) for epg in self.epg_intervals}
+        self.epg_bypass.update(
+            {uid: contract_bypass(vrf.props.get("contract_bypass")) for uid, vrf in external_vrf.items()}
+        )
         self.aci_vrfs = frozenset(
             vrf.uid for bd in graph.labels.get("BridgeDomain", ()) for vrf in graph.targets(bd, "IN_VRF")
         )
@@ -1163,6 +1235,7 @@ class _AciIndex:
             for vrf in self.aci_vrfs
         }
         self._scopes: dict[str, _AciScope] = {}
+        self._external_scopes: dict[str, tuple[_AciScope, ...]] = {}
         self._filters: dict[str, Predicate | None] = {}
 
     def contract_filter(self, graph: GraphInventory, contract_uid: str) -> Predicate | None:
@@ -1204,7 +1277,65 @@ class _AciIndex:
                 elif vrf_of[epg] in fabric and (rest := _subtract_intervals(values, owned)):
                     destinations[epg] = rest
         else:
-            sources, destinations = {}, dict(self.epg_intervals)
+            # `external_scopes` holds the fabrics of a packet from outside.
+            sources, destinations = {}, {}
+            fabric = frozenset()
+        scope = self._scope(sources, destinations, fabric, None)
+        self._scopes[context_vrf] = scope
+        return scope
+
+    def external_scopes(self, context_vrf: str) -> tuple[_AciScope, ...]:
+        """The scopes of the fabrics that `context_vrf` is not in, one per
+        fabric. A packet from outside a fabric has the external EPG of its
+        source address as its source, and the endpoints of the fabric are its
+        destinations. The endpoints of an EPG whose VRF does not resolve are
+        a scope with no source."""
+        cached = self._external_scopes.get(context_vrf)
+        if cached is not None:
+            return cached
+        vrf_of = {epg: vrf for epg, (vrf, _pref) in self.epg_vrf.items()}
+        own = self.fabric_vrfs.get(context_vrf, frozenset())
+        out = []
+        for fabric in sorted(set(self.fabric_vrfs.values()) - {own}, key=sorted):
+            destinations = {
+                epg: values for epg, values in self.epg_intervals.items() if vrf_of[epg] in fabric
+            }
+            if destinations:
+                out.append(self._scope({}, destinations, fabric, min(fabric)))
+        if context_vrf not in self.aci_vrfs:
+            unresolved = {epg: values for epg, values in self.epg_intervals.items() if vrf_of[epg] is None}
+            if unresolved:
+                out.append(self._scope({}, unresolved, frozenset(), "unresolved"))
+        self._external_scopes[context_vrf] = tuple(out)
+        return self._external_scopes[context_vrf]
+
+    def _scope(
+        self,
+        sources: dict[str, tuple[tuple[int, int], ...]],
+        destinations: dict[str, tuple[tuple[int, int], ...]],
+        fabric: frozenset[str],
+        external: str | None,
+    ) -> _AciScope:
+        """The scope of the endpoint `sources` and `destinations` of the VRFs
+        `fabric`. The external EPGs of these VRFs classify the addresses that
+        no endpoint of the 2 sides holds. They are destinations in the scope of
+        the entry context and sources in an external scope."""
+        vrf_of = {epg: vrf for epg, (vrf, _pref) in self.epg_vrf.items()}
+        endpoints = _merge_intervals(
+            value for group in (sources, destinations) for values in group.values() for value in values
+        )
+        destination_endpoint_all = _merge_intervals(
+            value for values in destinations.values() for value in values
+        )
+        classified = {
+            uid: rest
+            for uid, values in self.external_intervals.items()
+            if vrf_of[uid] in fabric and (rest := _subtract_intervals(values, endpoints))
+        }
+        if external is None:
+            destinations = {**destinations, **classified}
+        else:
+            sources = {**sources, **classified}
         source_held, destination_held = _held_twice(sources), _held_twice(destinations)
         source_predicates = {
             epg: _ranges("source_address", rest)
@@ -1233,7 +1364,8 @@ class _AciIndex:
         )
         source_all = _merge_intervals(value for values in sources.values() for value in values)
         destination_all = _merge_intervals(value for values in destinations.values() for value in values)
-        scope = _AciScope(
+        destination_any = _ranges("destination_address", destination_all)
+        return _AciScope(
             MappingProxyType(source_predicates),
             MappingProxyType(destination_predicates),
             MappingProxyType({vrf: frozenset(epgs) for vrf, epgs in vrf_destinations.items()}),
@@ -1247,11 +1379,15 @@ class _AciIndex:
             source_all,
             destination_all,
             _ranges("source_address", source_all),
-            _ranges("destination_address", destination_all),
+            destination_any,
             AnyOf(ambiguous) if ambiguous else None,
+            destination_endpoint_all,
+            # one object for the 2 fields of a scope with no external destination
+            destination_any
+            if destination_endpoint_all == destination_all
+            else _ranges("destination_address", destination_endpoint_all),
+            external,
         )
-        self._scopes[context_vrf] = scope
-        return scope
 
 
 def _aci_index(graph: GraphInventory, af: int) -> _AciIndex:
@@ -1261,6 +1397,17 @@ def _aci_index(graph: GraphInventory, af: int) -> _AciIndex:
     if index is None:
         index = graph.derived[key] = _AciIndex(graph, af)
     return index
+
+
+def _aci_external_vrfs(graph: GraphInventory, uid: str) -> dict[str, GraphNode]:
+    """The VRFs of the L3Outs of an external EPG, by uid. The L3Out holds the
+    external EPG (`HAS`), or the external EPG is a part of it (`PART_OF`)."""
+    l3outs = [
+        node
+        for node in (*graph.sources(uid, "HAS"), *graph.targets(uid, "PART_OF"))
+        if "L3Out" in node.labels
+    ]
+    return {vrf.uid: vrf for l3out in l3outs for vrf in graph.targets(l3out.uid, "IN_VRF")}
 
 
 def _aci_epg_vrf(graph: GraphInventory, epg_uid: str) -> tuple[str | None, Any]:

@@ -623,11 +623,19 @@ def _model_in(graph, vrf, *, source="10.1.1.10", destination="10.1.2.10", port=4
         "source_port": 1000,
         "destination_port": port,
     }
-    outcomes = {
-        "pass" if edge.target == downstream else nodes[edge.target].terminal
-        for edge in nodes[expansion.entry].edges
-        if _holds(edge.predicate, packet)
-    }
+    outcomes = set()
+    pending = [expansion.entry]
+    while pending:
+        # an edge to the gate of the next scope is followed (`external_scopes`)
+        for edge in nodes[pending.pop()].edges:
+            if not _holds(edge.predicate, packet):
+                continue
+            if edge.target == downstream:
+                outcomes.add("pass")
+            elif nodes[edge.target].terminal is None:
+                pending.append(edge.target)
+            else:
+                outcomes.add(nodes[edge.target].terminal)
     return outcomes, expansion
 
 
@@ -888,3 +896,140 @@ def test_a_destination_in_a_vrf_of_the_same_fabric_is_an_endpoint():
     outcomes, expansion = _model_in(_graph(nodes, unlinked), "vrf", destination="10.3.3.10")
     assert outcomes == {"unknown"}
     assert "ACI_VRF_ENFORCEMENT_UNKNOWN" not in expansion.gaps
+
+
+# --- external EPGs ---------------------------------------------------------------------------
+
+
+def _external_fabric(*, consumes=("ct",), provides=(), subnets=("10.9.0.0/16",), part_of=False, more=()):
+    """`_contracted_fabric` with the L3Out "out" of the VRF "vrf" and its external
+    EPG "ext", which matches `subnets`. epg-a consumes and epg-b provides the
+    contract "ct" on tcp/443. `more` holds (uid, subnet) of more external EPGs
+    of the L3Out, with no contract."""
+    nodes, relations = _contracted_fabric()
+    nodes.append(("out", {"L3Out"}, {}))
+    relations.append(("IN_VRF", "out", "vrf"))
+    for uid, matched in (("ext", subnets), *((uid, (subnet,)) for uid, subnet in more)):
+        nodes.append((uid, {"ExtEpg"}, {}))
+        relations.append(("PART_OF", uid, "out") if part_of else ("HAS", "out", uid))
+        for index, subnet in enumerate(matched):
+            nodes.append((f"pfx-{uid}-{index}", {"Prefix"}, {"cidr": subnet}))
+            relations.append(("MATCHES", uid, f"pfx-{uid}-{index}"))
+    relations += [("CONSUMES", "ext", contract) for contract in consumes]
+    relations += [("PROVIDES", "ext", contract) for contract in provides]
+    return _graph(nodes, relations)
+
+
+OUTSIDE = {"source": "10.9.1.1", "destination": "10.1.2.10"}
+
+
+@pytest.mark.parametrize("part_of", [False, True], ids=["l3out-has", "part-of-l3out"])
+def test_a_packet_from_outside_has_the_external_epg_of_its_source(part_of):
+    graph = _external_fabric(part_of=part_of)
+    assert _model_in(graph, "outside", **OUTSIDE)[0] == {"pass"}
+    assert _model_in(graph, "outside", **OUTSIDE, port=80)[0] == {"deny"}
+
+
+def test_an_external_epg_with_no_contract_to_the_epg_is_denied_in_an_enforced_vrf():
+    assert _model_in(_external_fabric(consumes=()), "outside", **OUTSIDE)[0] == {"deny"}
+
+
+def test_a_source_that_no_external_epg_matches_is_unknown():
+    graph = _external_fabric()
+    assert _model_in(graph, "outside", source="192.0.2.1", destination="10.1.2.10")[0] == {"unknown"}
+
+
+def test_a_packet_from_outside_to_no_endpoint_passes():
+    graph = _external_fabric()
+    assert _model_in(graph, "outside", source="10.9.1.1", destination="10.9.2.2")[0] == {"pass"}
+
+
+def test_the_longest_subnet_of_the_vrf_classifies_the_address():
+    graph = _external_fabric(more=(("ext-2", "10.9.1.0/24"),))
+    assert _model_in(graph, "outside", **OUTSIDE)[0] == {"deny"}
+    assert _model_in(graph, "outside", source="10.9.2.1", destination="10.1.2.10")[0] == {"pass"}
+
+
+def test_an_address_of_2_external_epgs_with_the_same_subnet_is_unknown():
+    graph = _external_fabric(more=(("ext-2", "10.9.0.0/16"),))
+    assert _model_in(graph, "outside", **OUTSIDE)[0] == {"unknown"}
+
+
+def test_an_endpoint_address_inside_the_subnet_stays_the_address_of_its_epg():
+    graph = _external_fabric(subnets=("10.1.0.0/16",))
+    # 10.1.1.10 is the endpoint of epg-a, also for a packet from outside
+    assert _model_in(graph, "outside", source="10.1.1.10", destination="10.1.2.10")[0] == {"unknown"}
+    assert _model_in(graph, "vrf")[0] == {"pass"}
+
+
+def test_a_packet_from_an_epg_has_the_external_epg_of_its_destination():
+    to_outside = {"source": "10.1.1.10", "destination": "10.9.1.1"}
+    provided = _external_fabric(consumes=(), provides=("ct",))
+    assert _model_in(provided, "vrf", **to_outside)[0] == {"pass"}
+    assert _model_in(provided, "vrf", **to_outside, port=80)[0] == {"deny"}
+    assert _model_in(_external_fabric(consumes=()), "vrf", **to_outside)[0] == {"deny"}
+    # no external EPG matches the destination
+    assert _model_in(provided, "vrf", source="10.1.1.10", destination="192.0.2.1")[0] == {"unknown"}
+
+
+def test_an_external_epg_without_a_subnet_or_with_2_vrfs_classifies_no_address():
+    assert _model_in(_external_fabric(subnets=()), "outside", **OUTSIDE)[0] == {"unknown"}
+    nodes, relations = _contracted_fabric()
+    nodes += [
+        ("out", {"L3Out"}, {}),
+        ("ext", {"ExtEpg"}, {}),
+        ("pfx", {"Prefix"}, {"cidr": "10.9.0.0/16"}),
+        ("vrf-2", {"VrfInstance"}, {"pc_enf_pref": "enforced", "contract_bypass": ""}),
+    ]
+    relations += [
+        ("IN_VRF", "out", "vrf"),
+        ("IN_VRF", "out", "vrf-2"),
+        ("HAS", "out", "ext"),
+        ("MATCHES", "ext", "pfx"),
+        ("CONSUMES", "ext", "ct"),
+    ]
+    assert _model_in(_graph(nodes, relations), "outside", **OUTSIDE)[0] == {"unknown"}
+
+
+def test_a_packet_to_an_endpoint_of_another_fabric_has_the_gate_of_that_fabric():
+    """The entry VRF "vrf-1" holds epg-s, and the fabric of "vrf" holds epg-b. The
+    packet passes the gate of the entry VRF as a packet to its external EPG, and
+    the gate of the other fabric as a packet from its external EPG."""
+    nodes, relations = _contracted_fabric()
+    nodes += [
+        ("out", {"L3Out"}, {}),
+        ("ext", {"ExtEpg"}, {}),
+        ("pfx", {"Prefix"}, {"cidr": "10.0.0.0/8"}),
+        ("ep-s", {"Endpoint"}, {}),
+        ("ip-s", {"IpAddress"}, {"ip": "10.5.1.10"}),
+        ("epg-s", {"Epg"}, {}),
+        ("bd-1", {"BridgeDomain"}, {}),
+        ("vrf-1", {"VrfInstance"}, {"pc_enf_pref": "enforced", "contract_bypass": ""}),
+        ("out-1", {"L3Out"}, {}),
+        ("ext-1", {"ExtEpg"}, {}),
+        ("ct-1", {"Contract"}, {}),
+        ("subj-1", {"ContractSubject"}, {}),
+    ]
+    relations += [
+        ("IN_VRF", "out", "vrf"),
+        ("HAS", "out", "ext"),
+        ("MATCHES", "ext", "pfx"),
+        ("HAS_IP", "ep-s", "ip-s"),
+        ("IN_EPG", "ep-s", "epg-s"),
+        ("IN_BD", "epg-s", "bd-1"),
+        ("IN_VRF", "bd-1", "vrf-1"),
+        ("IN_VRF", "out-1", "vrf-1"),
+        ("HAS", "out-1", "ext-1"),
+        ("MATCHES", "ext-1", "pfx"),
+        ("CONSUMES", "epg-s", "ct-1"),
+        ("PROVIDES", "ext-1", "ct-1"),
+        ("HAS", "ct-1", "subj-1"),
+        ("USES_FILTER", "subj-1", "flt"),
+    ]
+    flow = {"source": "10.5.1.10", "destination": "10.1.2.10"}
+    # the external EPG of the second fabric consumes no contract of epg-b
+    assert _model_in(_graph(nodes, relations), "vrf-1", **flow)[0] == {"deny"}
+    relations.append(("CONSUMES", "ext", "ct"))
+    graph = _graph(nodes, relations)
+    assert _model_in(graph, "vrf-1", **flow)[0] == {"pass"}
+    assert _model_in(graph, "vrf-1", **flow, port=80)[0] == {"deny"}
