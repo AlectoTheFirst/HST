@@ -38,7 +38,7 @@ from hst.core.finalize import finalize_derivations
 from hst.core.loader import load
 from hst.core.model import Batch
 from hst.path.session import CycleSession
-from hst.path.verdict import DENY, INDETERMINATE, PERMIT
+from hst.path.verdict import DENY, INDETERMINATE
 
 URI = os.environ.get("NEO4J_TEST_URI")
 CTS = 5_200_000_000_000
@@ -332,9 +332,10 @@ FLOWS: list[Flow] = [
     Flow("vyos-return-rule", lambda: _vyos(_JUMP, named=_guard("accept", _RETURN_SOURCE)), *_TO_ETH1, 443),
 ]
 
-# The rule has no service relationship and `svc_any` is false. The gate matches
-# it on its addresses. The policy reader gives GRAPH_RULE_COLUMN_MISSING.
-CONTROL = "cisco-no-service-relationship"
+# Rule 10 of the called ruleset GUARD has the action `return`. The gate gives no
+# verdict for a flow that the rule matches. The policy reader gives the default
+# drop of the calling ruleset.
+CONTROL = "vyos-jump-return-rule"
 
 
 # --- the database ---------------------------------------------------------------------
@@ -390,16 +391,11 @@ def found(database: Any) -> Found:
     return {case.name: run_case(database, case, CTS + index) for index, case in enumerate(CASES)}
 
 
-def test_the_harness_reports_the_rule_without_a_service_relationship(
-    found: Found,
-) -> None:
+def test_the_harness_reports_the_return_rule_of_a_called_ruleset(found: Found) -> None:
     _asked, differences = found[CONTROL]
     assert differences, "the control case gave no difference"
-    assert {(d.tracer.verdict, d.rules.verdict) for d in differences} <= {
-        (PERMIT, INDETERMINATE),
-        (DENY, INDETERMINATE),
-    }
-    assert any("GRAPH_RULE_COLUMN_MISSING" in d.rules.detail for d in differences)
+    assert {(d.tracer.verdict, d.rules.verdict) for d in differences} == {(INDETERMINATE, DENY)}
+    assert all("returns on a match" in d.tracer.detail for d in differences)
 
 
 def test_every_case_asks_probes(found: Found) -> None:

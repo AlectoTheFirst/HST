@@ -206,6 +206,35 @@ def test_regions_one_rule_decided_alike_merge():
     assert len(decided) == 1 and decided[0][4] == [(0, 442, 443)]
 
 
+# --- a service that is not Any with no service member ------------------------------
+
+
+def _stated_empty():
+    return [_rule(3, "accept", svc_any=False, svc_any_stated=True, svc_obj_count=0), _rule(4, "drop")]
+
+
+def test_a_stated_service_with_no_member_is_undecided_on_the_point_path():
+    m = fw._first_match_point(_stated_empty(), "a", "b", SRC, DST, 443, "tcp")
+    assert m is not None
+    assert (m[0]["pos"], classify_action(m[0]["action"])) == (3, INDETERMINATE)
+    assert m[0]["indeterminate_reason"] == fw._EMPTY_SERVICE_REASON
+
+
+def test_a_stated_service_with_no_member_is_undecided_on_the_region_path():
+    regions = fw._first_match_regions(
+        _stated_empty(), "a", "b", SRC, DST, _protoset(["tcp"]), _ports("80-443")
+    )
+    assert [(r["pos"], classify_action(r["action"])) for r, *_ in regions] == [(3, INDETERMINATE)]
+
+
+def test_a_rule_with_no_recorded_service_and_no_member_matches_on_its_addresses():
+    rules = [_rule(3, "accept", svc_any=False, svc_obj_count=0), _rule(4, "drop")]
+    m = fw._first_match_point(rules, "a", "b", SRC, DST, 443, "tcp")
+    assert m is not None and (m[0]["pos"], classify_action(m[0]["action"])) == (3, PERMIT)
+    regions = fw._first_match_regions(rules, "a", "b", SRC, DST, _protoset(["tcp"]), _ports("80-443"))
+    assert [(r["pos"], classify_action(r["action"])) for r, *_ in regions] == [(3, PERMIT)]
+
+
 # --- a negated service with no service member --------------------------------------
 
 

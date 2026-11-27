@@ -47,6 +47,7 @@ def _rows(batch, rb_uid: str) -> list[dict[str, Any]]:
             "src_any": bool(p.get("src_any")),
             "dst_any": bool(p.get("dst_any")),
             "svc_any": bool(p.get("svc_any")),
+            "svc_any_stated": p.get("svc_any") is not None,
             "src_negate": bool(p.get("src_negate")),
             "dst_negate": bool(p.get("dst_negate")),
             "svc_negate": bool(p.get("svc_negate")),

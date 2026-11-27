@@ -130,6 +130,7 @@ RETURN r.uid AS uid, r.position AS pos, r.action AS action, r.name AS name,
        coalesce(r.install_on_unresolved, false) AS install_on_unresolved,
        coalesce(r.src_any, false) AS src_any, coalesce(r.dst_any, false) AS dst_any,
        coalesce(r.svc_any, false) AS svc_any,
+       r.svc_any IS NOT NULL AS svc_any_stated,
        coalesce(r.src_negate, false) AS src_negate, coalesce(r.dst_negate, false) AS dst_negate,
        coalesce(r.svc_negate, false) AS svc_negate,
        src_cidrs, src_ips,
@@ -177,6 +178,8 @@ _IFACE_UNRESOLVED_REASON = (
     "the rule is scoped to {side} interface {scope!r}; this leg's {side} interface name did not resolve"
 )
 _NEGATED_EMPTY_SERVICE_REASON = "this rule's service is negated and lists no service object"
+# The rule records `svc_any` false and has no SVC edge (`svc_any_stated`).
+_EMPTY_SERVICE_REASON = "the service side is not Any and lists no service object"
 # a rule whose connection state clause the collector could not read
 _UNREAD_STATE_REASON = "the rule's connection state clause could not be read"
 # a rule with vendor fields its normalizer does not model (`unmodeled_fields`)
@@ -687,6 +690,8 @@ def _first_match_point(
                     svc_undecided = _SRC_PORT_REASON
                 else:
                     svc_undecided = _NO_SERVICE_REASON
+            elif not pairs and not svc_negate and r.get("svc_any_stated"):
+                svc_undecided = _EMPTY_SERVICE_REASON
             else:
                 # The un-negated predicate over the known members is computed first.
                 # Opacity is a property of the side and is decided before the negation.
@@ -697,7 +702,9 @@ def _first_match_point(
                         _combine_and(_proto_matches([p] if p else [], proto), _port_matches(q, port))
                         for p, q in pairs
                     ]
-                    or [_MATCH]  # with no SVC edge, the rule matches on its addresses alone
+                    # A rule with no SVC edge and no recorded `svc_any` matches
+                    # on its addresses alone.
+                    or [_MATCH]
                 )
                 if state == _MATCH:
                     if svc_src_port:
@@ -856,8 +863,11 @@ def _service_split(
         # A negated side with no service object is undecided, as in the point
         # path.
         return [("undecided", INDETERMINATE, _NEGATED_EMPTY_SERVICE_REASON, proto_sub, port_sub)]
+    if not pairs and r.get("svc_any_stated"):
+        return [("undecided", INDETERMINATE, _EMPTY_SERVICE_REASON, proto_sub, port_sub)]
     if not pairs:
-        # With no SVC edge, the rule matches on its addresses alone.
+        # A rule with no SVC edge and no recorded `svc_any` matches on its
+        # addresses alone.
         return [("match", r["action"], r.get("indeterminate_reason"), proto_sub, port_sub)]
 
     regions = _service_regions(pairs, proto_sub, port_sub)
@@ -2118,6 +2128,7 @@ _JUMP_DIMENSIONS: dict[str, tuple[str, ...]] = {
     ),
     "service": (
         "svc_any",
+        "svc_any_stated",
         "svc_negate",
         "protos",
         "ports",

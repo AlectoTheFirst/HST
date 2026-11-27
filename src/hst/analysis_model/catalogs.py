@@ -175,6 +175,7 @@ def _firewall_row(
         "src_any": props.get("src_any") is True,
         "dst_any": props.get("dst_any") is True,
         "svc_any": props.get("svc_any") is True,
+        "svc_any_stated": props.get("svc_any") is not None,
         "src_negate": props.get("src_negate") is True,
         "dst_negate": props.get("dst_negate") is True,
         "svc_negate": props.get("svc_negate") is True,
