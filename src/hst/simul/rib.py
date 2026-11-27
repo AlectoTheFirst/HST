@@ -1079,7 +1079,13 @@ class _Run:
 
     # -- platforms and policies
 
-    def platform(self, context_uid: str) -> str:
+    def platform(self, context_uid: str, *, local: bool = False) -> str:
+        """The platform profile of a context. A platform with no profile is
+        reported and gets the IOS-XE profile.
+
+        `local` is for the distance of a connected or a static route. Each
+        profile has the same 2 values, so a platform with no profile is not
+        reported."""
         raw = str((self.contexts.get(context_uid) or {}).get("platform") or self.inp.platform)
         known = platforms.known(raw)
         if known is not None:
@@ -1088,7 +1094,7 @@ class _Run:
             # The two FRR profiles differ only in the no-policy default of BGP. A
             # BGP process reads its profile from its node (`process_platform`).
             return platforms.FRR_TRADITIONAL
-        return platforms.normalize(raw, self.errors)
+        return platforms.IOSXE if local else platforms.normalize(raw, self.errors)
 
     def process_platform(self, process: Mapping[str, Any]) -> str:
         raw = process.get("platform")
@@ -1182,7 +1188,7 @@ class _Run:
                     "malformed-route", f"connected prefix {row.get('prefix')!r} is not a network; left out"
                 )
                 continue
-            platform = self.platform(context_uid)
+            platform = self.platform(context_uid, local=True)
             _offer(
                 store,
                 Candidate(
@@ -1305,7 +1311,7 @@ class _Run:
                 "malformed-route", f"static prefix {row.get('prefix')!r} is not a network; left out"
             )
             return None
-        platform = self.platform(context_uid)
+        platform = self.platform(context_uid, local=True)
         admin = row.get("admin")
         next_hop_context = _text(row.get("next_hop_context_uid"))
         return Candidate(

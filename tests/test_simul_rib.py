@@ -328,6 +328,26 @@ def test_a_static_beats_an_ospf_route_on_administrative_distance_and_loses_to_a_
     assert result.model_errors == []
 
 
+def test_a_platform_with_no_profile_is_not_reported_for_connected_and_static_routes():
+    inp = rib.RibInput(
+        contexts=[_ctx(platform="netscaler")],
+        connected=_r1_connected(),
+        static=[_static("192.168.2.0/24", "10.0.13.3")],
+    )
+    result = rib.compute(inp)
+    assert (_row(result, "10.0.13.0/30")["admin"], _row(result, "192.168.2.0/24")["admin"]) == (0, 1)
+    assert result.model_errors == []
+
+
+def test_a_platform_with_no_profile_is_reported_for_an_ospf_process():
+    inp = rib.RibInput(
+        contexts=[_ctx(platform="netscaler")],
+        connected=_r1_connected(),
+        ospf=[_ospf_entry()],
+    )
+    assert "unknown-platform" in {error["kind"] for error in rib.compute(inp).model_errors}
+
+
 @pytest.mark.parametrize(
     "platform", [platforms.IOSXE, platforms.NXOS, platforms.IOSXR, platforms.FRR_TRADITIONAL]
 )
