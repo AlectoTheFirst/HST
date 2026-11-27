@@ -74,6 +74,8 @@ CLASSES: tuple[str, ...] = (
     "fvRsCons",
     "l3extOut",
     "l3extInstP",
+    "l3extRsEctx",
+    "l3extSubnet",
     "vnsAbsGraph",
     "vnsGraphInst",
     "vnsSvcRedirectPol",
@@ -408,7 +410,7 @@ def normalize_apic(
     domains = _AciDomains(raw, fabric, l3dom)
     _fabric_stage(b, raw, fabric, resolver)
     _tenant_stage(b, raw, fabric, l3dom, domains)
-    _contract_stage(b, raw, fabric)
+    _contract_stage(b, raw, fabric, domains)
     _service_stage(b, raw, fabric, l3dom, domains, resolver)
     _ospf_stage(b, raw, fabric, resolver)
     normalize_mtu_apic(b, raw, fabric, resolver)
@@ -646,9 +648,14 @@ def _contract_bypass(raw: dict[str, Any]) -> dict[str, str]:
     return {dn: ",".join(sorted(values)) for dn, values in flags.items()}
 
 
-def _contract_stage(b: GraphBuilder, raw: dict[str, Any], fabric: str) -> None:
+def _contract_stage(b: GraphBuilder, raw: dict[str, Any], fabric: str, domains: _AciDomains) -> None:
     """Write the contract graph from vzBrCP, vzSubj, vzRsSubjFiltAtt, vzRsFiltAtt,
-    vzFilter, vzEntry, fvRsProv, fvRsCons, l3extOut and l3extInstP.
+    vzFilter, vzEntry, fvRsProv, fvRsCons, l3extOut, l3extInstP, l3extRsEctx and
+    l3extSubnet.
+
+    An external EPG matches each of its subnets that has the scope
+    `import-security`. A contract relation of an external EPG starts at its
+    `ExtEpg` node.
     """
 
     def aci_node(label: str, dn: str, **props) -> str:
@@ -741,7 +748,9 @@ def _contract_stage(b: GraphBuilder, raw: dict[str, Any], fabric: str) -> None:
             tdn = a.get("tDn")
             if not tdn:
                 continue
-            b.rel(rtype, "Epg", uid.aci(fabric, _parent_dn(a["dn"])), "Contract", uid.aci(fabric, tdn))
+            owner = _parent_dn(a["dn"])
+            label = "ExtEpg" if owner.rsplit("/", 1)[-1].startswith("instP-") else "Epg"
+            b.rel(rtype, label, uid.aci(fabric, owner), "Contract", uid.aci(fabric, tdn))
     for mo in raw.get("l3extOut", []):
         a = _attrs(mo)
         out = aci_node("L3Out", a["dn"], name=a.get("name"))
@@ -750,6 +759,29 @@ def _contract_stage(b: GraphBuilder, raw: dict[str, Any], fabric: str) -> None:
         a = _attrs(mo)
         ext = aci_node("ExtEpg", a["dn"], name=a.get("name"))
         b.rel("PART_OF", "ExtEpg", ext, "L3Out", uid.aci(fabric, _parent_dn(a["dn"])))
+    l3out_ctx: dict[str, str] = {}
+    for mo in raw.get("l3extRsEctx", []):
+        a = _attrs(mo)
+        tdn = a.get("tDn")
+        if not tdn:
+            continue
+        l3out_ctx[_parent_dn(a["dn"])] = tdn
+        b.rel("IN_VRF", "L3Out", uid.aci(fabric, _parent_dn(a["dn"])), "VrfInstance", uid.aci(fabric, tdn))
+    for mo in raw.get("l3extSubnet", []):
+        a = _attrs(mo)
+        if "import-security" not in str(a.get("scope") or "").split(","):
+            continue
+        ext_dn = _parent_dn(a["dn"])
+        dom = domains.for_ctx(l3out_ctx.get(_parent_dn(ext_dn)))
+        pfx = b.node(
+            "Prefix",
+            uid.aci(fabric, a["dn"]),
+            cidr=str(ipaddress.ip_network(a["ip"], strict=False)),
+            l3dom=dom,
+            anchor=dom,
+            dn=a["dn"],
+        )
+        b.rel("MATCHES", "ExtEpg", uid.aci(fabric, ext_dn), "Prefix", pfx)
 
 
 def _service_stage(

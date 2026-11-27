@@ -428,6 +428,28 @@ RAW["fvRsCons"] = [
 ]
 RAW["l3extOut"] = [_mo("l3extOut", dn="uni/tn-prod/out-wan", name="wan")]
 RAW["l3extInstP"] = [_mo("l3extInstP", dn="uni/tn-prod/out-wan/instP-internet", name="internet")]
+RAW["l3extRsEctx"] = [_mo("l3extRsEctx", dn="uni/tn-prod/out-wan/rsectx", tDn="uni/tn-prod/ctx-prod-vrf")]
+RAW["l3extSubnet"] = [
+    _mo(
+        "l3extSubnet",
+        dn="uni/tn-prod/out-wan/instP-internet/extsubnet-[198.51.100.0/24]",
+        ip="198.51.100.0/24",
+        scope="import-security",
+    ),
+    _mo(
+        "l3extSubnet",
+        dn="uni/tn-prod/out-wan/instP-internet/extsubnet-[203.0.113.0/24]",
+        ip="203.0.113.0/24",
+        scope="export-rtctrl",
+    ),
+]
+RAW["fvRsCons"].append(
+    _mo(
+        "fvRsCons",
+        dn="uni/tn-prod/out-wan/instP-internet/rscons-web-to-be",
+        tDn="uni/tn-prod/brc-web-to-be",
+    )
+)
 # vzSubj returns subjects of every contract flavor, including out-of-band
 # contracts (vzOOBBrCP) that the collector does not fetch.
 RAW["vzSubj"].append(_mo("vzSubj", dn="uni/tn-common/oobbrc-default/subj-default", name="default"))
@@ -489,6 +511,24 @@ def test_l3out_hierarchy():
     ext = uidmod.aci("fab1", "uni/tn-prod/out-wan/instP-internet")
     t = uidmod.aci("fab1", "uni/tn-prod")
     assert ("PART_OF", out, t) in rels and ("PART_OF", ext, out) in rels
+
+
+def test_an_external_epg_has_its_vrf_its_security_subnets_and_its_contracts():
+    batch = _norm()
+    from hst.core import uid as uidmod
+
+    out = uidmod.aci("fab1", "uni/tn-prod/out-wan")
+    ext = uidmod.aci("fab1", "uni/tn-prod/out-wan/instP-internet")
+    rels = {(r.rel_type, r.start_label, r.start_uid, r.end_label, r.end_uid) for r in batch.rels}
+    assert ("IN_VRF", "L3Out", out, "VrfInstance", uidmod.aci("fab1", "uni/tn-prod/ctx-prod-vrf")) in rels
+    matched = {end for kind, _label, start, _end_label, end in rels if kind == "MATCHES" and start == ext}
+    # the subnet with the scope export-rtctrl classifies no packet
+    assert matched == {uidmod.aci("fab1", "uni/tn-prod/out-wan/instP-internet/extsubnet-[198.51.100.0/24]")}
+    (prefix,) = [n for n in batch.nodes if n.uid in matched]
+    assert (prefix.label, prefix.props["cidr"]) == ("Prefix", "198.51.100.0/24")
+    contract = uidmod.aci("fab1", "uni/tn-prod/brc-web-to-be")
+    assert ("CONSUMES", "ExtEpg", ext, "Contract", contract) in rels
+    assert not [r for r in rels if r[0] == "CONSUMES" and r[1] == "Epg" and r[2] == ext]
 
 
 RAW["vnsAbsGraph"] = [_mo("vnsAbsGraph", dn="uni/tn-prod/AbsGraph-fw-insert", name="fw-insert")]
