@@ -1414,17 +1414,59 @@ def _lpm_predicate(row: Mapping[str, Any], rows: Sequence[Mapping[str, Any]], af
     return _LongestMatch([item for item in rows if str(item.get("context_uid")) == context]).predicate(row)
 
 
+# The state of the member that forwards for a first-hop redundancy group
+# (core/labels.py `HAS_IP`).
+_FHRP_FORWARDING = {"hsrp": "active", "vrrp": "master"}
+
+
+def _fhrp_standby_addresses(graph: GraphInventory, interface_uid: str) -> tuple[str, ...]:
+    """The virtual addresses of the first-hop redundancy groups in which the
+    interface does not forward. The rule is the rule of the tracer
+    (path/trace.py). Each member of the group has a recorded state, and 1
+    other member has the forwarding state."""
+    out = []
+    for held in graph.outgoing.get((interface_uid, "HAS_IP"), ()):
+        kind = str(held.props.get("fhrp") or "").lower()
+        if kind not in _FHRP_FORWARDING:
+            continue
+        states = [
+            str(member.props.get("state") or "").lower()
+            for member in graph.incoming.get((held.end, "HAS_IP"), ())
+            if str(member.props.get("fhrp") or "").lower() == kind
+            and member.props.get("group") == held.props.get("group")
+        ]
+        own = str(held.props.get("state") or "").lower()
+        address = graph.nodes[held.end].props.get("ip") if held.end in graph.nodes else None
+        if (
+            address
+            and not {"", "unknown"} & set(states)
+            and states.count(_FHRP_FORWARDING[kind]) == 1
+            and own != _FHRP_FORWARDING[kind]
+        ):
+            out.append(str(address))
+    return tuple(out)
+
+
 def _source_attachments(
-    network: Network, request: RequestSet, af: int
+    network: Network, request: RequestSet, af: int, graph: GraphInventory | None = None
 ) -> dict[str, tuple[tuple[int, int, int], ...]]:
-    """Intersect every source interval with every qualified interface prefix."""
+    """Intersect every source interval with every qualified interface prefix.
+
+    With `graph`, a prefix whose first-hop redundancy group has another
+    member as its forwarder is no attachment of the interface
+    (`_fhrp_standby_addresses`)."""
     attached: dict[str, set[tuple[int, int, int]]] = defaultdict(set)
     for interface in network.interfaces:
         if interface.context_uid is None:
             continue
+        standby = (
+            [ip_address(value) for value in _fhrp_standby_addresses(graph, interface.uid)]
+            if graph is not None
+            else []
+        )
         for prefix_text in interface.prefixes:
             prefix = ip_network(prefix_text, strict=False)
-            if prefix.version != af:
+            if prefix.version != af or any(address in prefix for address in standby):
                 continue
             low, high = int(prefix.network_address), int(prefix.broadcast_address)
             for family, source_low, source_high in request.sources:
@@ -1548,7 +1590,7 @@ def normalize_network(
     # and the zone policy of that gateway interface judge them. In a context
     # without an owning device, the device of that interface is the device of
     # the source state.
-    attachments = _source_attachments(network, request, af) if request.source_context is None else None
+    attachments = _source_attachments(network, request, af, graph) if request.source_context is None else None
     attached: dict[str, tuple[tuple[int, int, int], ...]] = (
         dict(attachments)
         if attachments is not None
