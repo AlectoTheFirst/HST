@@ -1024,9 +1024,13 @@ class Estate:
         for iface in self.ctx_ifaces[code]:
             g.rel("ENFORCES", iface, pbr)
         first = True
+        # the contracts of a tier pair with 1 tier in this fabric, each as (contract, consumer, provider)
+        # with None for the tier of the other fabric; the campus external EPG stands for that tier
+        crossing = []
         for app, spec in APPS.items():
             for src, dst, port, since in spec["flows"]:
-                if since > v or f"{app}/{src}" not in epg_of or f"{app}/{dst}" not in epg_of:
+                consumer, provider = epg_of.get(f"{app}/{src}"), epg_of.get(f"{app}/{dst}")
+                if since > v or (consumer is None and provider is None):
                     continue
                 c = g.node(
                     "Contract",
@@ -1038,8 +1042,11 @@ class Estate:
                 subj = g.node("ContractSubject", f"{c}/subj-{port}", name=f"tcp-{port}")
                 g.rel("HAS", c, subj)
                 g.rel("USES_FILTER", subj, aci_filter(port), props={"action": "permit"})
-                g.rel("CONSUMES", epg_of[f"{app}/{src}"], c)
-                g.rel("PROVIDES", epg_of[f"{app}/{dst}"], c)
+                if consumer is None or provider is None:
+                    crossing.append((c, consumer, provider))
+                    continue
+                g.rel("CONSUMES", consumer, c)
+                g.rel("PROVIDES", provider, c)
                 if first:
                     g.rel("APPLIES_GRAPH", subj, sgt)
                     first = False
@@ -1059,6 +1066,9 @@ class Estate:
         ext = g.node("ExtEpg", f"{l3out}/instP-campus", name="campus-users")
         g.rel("HAS", l3out, ext)
         g.rel("MATCHES", ext, self.corp_super)
+        for c, consumer, provider in crossing:
+            g.rel("CONSUMES", consumer or ext, c)
+            g.rel("PROVIDES", provider or ext, c)
         for key, epg in epg_of.items():
             if key != "infra/shared":
                 g.rel("CONSUMES", epg, infra_c)

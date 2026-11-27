@@ -521,6 +521,8 @@ nodes:
   - {"label": "ContractSubject", "uid": "aci:fab-dc1:uni/tn-PROD/brc-claims-web-to-app/subj-8009", "props": {"name": "tcp-8009"}}
   - {"label": "AciFilter", "uid": "aci:fab-dc1:uni/tn-PROD/flt-tcp-8009", "props": {"name": "tcp-8009"}}
   - {"label": "FilterEntry", "uid": "aci:fab-dc1:uni/tn-PROD/flt-tcp-8009/e-tcp-8009", "props": {"proto": "tcp", "ether_type": "ip", "s_from_port": "unspecified", "s_to_port": "unspecified", "d_from_port": "8009", "d_to_port": "8009", "tcp_rules": "unspecified", "apply_to_frag": "no"}}
+  - {"label": "Contract", "uid": "aci:fab-dc1:uni/tn-PROD/brc-claims-app-to-db", "props": {"name": "claims-app-to-db", "scope": "context"}}
+  - {"label": "ContractSubject", "uid": "aci:fab-dc1:uni/tn-PROD/brc-claims-app-to-db/subj-5432", "props": {"name": "tcp-5432"}}
   - {"label": "Contract", "uid": "aci:fab-dc1:uni/tn-PROD/brc-infra-services", "props": {"name": "infra-services", "scope": "context"}}
   - {"label": "ContractSubject", "uid": "aci:fab-dc1:uni/tn-PROD/brc-infra-services/subj-udp-53", "props": {"name": "udp-53"}}
   - {"label": "AciFilter", "uid": "aci:fab-dc1:uni/tn-PROD/flt-udp-53", "props": {"name": "udp-53"}}
@@ -1121,6 +1123,10 @@ nodes:
   - {"label": "ContractSubject", "uid": "aci:fab-dc2:uni/tn-PROD/brc-payments-api-to-db/subj-1521", "props": {"name": "tcp-1521"}}
   - {"label": "AciFilter", "uid": "aci:fab-dc2:uni/tn-PROD/flt-tcp-1521", "props": {"name": "tcp-1521"}}
   - {"label": "FilterEntry", "uid": "aci:fab-dc2:uni/tn-PROD/flt-tcp-1521/e-tcp-1521", "props": {"proto": "tcp", "ether_type": "ip", "s_from_port": "unspecified", "s_to_port": "unspecified", "d_from_port": "1521", "d_to_port": "1521", "tcp_rules": "unspecified", "apply_to_frag": "no"}}
+  - {"label": "Contract", "uid": "aci:fab-dc2:uni/tn-PROD/brc-claims-app-to-db", "props": {"name": "claims-app-to-db", "scope": "context"}}
+  - {"label": "ContractSubject", "uid": "aci:fab-dc2:uni/tn-PROD/brc-claims-app-to-db/subj-5432", "props": {"name": "tcp-5432"}}
+  - {"label": "AciFilter", "uid": "aci:fab-dc2:uni/tn-PROD/flt-tcp-5432", "props": {"name": "tcp-5432"}}
+  - {"label": "FilterEntry", "uid": "aci:fab-dc2:uni/tn-PROD/flt-tcp-5432/e-tcp-5432", "props": {"proto": "tcp", "ether_type": "ip", "s_from_port": "unspecified", "s_to_port": "unspecified", "d_from_port": "5432", "d_to_port": "5432", "tcp_rules": "unspecified", "apply_to_frag": "no"}}
   - {"label": "Contract", "uid": "aci:fab-dc2:uni/tn-PROD/brc-intranet-web-to-db", "props": {"name": "intranet-web-to-db", "scope": "context"}}
   - {"label": "ContractSubject", "uid": "aci:fab-dc2:uni/tn-PROD/brc-intranet-web-to-db/subj-3306", "props": {"name": "tcp-3306"}}
   - {"label": "AciFilter", "uid": "aci:fab-dc2:uni/tn-PROD/flt-tcp-3306", "props": {"name": "tcp-3306"}}
@@ -4037,6 +4043,9 @@ rels:
   - {"type": "USES_FILTER", "start": ["ContractSubject", "aci:fab-dc1:uni/tn-PROD/brc-claims-web-to-app/subj-8009"], "end": ["AciFilter", "aci:fab-dc1:uni/tn-PROD/flt-tcp-8009"], "props": {"action": "permit"}}
   - {"type": "CONSUMES", "start": ["Epg", "aci:fab-dc1:uni/tn-PROD/ap-claims/epg-web"], "end": ["Contract", "aci:fab-dc1:uni/tn-PROD/brc-claims-web-to-app"]}
   - {"type": "PROVIDES", "start": ["Epg", "aci:fab-dc1:uni/tn-PROD/ap-claims/epg-app"], "end": ["Contract", "aci:fab-dc1:uni/tn-PROD/brc-claims-web-to-app"]}
+  - {"type": "HAS", "start": ["Tenant", "aci:fab-dc1:uni/tn-PROD"], "end": ["Contract", "aci:fab-dc1:uni/tn-PROD/brc-claims-app-to-db"]}
+  - {"type": "HAS", "start": ["Contract", "aci:fab-dc1:uni/tn-PROD/brc-claims-app-to-db"], "end": ["ContractSubject", "aci:fab-dc1:uni/tn-PROD/brc-claims-app-to-db/subj-5432"]}
+  - {"type": "USES_FILTER", "start": ["ContractSubject", "aci:fab-dc1:uni/tn-PROD/brc-claims-app-to-db/subj-5432"], "end": ["AciFilter", "aci:fab-dc1:uni/tn-PROD/flt-tcp-5432"], "props": {"action": "permit"}}
   - {"type": "HAS", "start": ["Tenant", "aci:fab-dc1:uni/tn-PROD"], "end": ["Contract", "aci:fab-dc1:uni/tn-PROD/brc-infra-services"]}
   - {"type": "HAS", "start": ["Contract", "aci:fab-dc1:uni/tn-PROD/brc-infra-services"], "end": ["ContractSubject", "aci:fab-dc1:uni/tn-PROD/brc-infra-services/subj-udp-53"]}
   - {"type": "HAS", "start": ["Tenant", "aci:fab-dc1:uni/tn-PROD"], "end": ["AciFilter", "aci:fab-dc1:uni/tn-PROD/flt-udp-53"]}
@@ -4055,6 +4064,8 @@ rels:
   - {"type": "IN_VRF", "start": ["L3Out", "aci:fab-dc1:uni/tn-PROD/out-campus"], "end": ["VrfInstance", "vrf:aci:fab-dc1:tn-PROD:CTX1"]}
   - {"type": "HAS", "start": ["L3Out", "aci:fab-dc1:uni/tn-PROD/out-campus"], "end": ["ExtEpg", "aci:fab-dc1:uni/tn-PROD/out-campus/instP-campus"]}
   - {"type": "MATCHES", "start": ["ExtEpg", "aci:fab-dc1:uni/tn-PROD/out-campus/instP-campus"], "end": ["Prefix", "pfx:corp:10.0.0.0/8"]}
+  - {"type": "CONSUMES", "start": ["Epg", "aci:fab-dc1:uni/tn-PROD/ap-claims/epg-app"], "end": ["Contract", "aci:fab-dc1:uni/tn-PROD/brc-claims-app-to-db"]}
+  - {"type": "PROVIDES", "start": ["ExtEpg", "aci:fab-dc1:uni/tn-PROD/out-campus/instP-campus"], "end": ["Contract", "aci:fab-dc1:uni/tn-PROD/brc-claims-app-to-db"]}
   - {"type": "CONSUMES", "start": ["Epg", "aci:fab-dc1:uni/tn-PROD/ap-webshop/epg-web"], "end": ["Contract", "aci:fab-dc1:uni/tn-PROD/brc-infra-services"]}
   - {"type": "HAS", "start": ["Tenant", "aci:fab-dc1:uni/tn-PROD"], "end": ["Contract", "aci:fab-dc1:uni/tn-PROD/brc-users-to-webshop-web"]}
   - {"type": "HAS", "start": ["Contract", "aci:fab-dc1:uni/tn-PROD/brc-users-to-webshop-web"], "end": ["ContractSubject", "aci:fab-dc1:uni/tn-PROD/brc-users-to-webshop-web/subj-8443"]}
@@ -5243,6 +5254,11 @@ rels:
   - {"type": "USES_FILTER", "start": ["ContractSubject", "aci:fab-dc2:uni/tn-PROD/brc-payments-api-to-db/subj-1521"], "end": ["AciFilter", "aci:fab-dc2:uni/tn-PROD/flt-tcp-1521"], "props": {"action": "permit"}}
   - {"type": "CONSUMES", "start": ["Epg", "aci:fab-dc2:uni/tn-PROD/ap-payments/epg-api"], "end": ["Contract", "aci:fab-dc2:uni/tn-PROD/brc-payments-api-to-db"]}
   - {"type": "PROVIDES", "start": ["Epg", "aci:fab-dc2:uni/tn-PROD/ap-payments/epg-db"], "end": ["Contract", "aci:fab-dc2:uni/tn-PROD/brc-payments-api-to-db"]}
+  - {"type": "HAS", "start": ["Tenant", "aci:fab-dc2:uni/tn-PROD"], "end": ["Contract", "aci:fab-dc2:uni/tn-PROD/brc-claims-app-to-db"]}
+  - {"type": "HAS", "start": ["Contract", "aci:fab-dc2:uni/tn-PROD/brc-claims-app-to-db"], "end": ["ContractSubject", "aci:fab-dc2:uni/tn-PROD/brc-claims-app-to-db/subj-5432"]}
+  - {"type": "HAS", "start": ["Tenant", "aci:fab-dc2:uni/tn-PROD"], "end": ["AciFilter", "aci:fab-dc2:uni/tn-PROD/flt-tcp-5432"]}
+  - {"type": "HAS", "start": ["AciFilter", "aci:fab-dc2:uni/tn-PROD/flt-tcp-5432"], "end": ["FilterEntry", "aci:fab-dc2:uni/tn-PROD/flt-tcp-5432/e-tcp-5432"]}
+  - {"type": "USES_FILTER", "start": ["ContractSubject", "aci:fab-dc2:uni/tn-PROD/brc-claims-app-to-db/subj-5432"], "end": ["AciFilter", "aci:fab-dc2:uni/tn-PROD/flt-tcp-5432"], "props": {"action": "permit"}}
   - {"type": "HAS", "start": ["Tenant", "aci:fab-dc2:uni/tn-PROD"], "end": ["Contract", "aci:fab-dc2:uni/tn-PROD/brc-intranet-web-to-db"]}
   - {"type": "HAS", "start": ["Contract", "aci:fab-dc2:uni/tn-PROD/brc-intranet-web-to-db"], "end": ["ContractSubject", "aci:fab-dc2:uni/tn-PROD/brc-intranet-web-to-db/subj-3306"]}
   - {"type": "HAS", "start": ["Tenant", "aci:fab-dc2:uni/tn-PROD"], "end": ["AciFilter", "aci:fab-dc2:uni/tn-PROD/flt-tcp-3306"]}
@@ -5275,6 +5291,8 @@ rels:
   - {"type": "IN_VRF", "start": ["L3Out", "aci:fab-dc2:uni/tn-PROD/out-campus"], "end": ["VrfInstance", "vrf:aci:fab-dc2:tn-PROD:CTX1"]}
   - {"type": "HAS", "start": ["L3Out", "aci:fab-dc2:uni/tn-PROD/out-campus"], "end": ["ExtEpg", "aci:fab-dc2:uni/tn-PROD/out-campus/instP-campus"]}
   - {"type": "MATCHES", "start": ["ExtEpg", "aci:fab-dc2:uni/tn-PROD/out-campus/instP-campus"], "end": ["Prefix", "pfx:corp:10.0.0.0/8"]}
+  - {"type": "CONSUMES", "start": ["ExtEpg", "aci:fab-dc2:uni/tn-PROD/out-campus/instP-campus"], "end": ["Contract", "aci:fab-dc2:uni/tn-PROD/brc-claims-app-to-db"]}
+  - {"type": "PROVIDES", "start": ["Epg", "aci:fab-dc2:uni/tn-PROD/ap-claims/epg-db"], "end": ["Contract", "aci:fab-dc2:uni/tn-PROD/brc-claims-app-to-db"]}
   - {"type": "CONSUMES", "start": ["Epg", "aci:fab-dc2:uni/tn-PROD/ap-payments/epg-web"], "end": ["Contract", "aci:fab-dc2:uni/tn-PROD/brc-infra-services"]}
   - {"type": "HAS", "start": ["Tenant", "aci:fab-dc2:uni/tn-PROD"], "end": ["Contract", "aci:fab-dc2:uni/tn-PROD/brc-users-to-payments-web"]}
   - {"type": "HAS", "start": ["Contract", "aci:fab-dc2:uni/tn-PROD/brc-users-to-payments-web"], "end": ["ContractSubject", "aci:fab-dc2:uni/tn-PROD/brc-users-to-payments-web/subj-8443"]}
