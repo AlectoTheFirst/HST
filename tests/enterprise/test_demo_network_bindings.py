@@ -24,7 +24,7 @@ from hst.policy.ir import AllOf, AnyOf, Atom, ExecutionContext, Predicate, Unkno
 DEMO = Path(__file__).parents[2] / "fixtures" / "demo-enterprise" / "estate-v3.yaml"
 FGT = "dev:vie01-fgt-01"
 FGT_POLICY = "fgt:FGT100F7084444526:root:policy"
-CPFW = "dev:dc1-cpfw-01a"
+CPFW = "dev:dc1-cpfw-01"
 LEAF = "dev:dc1-leaf-05"
 CTX1 = "vrf:aci:fab-dc1:tn-PROD:CTX1"
 
@@ -55,7 +55,7 @@ def test_the_vienna_fortigate_binds_the_zone_pair_of_the_flow_and_never_its_nat_
 
 
 def test_the_dc1_check_point_gateway_binds_its_layer_without_installation_evidence(graph):
-    context = ExecutionContext("demo", "graph", "graph", CPFW, "vrf:dev:dc1-cpfw-01a:default", 4)
+    context = ExecutionContext("demo", "graph", "graph", CPFW, "vrf:dev:dc1-cpfw-01:default", 4)
 
     assert _bindings(graph, context, f"{CPFW}/if/eth1", None, 4) == (
         ("cp:cpmgmt-01:smc:pkg-dc1-access",),

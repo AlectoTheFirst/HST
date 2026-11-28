@@ -224,8 +224,8 @@ def test_each_check_point_layer_has_one_qualified_package_and_both_cluster_membe
         assert [node.uid for node in graph.sources(layer, "HAS_LAYER")] == [package]
         assert checkpoint_scope(graph, layer) == ("cpmgmt-01", "smc")
         assert graph.nodes[layer].props["match_context"] == "device"
-        assert rule_explain._gateways(graph, layer) == [f"dev:{code}-cpfw-01a", f"dev:{code}-cpfw-01b"]
-        assert f"rgrp:cp-cluster:{code}:cpfw01" in {node.uid for node in graph.sources(layer, "ENFORCES")}
+        assert rule_explain._gateways(graph, layer) == [f"dev:{code}-cpfw-01"]
+        assert [node.uid for node in graph.sources(layer, "ENFORCES")] == [f"dev:{code}-cpfw-01"]
         for gateway in rule_explain._gateways(graph, layer):
             policy, _context, checkpoint = rule_explain.rulebase_policy(graph, "test", layer, 4, gateway)
             assert checkpoint is True and policy is not None, (code, gateway)
@@ -256,10 +256,10 @@ def test_explain_rule_settles_a_dc1_access_rule_for_one_gateway():
     ambiguous = rule_explain.explain(graph, "test", layer, rule, 4)
     assert ambiguous["error"]["code"] == "ambiguous" and ambiguous["error"]["field"] == "firewall"
 
-    document = rule_explain.explain(graph, "test", layer, rule, 4, firewall="dev:dc1-cpfw-01a", limit=1000)
+    document = rule_explain.explain(graph, "test", layer, rule, 4, firewall="dev:dc1-cpfw-01", limit=1000)
     assert "error" not in document, document
     assert document["qualified"] is True and document["vendor"] == "checkpoint"
-    assert document["firewall"] == "dev:dc1-cpfw-01a"
+    assert document["firewall"] == "dev:dc1-cpfw-01"
     assert document["action"] == "permit" and document["gaps"] == []
     assert document["lower_empty"] is False and document["possible_empty"] is True
     assert document["definite_count"] > 0 and document["possible_count"] == 0
@@ -272,11 +272,11 @@ def test_match_flow_decides_dc1_access_on_a_cluster_member():
 
     def entry(port: int) -> dict:
         document = flow_match.match(
-            graph, "test", "dev:dc1-cpfw-01a", layer, _flow("10.11.10.5", "10.1.30.10", port), 4
+            graph, "test", "dev:dc1-cpfw-01", layer, _flow("10.11.10.5", "10.1.30.10", port), 4
         )
         assert "error" not in document, document
         (item,) = document["rulebases"]
-        assert item["qualified"] is True and item["firewall"] == "dev:dc1-cpfw-01a"
+        assert item["qualified"] is True and item["firewall"] == "dev:dc1-cpfw-01"
         assert "CHECKPOINT_CAPTURE_UNQUALIFIED" not in {gap["code"] for gap in item["gaps"]}
         return item
 
@@ -351,7 +351,7 @@ def test_no_fortigate_or_check_point_rule_leaves_a_policy_gap(version):
         props = graph.nodes[uid].props
         if props.get("vendor") not in ("fortinet", "checkpoint") or props.get("kind") != "access":
             continue
-        gateway = f"dev:{props['name'][:3]}-cpfw-01a" if props["vendor"] == "checkpoint" else None
+        gateway = f"dev:{props['name'][:3]}-cpfw-01" if props["vendor"] == "checkpoint" else None
         policy, _context, _checkpoint = rule_explain.rulebase_policy(graph, "test", uid, 4, gateway)
         assert policy is not None, uid
         for layer in policy.layers:
@@ -383,7 +383,7 @@ def test_the_dc1_cleanup_decides_a_flow_no_earlier_rule_takes():
     _package, layer = PACKAGES["dc1"]
     flow = _flow("10.11.10.5", "10.1.30.10", 80)
 
-    document = flow_match.match(graph, "test", "dev:dc1-cpfw-01a", layer, flow, 4)
+    document = flow_match.match(graph, "test", "dev:dc1-cpfw-01", layer, flow, 4)
 
     assert "error" not in document, document
     (item,) = document["rulebases"]

@@ -2,7 +2,7 @@ schema_version: 1
 kind: BusinessApplication
 id: payments-production
 name: Payments
-description: "Card and transfer processing in Munich: PCI tiers behind the dc2 firewall cluster."
+description: "Card and transfer processing in Munich: PCI tiers behind the dc2 firewall."
 environment: production
 state: draft
 services:

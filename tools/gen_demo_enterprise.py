@@ -24,7 +24,7 @@ Routing model (what the hst path engine reads, so a trace runs end to end):
     overlay /30 per data-center hub (the VCMP tunnels drawn as point-to-point tunnel interfaces)
   - data center: hub and border on L3Out /30s of leaf-07/08; the ACI VRF CTX1 is the leaf table; the
     PBR redirect is a PbrPolicy rule on the L3Out and bridge-domain SVIs whose REDIRECTS_VIA table has one
-    route to the Check Point cluster address; the NetScaler owns the VIP /24 behind a transit /29
+    route to the Check Point gateway address; the NetScaler owns the VIP /24 behind a transit /29
   - VM endpoints ATTACHED to leaf ports, IN_EPG, IN their segment, so delivery and ACI contracts resolve
 
   - Oslo office (osl01, every version): one dual-stack VyOS router with zones LAN, IOT, GUEST,
@@ -478,7 +478,7 @@ class Estate:
         self.office_users: dict[str, str] = {}  # site code -> users prefix uid
         self.office_mgmt: dict[str, str] = {}
         self.border_lo: dict[str, str] = {}  # dc -> border-01 lo0 ip uid
-        self.cp_cluster: dict[str, str] = {}
+        self.cp_gateway: dict[str, str] = {}
         self.leaf_if: dict[str, list[str]] = {}
         self.esx_hosts: dict[str, list[str]] = {}
         self.app_component: dict[tuple[str, str], str] = {}
@@ -662,12 +662,8 @@ class Estate:
                 role="vpc-peer-link",
             )
 
-        # Check Point cluster
+        # Check Point gateway
         fw_pfx = g.prefix("corp", f"{base}.250.0/29", "service", f"{code}-fw-svc", parent=agg)
-        cp_grp = g.node(
-            "RedundancyGroup", f"rgrp:cp-cluster:{code}:cpfw01", kind="cp-cluster", name=f"{code}-cpfw01"
-        )
-        self.cp_cluster[code] = cp_grp
         # the ACI VRF is the one routing table every leaf forwards in; its gateway interfaces are
         # placed on the leaf each attached device hangs off (the fabric's anycast gateway, drawn once)
         # contract_bypass "": the demo fabric uses no vzAny contract, preferred group or ESG, so an
@@ -682,37 +678,23 @@ class Estate:
         self.aci_vrf = getattr(self, "aci_vrf", {})
         self.aci_vrf[code] = vrf_aci
         self.ctx_ifaces[code] = []
-        fw_ifs = []
-        # the firewall service bridge domain: gateway on leaf-01, the cluster members and the
-        # cluster address on it, the Check Point default route back to the fabric
+        # the firewall service bridge domain: gateway on leaf-01, the Check Point gateway on it,
+        # the Check Point default route back to the fabric
         fw_svi = g.iface(leafs[0], "vlan250", "vlan250", "svi", vlan=250)
         g.connected(vrf_aci, fw_svi, f"{base}.250.1", fw_pfx)
-        fw_vip = g.ip("corp", f"{base}.250.10", fw_pfx, name=f"{code}-cpfw01-inside")
-        for idx, suffix in enumerate("ab"):
-            fw = g.device(
-                site,
-                f"{code}-cpfw-01{suffix}",
-                "checkpoint",
-                "firewall",
-                "checkpoint",
-                "CP",
-                f"{base}.0.{41 + idx}",
-            )
-            g.rel("MEMBER_OF", fw, cp_grp)
-            p1 = g.port(fw, "eth1", "eth1", 10000)
-            psync = g.port(fw, "eth2", "eth2", 10000)
-            fw_ifs.append((fw, p1, psync))
-            leaf_port = g.port(leafs[idx], "eth1-1", "ethernet1/1", 10000)
-            g.iface(leafs[idx], "eth1-1", "ethernet1/1", "phys", port=leaf_port)
-            g.cable(leaf_port, p1)
-            fi = g.iface(fw, "eth1", "eth1", "phys", port=p1)
-            fw_vrf = g.vrf(f"vrf:dev:{code}-cpfw-01{suffix}:default", "default", self.rdom["corp"])
-            g.rel("HAS_IP", fi, g.ip("corp", f"{base}.250.{11 + idx}", fw_pfx))
-            g.rel("HAS_IP", fi, fw_vip)
-            g.rel("IN_VRF", fi, fw_vrf)
-            g.rel("ORIGINATES", fw_vrf, fw_pfx, props={"proto": "connected"})
-            g.route(fw_vrf, self.corp_default, "STATIC_ROUTE", next_hop=f"{base}.250.1", iface=fi)
-        g.cable(fw_ifs[0][2], fw_ifs[1][2], role="cp-sync")
+        fw_ip = g.ip("corp", f"{base}.250.10", fw_pfx, name=f"{code}-cpfw01-inside")
+        fw = g.device(site, f"{code}-cpfw-01", "checkpoint", "firewall", "checkpoint", "CP", f"{base}.0.41")
+        self.cp_gateway[code] = fw
+        p1 = g.port(fw, "eth1", "eth1", 10000)
+        leaf_port = g.port(leafs[0], "eth1-1", "ethernet1/1", 10000)
+        g.iface(leafs[0], "eth1-1", "ethernet1/1", "phys", port=leaf_port)
+        g.cable(leaf_port, p1)
+        fi = g.iface(fw, "eth1", "eth1", "phys", port=p1)
+        fw_vrf = g.vrf(f"vrf:dev:{code}-cpfw-01:default", "default", self.rdom["corp"])
+        g.rel("HAS_IP", fi, fw_ip)
+        g.rel("IN_VRF", fi, fw_vrf)
+        g.rel("ORIGINATES", fw_vrf, fw_pfx, props={"proto": "connected"})
+        g.route(fw_vrf, self.corp_default, "STATIC_ROUTE", next_hop=f"{base}.250.1", iface=fi)
         fw_mac = g.mac(f"{code}-cpfw01", "00:1c:7f")
         ep = g.node(
             "Endpoint",
@@ -721,9 +703,8 @@ class Estate:
             kind="infra",
             name=f"{code}-cpfw01-inside",
         )
-        g.rel("OWNED_BY", ep, cp_grp)
         g.rel("ATTACHED", ep, f"{leafs[0]}/if/eth1-1", props={"encap": "vlan-250"})
-        g.rel("HAS_IP", ep, fw_vip)
+        g.rel("HAS_IP", ep, fw_ip)
 
         # NetScaler pair
         # NetScaler pair: the NSIPs on a transit /29 whose fabric gateway sits on leaf-05, the VIP
@@ -998,22 +979,15 @@ class Estate:
 
         sgt = g.node("ServiceGraphTemplate", f"aci:{fab}:uni/tn-PROD/AbsGraph-fw", name="fw-graph")
         g.rel("HAS", tn, sgt)
-        snode = g.node("ServiceNode", f"{sgt}/AbsNode-FW", name="FW", function="fw", managed=False)
-        g.rel("HAS_NODE", sgt, snode, props={"seq": 1})
-        pbr = g.node(
-            "PbrPolicy",
-            f"aci:{fab}:uni/tn-PROD/svcCont/svcRedirectPol-fw-pbr",
-            name="fw-pbr",
-            hashing="sip-dip",
-        )
-        g.rel("REDIRECTS_VIA", snode, pbr)
+        snode = g.node("ServiceNode", f"{sgt}/AbsNode-FW", name="FW")
+        g.rel("HAS_NODE", sgt, snode)
+        pbr = g.node("PbrPolicy", f"aci:{fab}:uni/tn-PROD/svcCont/svcRedirectPol-fw-pbr", name="fw-pbr")
         dest = g.node("PbrDest", f"{pbr}/dest-{base}.250.10", ip=f"{base}.250.10", mac=fw_mac.upper())
         g.rel("HAS_DEST", pbr, dest)
-        g.rel("RESOLVES_TO", dest, ep)
         self.dc_pbr[code] = pbr
         # the redirect as the path engine reads it: every ACI VRF interface except the firewall's own
         # bridge domain enforces the policy, and a matching rule forwards in a one-row table whose
-        # only route points at the cluster address (the rule itself is written with the DC policy,
+        # only route points at the gateway address (the rule itself is written with the DC policy,
         # once the campus prefixes it matches exist)
         redirect = g.vrf(f"vrf:aci:{fab}:tn-PROD:fw-redirect", "fw-redirect", kind="pbr-redirect")
         host = g.prefix(
@@ -1049,6 +1023,11 @@ class Estate:
                 g.rel("PROVIDES", provider, c)
                 if first:
                     g.rel("APPLIES_GRAPH", subj, sgt)
+                    # the device selection policy of the one-arm firewall: the 2 connectors of the
+                    # node FW redirect to the same policy
+                    for connector in ("consumer", "provider"):
+                        key = {"graph": sgt, "node": "FW", "connector": connector}
+                        g.rel("REDIRECTS_VIA", c, pbr, key=key)
                     first = False
         # every tier reaches shared infra (dns, ntp, ldap) and the campus L3Out reaches the web tiers
         infra_c = g.node(
@@ -2245,20 +2224,18 @@ class Estate:
             )
             for action in ("accept", "drop")
         }
-        # the cluster members are the installation targets of the package
-        gateways = []
-        for suffix in "ab":
-            gw_api = f"gw-{code}-cpfw-01{suffix}"
-            gateways.append(
-                g.node(
-                    "Device",
-                    f"dev:{code}-cpfw-01{suffix}",
-                    cp_type="CpmiClusterMember",
-                    cp_uid=f"{mg}:{gw_api}",
-                    cp_raw_uid=gw_api,
-                )
+        # the gateway is the installation target of the package
+        gw_api = f"gw-{code}-cpfw-01"
+        gateways = [
+            g.node(
+                "Device",
+                f"dev:{code}-cpfw-01",
+                cp_type="simple-gateway",
+                cp_uid=f"{mg}:{gw_api}",
+                cp_raw_uid=gw_api,
             )
-        install_on = [str(g.nodes[gw][1]["cp_raw_uid"]) for gw in gateways]
+        ]
+        install_on = [gw_api]
         layer_api = f"pkg-{code}-access"
         rb = g.node(
             "FwRulebase",
@@ -2283,7 +2260,6 @@ class Estate:
                 }
             ),
         )
-        g.rel("ENFORCES", self.cp_cluster[code], rb)
         package_api = f"policy-{code}"
         package = g.node(
             "CpPolicyPackage",
@@ -2550,7 +2526,7 @@ class Estate:
         )
         self.cp_rules[code] = pos[0]
         # the ACI PBR redirect: campus sources toward the DC server networks are steered into the
-        # firewall cluster (the one-row fw-redirect table built with the fabric)
+        # firewall (the one-row fw-redirect table built with the fabric)
         pbr = self.dc_pbr[code]
         campus = g.node(
             "NetObject", f"aci:{dc['fabric']}:obj-campus-networks", name="campus-networks", kind="group"
@@ -3349,7 +3325,7 @@ def write_apps(est: Estate) -> dict[str, dict]:
     define(
         "payments",
         "payments",
-        "Card and transfer processing in Munich: PCI tiers behind the dc2 firewall cluster.",
+        "Card and transfer processing in Munich: PCI tiers behind the dc2 firewall.",
         [
             group("office-clients", "Finance clients", clients[:2]),
             group("frontend", "Payments VIP", [("payments-vip", addr(est.vip_ip[("payments", "web", 443)]))]),

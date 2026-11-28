@@ -9,7 +9,7 @@ copy of any real network.
 
 The fixtures hold routes with next hops, connected prefixes, PBR redirects and a
 load-balancer model. A trace runs through offices, SD-WAN overlays, the ACI fabrics
-and the firewall clusters.
+and the firewalls.
 
 ## Files
 
@@ -24,7 +24,7 @@ and the firewall clusters.
 
 | Element | Detail |
 | --- | --- |
-| Data centers | dc1 Frankfurt and dc2 Munich, each an ACI fabric with border leafs, a Check Point cluster behind a PBR redirect, and a NetScaler that owns the VIP range. |
+| Data centers | dc1 Frankfurt and dc2 Munich, each an ACI fabric with border leafs, a Check Point gateway behind a PBR redirect, and a NetScaler that owns the VIP range. |
 | Offices | vie01, waw01, par01, mad01, zrh01; lis01 from v2; mil01 until v2. Each has NX-OS or IOS-XE cores, a FortiGate with zone pairs, an SD-WAN edge with one overlay per data-center hub, and corp and guest VRFs. |
 | Oslo office | osl01, in every version, its own routing domain with its own internet break-out: one dual-stack VyOS router whose nodes and relationships are the VyOS collector's batch for a synthetic payload. Zones LAN, IOT, GUEST, WAN and the local zone LOCAL, an IPv4 and an IPv6 rule set per zone pair, a global state policy and a jump to a shared rule set. Each zone has a rule set to LOCAL (LAN accepts, IOT and GUEST accept DNS and DHCP only, WAN drops) and one from LOCAL; LOCAL-WAN accepts the WireGuard carrier to the VPN provider, DNS, NTP and DHCP, and not the carrier of the partner tunnel wg1. Source NAT masquerade on the WAN, a port forward of WAN 443 to the NAS, nat66 on the WireGuard tunnel; `policy route` and `policy route6` on the LAN into the tunnel's table 100; a DHCP WAN link with static IPv4 and IPv6 default routes, a static to the partner network by wg1, and a static FRR does not install (next hop in no connected network). The payload records a successful read of each RIB table, so the main table and table 100 read `rib_mirrored`. Six dual-stack endpoints in LAN, IOT and GUEST. |
 | FR5 internet routers | fr5-inet-01 and fr5-inet-02, in every version: two IOS-XE routers at Equinix FR5, each behind one FR5 core, with GigabitEthernet0/0/1 on a provider network (203.0.113.16/30 and 2001:db8:72:e1::/64, 203.0.113.20/30 and 2001:db8:72:e2::/64) and static default routes of both families to the provider's gateway, which no collected interface holds. No WAN link: an IOS-XE collector writes none. Each core has a dual-stack jump host, fr5-jump-01 (10.72.101.10, 2001:db8:72:101::10) and fr5-jump-02 (10.72.102.10, 2001:db8:72:102::10), and default routes to its internet router. `sites.yaml` gives eqx-fr5 two named blocks: Internet edge, zone `internet`, holds fr5-inet-01; Carrier edge, zone `external`, holds fr5-inet-02. |
@@ -37,7 +37,7 @@ and the firewall clusters.
 A trace that runs through the whole estate: source 10.11.99.0/24 (Vienna
 servers) to 10.1.10.11 port 22 (a Frankfurt VM). It crosses the Vienna core,
 the FortiGate, the SD-WAN overlay to dc1, the border leaf, the PBR redirect to
-the Check Point cluster and the ACI contract, in 46 hops.
+the Check Point gateway and the ACI contract, in 46 hops.
 
 Traces in the Oslo office, where the address family decides
 (`tests/test_demo_enterprise_vyos.py` runs each one):

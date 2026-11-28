@@ -229,3 +229,61 @@ def test_api_to_db_session_has_each_forwarding_choice(demo):
     network = load_network(session, request)
     verdict, gaps = _verdict(network, graph, request)
     assert (verdict, "FORWARDING_CHOICES_INCOMPLETE" in gaps) == ("holds", False), (verdict, gaps)
+
+
+def _web_to_api(port: int = 8080):
+    from hst.impact.evaluate import Member, RequestSet, Service, member
+
+    # fixtures/demo-enterprise/apps/webshop.yaml: the web tier to webshop-api-01
+    return RequestSet(
+        "webshop web to api",
+        _ivals(*(f"10.1.10.{host}" for host in range(11, 16))),
+        "api",
+        (Member("webshop-api-01", _ivals("10.1.11.11")),),
+        member("webshop-api-01"),
+        Service(frozenset({6}), ((0, port, port),)),
+        success="round-trip",
+    )
+
+
+def test_web_to_api_is_redirected_to_the_check_point_gateway_of_dc1(demo):
+    from hst.assessment.evaluation import load_network
+
+    session, graph = demo
+    request = replace(_web_to_api(), success="forward")
+    network = load_network(session, request)
+    source, gap_refs, gaps, _lower_empty = _forward_walk(network, graph, request)
+
+    gate = next(node for node in source.nodes if node.key.location == f"gate:aci:{CTX1}")
+    redirects = [edge for edge in gate.edges if edge.uid.startswith("aci:redirect:")]
+    assert [edge.target.context.vrf for edge in redirects] == ["vrf:dev:dc1-cpfw-01:default"], (
+        sorted(edge.uid for edge in gate.edges),
+        sorted(map(str, gaps)),
+    )
+    assert "ACI_CONTRACT_FILTER_UNKNOWN" not in gap_refs, gap_refs
+
+
+@pytest.mark.parametrize("success", ["forward", "session", "round-trip"])
+def test_web_to_api_holds_through_the_check_point_gateway(demo, success):
+    from hst.assessment.evaluation import load_network
+
+    session, graph = demo
+    request = replace(_web_to_api(), success=success)
+    network = load_network(session, request)
+    verdict, gaps = _verdict(network, graph, request)
+    forward = replace(request, success="forward")
+    assert (verdict, gaps) == ("holds", ()), (
+        verdict,
+        gaps,
+        sorted(map(str, _forward_walk(load_network(session, forward), graph, forward)[2])),
+    )
+
+
+def test_web_to_api_on_a_port_the_contract_does_not_list_is_proven_denied(demo):
+    from hst.assessment.evaluation import load_network
+
+    session, graph = demo
+    request = replace(_web_to_api(22), success="forward", header_constraints=FIRST_FRAGMENTS)
+    network = load_network(session, request)
+    verdict, gaps = _verdict(network, graph, request)
+    assert verdict == "does-not-hold", (verdict, gaps)
