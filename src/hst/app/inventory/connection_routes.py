@@ -17,7 +17,7 @@ from fastapi.responses import JSONResponse
 from pydantic import ValidationError
 
 from hst import collectors as coll
-from hst.app import crypto, runs_exec
+from hst.app import crypto, runs_exec, source_egress
 from hst.app import sources as glue
 from hst.app.auth import require_permission
 from hst.app.inventory import collection, credentials
@@ -78,6 +78,8 @@ from hst.app.inventory.tables import PREVIEW_TTL_S
 from hst.app.permissions import permissions_for
 from hst.app.store import (
     UNSET,
+    CollectionProfile,
+    CollectionProfileVersion,
     Device,
     DeviceFilters,
     DeviceSpec,
@@ -121,9 +123,22 @@ class Validation(InventoryError):
     """A well-formed request that the inventory refuses. The response is 422 with the code `validation`."""
 
 
+class CredentialsRequiredError(Validation):
+    """A change of the endpoint or of the TLS check keeps a stored credential.
+    `detail` lists the paths of its secrets under `credentials`."""
+
+    def __init__(self, exc: source_egress.CredentialsRequired):
+        super().__init__(str(exc))
+        self.detail = {"credentials": exc.kept}
+
+
 def error_response(exc: InventoryError) -> JSONResponse:
     body = ErrorResponse(
-        error=str(exc), code=exc.code, current_revision=exc.current_revision, references=exc.references
+        error=str(exc),
+        code=exc.code,
+        current_revision=exc.current_revision,
+        references=exc.references,
+        detail=getattr(exc, "detail", None),
     )
     return JSONResponse(body.model_dump(mode="json"), status_code=exc.status)
 
@@ -874,6 +889,140 @@ async def create_connection(
     return await _committed_view(store, settings, row.id)
 
 
+@dataclass
+class Binding:
+    """A profile, its current version and the secret paths of the credential version it pins."""
+
+    profile: CollectionProfile
+    version: CollectionProfileVersion
+    secret_paths: list[str]
+
+
+async def _binding(tx: InventoryTx, profile_id: uuid.UUID | None) -> Binding | None:
+    """The binding of a profile that pins a credential with secrets, or None."""
+    profile = await tx.get_profile(profile_id) if profile_id is not None else None
+    if profile is None:
+        return None
+    version = await tx.get_profile_version(profile.id, profile.current_revision)
+    if version is None or version.credential_id is None or version.credential_revision is None:
+        return None
+    cv = await tx.get_credential_version(version.credential_id, version.credential_revision)
+    paths = sorted(cv.secret_paths) if cv is not None else []
+    return Binding(profile, version, paths) if paths else None
+
+
+def _kept(before: Binding | None, after: Binding | None) -> Binding | None:
+    """`before` when `after` pins the same credential, None otherwise."""
+    if before is None or after is None or before.version.credential_id != after.version.credential_id:
+        return None
+    return before
+
+
+def _require_credentials(
+    collector_type: str,
+    before: Mapping[str, Any],
+    after: Mapping[str, Any],
+    kept: Binding | None,
+    secrets: Mapping[str, str] | None,
+) -> dict[str, str] | None:
+    """Raise CredentialsRequiredError when `after` moves the endpoint or weakens the TLS
+    check of `before`, and `secrets` lacks a secret of the kept binding. Return the
+    validated `secrets` to bind, or None when the request has none."""
+    paths = kept.secret_paths if kept is not None else []
+    given = {path for path, value in (secrets or {}).items() if value}
+    try:
+        source_egress.require_secrets(collector_type, before, after, paths, given)
+    except source_egress.CredentialsRequired as exc:
+        raise CredentialsRequiredError(exc) from exc
+    if not secrets:
+        return None
+    if kept is None:
+        raise Validation("the secrets replace a stored credential, and the change keeps none")
+    try:
+        return credentials.validate_secret_map([collector_type], secrets)
+    except credentials.SecretsRejected as exc:
+        raise Validation(str(exc)) from exc
+
+
+async def _rebind(
+    tx: InventoryTx,
+    key: str,
+    binding: Binding,
+    secrets: Mapping[str, str],
+    *,
+    label: str,
+    assign: Any,
+    actor_id: int | None,
+    now: datetime,
+    request_id: str | None = None,
+) -> None:
+    """Pin a new credential that holds `secrets` in place of the credential of the binding.
+
+    A profile that 1 connection or 1 target follows gets a new revision. A shared profile
+    stays as it is, and `assign` receives the id of a copy that pins the new credential."""
+    suffix = uuid.uuid4().hex[:8]
+    cred, cv = await tx.create_credential(
+        display_name=f"{label} {suffix}",
+        sealed=credentials.seal(key, secrets),
+        secret_paths=sorted(secrets),
+        actor_id=actor_id,
+        now=now,
+    )
+    await tx.append_event(
+        entity_type="credential",
+        entity_id=str(cred.id),
+        actor_id=actor_id,
+        action="created",
+        now=now,
+        after={"display_name": cred.display_name, "secrets": credentials.redact_secret_names(secrets)},
+        request_id=request_id,
+        sensitive=True,
+    )
+    profile, settings_map = binding.profile, dict(binding.version.settings)
+    refs = await tx.profile_references(profile.id)
+    if len(refs.source_ids) + len(refs.target_ids) > 1:
+        copy, _ = await tx.create_profile(
+            display_name=f"{profile.display_name} {suffix}",
+            collector_type=profile.collector_type,
+            settings=settings_map,
+            credential_id=cred.id,
+            credential_revision=cv.revision,
+            actor_id=actor_id,
+            now=now,
+        )
+        await assign(copy.id)
+        return
+    await tx.add_profile_version(
+        profile.id,
+        expected_revision=profile.current_revision,
+        settings=settings_map,
+        credential_id=cred.id,
+        credential_revision=cv.revision,
+        actor_id=actor_id,
+        now=now,
+    )
+
+
+def _assigner(tx: InventoryTx, row: Source, target: InventoryTarget | None, now: datetime) -> Any:
+    """A callback that makes a profile the profile of `target`, or the default profile of
+    the connection when `target` has no profile of its own."""
+
+    async def assign(profile_id: uuid.UUID) -> None:
+        if target is not None and target.profile_id is not None:
+            fresh = await tx.get_target(target.id)
+            revision = fresh.revision if fresh is not None else target.revision
+            await tx.update_target(target.id, expected_revision=revision, now=now, profile_id=profile_id)
+            return
+        inventory = await tx.get_source_inventory(row.id)
+        if inventory is None:
+            raise NotFound("connection has no inventory record")
+        await tx.update_source_inventory(
+            row.id, expected_revision=inventory.inventory_revision, now=now, default_profile_id=profile_id
+        )
+
+    return assign
+
+
 async def _committed_view(store: Store, settings: Settings, source_id: int) -> ConnectionView:
     """The saved connection's view, built in a new read transaction after the
     write commits."""
@@ -945,6 +1094,32 @@ async def patch_connection(
                 )
             new_config = glue._overlay(row.config, overlay)
             new_config.pop("source_name", None)
+        endpoints: list[InventoryTarget | None] = [
+            t
+            for t in await tx.list_targets(row.id)
+            if t.kind != TargetKind.DIRECT.value and t.archived_at is None
+        ]
+        after_default = None if body.clear_profile else (body.profile_id or inventory.default_profile_id)
+        # A connection without a controller or implicit target checks its default profile.
+        kept: list[tuple[Binding, InventoryTarget | None, dict[str, str]]] = []
+        for endpoint in endpoints or [None]:
+            own = endpoint.profile_id if endpoint is not None else None
+            before_binding = await _binding(tx, own or inventory.default_profile_id)
+            after_binding = await _binding(tx, own or after_default)
+            binding = _kept(before_binding, after_binding)
+            secrets = _require_credentials(
+                row.type,
+                row.config,
+                new_config if new_config is not None else row.config,
+                binding,
+                body.secret_values(),
+            )
+            if (
+                binding is not None
+                and secrets is not None
+                and all(b.profile.id != binding.profile.id for b, _, _ in kept)
+            ):
+                kept.append((binding, endpoint, secrets))
         if body.clear_jump_host_keys:
             base = new_config if new_config is not None else row.config
             if base.get(collection.JUMP_PINS):
@@ -972,6 +1147,17 @@ async def patch_connection(
                         await tx.update_target(
                             target.id, expected_revision=target.revision, now=now, enabled=body.enabled
                         )
+        for binding, endpoint, secrets in kept:
+            await _rebind(
+                tx,
+                _key(request),
+                binding,
+                secrets,
+                label=row.name,
+                assign=_assigner(tx, row, endpoint, now),
+                actor_id=user.id,
+                now=now,
+            )
         fresh = await records.get_source(row.name)
         row = fresh if fresh is not None else row
         await tx.append_event(
@@ -1597,6 +1783,9 @@ class EditProfile:
             if cred is None or cred.archived_at is not None:
                 raise Validation("credential does not exist or is archived")
             credential_id = cred.id
+        await _require_profile_credentials(
+            ctx.tx, profile.collector_type, version, settings_map, credential_id
+        )
         targets, connections = await _profile_targets(ctx.tx, profile.id)
         impacts, device_ids = await _impact_rows_for_targets(ctx, targets)
         for inventory in connections:
@@ -1642,6 +1831,29 @@ class EditProfile:
         return ApplyOutcome([ApplyResult(kind=PreviewMemberKind.PROFILE, id=id_, revision=result)])
 
 
+async def _require_profile_credentials(
+    tx: InventoryTx,
+    collector_type: str,
+    current: CollectionProfileVersion | None,
+    settings_map: Mapping[str, Any],
+    credential_id: uuid.UUID | None,
+) -> None:
+    """Raise CredentialsRequiredError when `settings_map` moves the endpoint or weakens the
+    TLS check of `current`, and the edit keeps the credential that `current` pins."""
+    if current is None or current.credential_id is None or credential_id != current.credential_id:
+        return
+    cv = (
+        await tx.get_credential_version(current.credential_id, current.credential_revision)
+        if current.credential_revision is not None
+        else None
+    )
+    paths = sorted(cv.secret_paths) if cv is not None else []
+    try:
+        source_egress.require_secrets(collector_type, current.settings, settings_map, paths, ())
+    except source_egress.CredentialsRequired as exc:
+        raise CredentialsRequiredError(exc) from exc
+
+
 async def apply_profile_edit(
     tx: InventoryTx,
     profile_id: uuid.UUID,
@@ -1682,6 +1894,7 @@ async def apply_profile_edit(
         cred_id = credential_id
     else:
         cred_id = current.credential_id if current else None
+    await _require_profile_credentials(tx, profile.collector_type, current, new_settings, cred_id)
     cred_rev: int | None = None
     if cred_id is not None:
         cred = await tx.get_credential(cred_id)
@@ -2012,6 +2225,21 @@ class ReplaceTarget:
             )
         ):
             raise Conflict(f"{row.name} already has a target {new_host!r}")
+        draft: bytes | None = None
+        secret_names: dict[str, str] = {}
+        if target.kind != TargetKind.DIRECT.value:
+            inventory = await ctx.tx.get_source_inventory(row.id)
+            default = inventory.default_profile_id if inventory is not None else None
+            secrets = _require_credentials(
+                row.type,
+                row.config,
+                _replaced_config(row, endpoint),
+                await _binding(ctx.tx, target.profile_id or default),
+                change.secret_values(),
+            )
+            if secrets is not None:
+                draft = credentials.seal_draft(ctx.key, ctx.actor.id, secrets, hint=str(target.id))
+                secret_names = credentials.redact_secret_names(secrets)
         impacts, device_ids = await _impact_rows_for_targets(ctx, [target])
         return PreviewPlan(
             members=[
@@ -2023,10 +2251,15 @@ class ReplaceTarget:
                 )
             ],
             impacts=impacts,
-            changes={"endpoint_config": redact_by_key(endpoint), "new_host": new_host},
+            changes={
+                "endpoint_config": redact_by_key(endpoint),
+                "new_host": new_host,
+                **({"secrets": secret_names} if secret_names else {}),
+            },
             affected_devices=len(device_ids),
             affected_targets=1,
             warnings=_replacement_warnings(row, endpoint),
+            secret_draft=draft,
             summary={"devices": len(device_ids)},
         )
 
@@ -2057,11 +2290,7 @@ class ReplaceTarget:
             identity = {k: v for k, v in endpoint.items() if k not in ("host", "port")}
             identity = _target_identity(row, glue._overlay(target.endpoint_config, identity))
         else:
-            # For the endpoint of the connection, the endpoint fields overlay the
-            # source config and the host key pin of the source is cleared.
-            new_config = glue._overlay(row.config, endpoint)
-            if _has_host_key(row.type):
-                new_config["host_key"] = ""
+            new_config = _replaced_config(row, endpoint)
             new_host = str(new_config.get("host") or "")
             legacy_id = None
         if new_config is not None:
@@ -2079,6 +2308,24 @@ class ReplaceTarget:
             enabled=target.enabled,
             **({"endpoint_config": identity} if target.kind == TargetKind.DIRECT.value and identity else {}),
         )
+        if preview.secret_draft is not None:
+            secrets = credentials.open_draft(ctx.key, ctx.actor.id, preview.secret_draft, hint=id_)
+            inventory = await ctx.tx.get_source_inventory(row.id)
+            default = inventory.default_profile_id if inventory is not None else None
+            binding = await _binding(ctx.tx, target.profile_id or default)
+            if binding is None:
+                raise Validation("the secrets replace a stored credential, and the change keeps none")
+            await _rebind(
+                ctx.tx,
+                ctx.key,
+                binding,
+                secrets,
+                label=row.name,
+                assign=_assigner(ctx.tx, row, created, ctx.now),
+                actor_id=ctx.actor.id,
+                now=ctx.now,
+                request_id=request_id,
+            )
         await ctx.tx.append_event(
             entity_type="target",
             entity_id=id_,
@@ -2131,6 +2378,15 @@ async def _check_location_sites(store: Any, collector_type: str, config: Mapping
     if folded:
         lines = "; ".join(f"'{key}, {code}' (the site {clash!r})" for key, code, clash in folded)
         raise Validation(f"ibx_sites: the code of the line is the same site as another code: {lines}")
+
+
+def _replaced_config(row: Source, endpoint: dict[str, Any]) -> dict:
+    """The source config after the replacement of the endpoint of the connection. The
+    endpoint fields overlay the source config, and the host key pin of the source is cleared."""
+    config = glue._overlay(row.config, endpoint)
+    if _has_host_key(row.type):
+        config["host_key"] = ""
+    return config
 
 
 def _has_host_key(collector_type: str) -> bool:

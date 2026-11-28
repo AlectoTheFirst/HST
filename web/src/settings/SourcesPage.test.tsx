@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -149,6 +149,38 @@ describe("SourcesPage: edit is a merge PATCH", () => {
     expect(await screen.findByText("invalid config: url: not a valid URL")).toBeInTheDocument();
     expect(screen.getByLabelText("Url", { exact: false })).toHaveValue("not-a-url");
     expect(screen.getByRole("button", { name: "Save connection" })).toBeInTheDocument();
+  });
+});
+
+describe("SourcesPage: a new endpoint needs the stored secret again", () => {
+  it("shows the refusal and sends the typed password with the new URL", async () => {
+    const user = userEvent.setup();
+    const bodies: unknown[] = [];
+    mockApi(
+      baseRoutes({
+        "PATCH /api/sources/home-unifi": (req) => {
+          bodies.push(req.body);
+          const config = (req.body as { config: Record<string, unknown> }).config;
+          return config.password
+            ? { status: 200, body: { ...SOURCE_UNIFI, config: { ...SOURCE_UNIFI.config, url: config.url } } }
+            : { status: 400, body: { error: "credentials required for an endpoint other than the stored one: password" } };
+        },
+      }),
+    );
+    renderSources();
+
+    await user.click(await screen.findByRole("button", { name: "Edit home-unifi" }));
+    const url = screen.getByLabelText("Url", { exact: false });
+    await user.clear(url);
+    await user.type(url, "https://192.168.1.2");
+    await user.click(screen.getByRole("button", { name: "Save connection" }));
+
+    expect(await screen.findByText("credentials required for an endpoint other than the stored one: password")).toBeInTheDocument();
+    await user.type(screen.getByLabelText("Password", { exact: false }), "typed-again");
+    await user.click(screen.getByRole("button", { name: "Save connection" }));
+
+    await waitFor(() => expect(bodies).toHaveLength(2));
+    expect(bodies[1]).toMatchObject({ config: { url: "https://192.168.1.2", password: "typed-again" } });
   });
 });
 

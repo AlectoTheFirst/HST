@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router";
 import { useQuery } from "@tanstack/react-query";
-import { api } from "../../api/client";
+import { api, ApiError } from "../../api/client";
 import type { JobHistory, RunHistory } from "../../api/types";
 import { CollectionProgressView } from "../../settings/CollectionProgress";
 import { inventoryApi, type ConnectionView, type PreviewRequest } from "../../api/inventory";
@@ -141,8 +141,16 @@ function Configuration({ connection, onSaved }: { connection: ConnectionView; on
   );
 }
 
+/** The secret paths of a refusal that asks for the stored credential again. */
+function credentialPaths(error: unknown): string[] {
+  const paths = error instanceof ApiError ? error.detail?.credentials : undefined;
+  return Array.isArray(paths) ? paths.filter((p): p is string => typeof p === "string") : [];
+}
+
 function ConnectionEditor({ connection, onClose, onSaved }: { connection: ConnectionView; onClose: () => void; onSaved: (saved: ConnectionView) => void }) {
   const catalog = useCatalog(); const action = useAction("connection");
+  const [needed, setNeeded] = useState<string[]>([]);
+  const [secrets, setSecrets] = useState<Record<string, string>>({});
   const profiles = useQuery({ queryKey: inventoryKeys.profiles.list(connection.collector_type), queryFn: () => inventoryApi.listProfiles({ collector_type: connection.collector_type }) });
   const [name, setName] = useState(connection.display_name);
   const [config, setConfig] = useState(connection.config);
@@ -156,17 +164,32 @@ function ConnectionEditor({ connection, onClose, onSaved }: { connection: Connec
       <form className="inv-form" onSubmit={e => {
         e.preventDefault();
         if (!schema || !metadata) return;
-        void action.run(() => inventoryApi.patchConnection(connection.id, {
-          expected_revision: connection.revision, display_name: name,
-          config: { ...materialize(schema, metadata, "connection", config), ...(connection.kind === "controller" ? materialize(schema, metadata, "target", config) : {}) },
-          profile_id: profile || null, clear_profile: !profile,
-        }), onSaved);
+        void action.run(async () => {
+          try {
+            return await inventoryApi.patchConnection(connection.id, {
+              expected_revision: connection.revision, display_name: name,
+              config: { ...materialize(schema, metadata, "connection", config), ...(connection.kind === "controller" ? materialize(schema, metadata, "target", config) : {}) },
+              profile_id: profile || null, clear_profile: !profile,
+              ...(needed.length > 0 ? { secrets: Object.fromEntries(needed.map(path => [path, secrets[path] ?? ""])) } : {}),
+            });
+          } catch (err) {
+            const paths = credentialPaths(err);
+            if (paths.length > 0) setNeeded(paths);
+            throw err;
+          }
+        }, onSaved);
       }}>
         <label className="inv-field"><span>Connection display name</span><input value={name} required onChange={e => setName(e.target.value)} /></label>
         {schema && metadata && <>
           <MetadataFields schema={schema} metadata={metadata} category="connection" value={config} onChange={setConfig} editing />
           {connection.kind === "controller" && <MetadataFields schema={schema} metadata={metadata} category="target" value={config} onChange={setConfig} editing />}
         </>}
+        {needed.length > 0 && <fieldset>
+          <legend>Credential</legend>
+          {needed.map(path => <label key={path} className="inv-field"><span>{metadata?.fields.find(f => f.path === path)?.label || path}</span>
+            <input type="password" autoComplete="new-password" required value={secrets[path] ?? ""} onChange={e => setSecrets({ ...secrets, [path]: e.target.value })} />
+          </label>)}
+        </fieldset>}
         <label className="inv-field"><span>Connection default profile</span>
           <select value={profile} onChange={e => setProfile(e.target.value)}>
             <option value="">No default profile</option>

@@ -11,8 +11,10 @@ from typing import TYPE_CHECKING, Any, TypeVar, get_args
 from pydantic import BaseModel, SecretStr
 
 from hst import collectors as coll
+from hst.app import source_egress
 from hst.app.crypto import SecretKeyError, decrypt_secrets, dek, encrypt_secrets
 from hst.app.secrets import FernetResolver, SecretResolver
+from hst.app.source_egress import CredentialsRequired as CredentialsRequired
 from hst.app.store import Device, Site, Source, Store
 from hst.collectors.base import Collector, SourceConfig
 from hst.core import Settings, redaction
@@ -530,11 +532,15 @@ def merge_config(row: Source, overlay: dict, key: str) -> tuple[dict, bytes]:
 
     The function decrypts the stored secrets, applies the overlay, removes
     `source_name`, validates the result and encrypts the secrets. Raises
-    ValidationError or SecretsUnreadable.
+    ValidationError, SecretsUnreadable or CredentialsRequired.
 
     When the stored blob does not decrypt under `key`, the overlay must hold
     every secret field of the type. Otherwise SecretsUnreadable lists the
     missing paths.
+
+    When the result moves the endpoint or weakens the TLS check
+    (`source_egress.change`), the overlay must hold every stored secret that the
+    result keeps. Otherwise CredentialsRequired lists the kept paths.
     """
     try:
         stored_secrets = decrypt_secrets(key, row.secrets)
@@ -552,7 +558,30 @@ def merge_config(row: Source, overlay: dict, key: str) -> tuple[dict, bytes]:
         if missing:
             raise SecretsUnreadable(missing)
     config, secrets = validate_source(row.type, merged)
+    if stored_secrets:
+        given = {path for path, value in _flat(overlay).items() if isinstance(value, str) and value}
+        kept = [path for path, value in secrets.items() if value and stored_secrets.get(path) == value]
+        source_egress.require_secrets(row.type, _stored_config(row, stored_secrets), config, kept, given)
     return config, encrypt_secrets(key, secrets)
+
+
+def _flat(tree: Mapping[str, Any], prefix: str = "") -> dict[str, Any]:
+    out: dict[str, Any] = {}
+    for name, value in tree.items():
+        if isinstance(value, Mapping):
+            out.update(_flat(value, f"{prefix}{name}."))
+        else:
+            out[f"{prefix}{name}"] = value
+    return out
+
+
+def _stored_config(row: Source, secrets: dict[str, str]) -> dict:
+    """The stored config with the defaults of the model, or the stored config
+    as it is when it no longer validates."""
+    try:
+        return validate_source(row.type, inject_secrets(row.config, secrets))[0]
+    except (KeyError, ValueError):  # pydantic's ValidationError is a ValueError
+        return row.config
 
 
 def _overlay(base: dict, overlay: dict) -> dict:

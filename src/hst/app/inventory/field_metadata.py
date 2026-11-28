@@ -7,6 +7,18 @@ from typing import NamedTuple
 CATEGORIES = ("profile", "credential", "connection", "target", "internal", "legacy_normalization")
 IDENTITY_SENSITIVITIES = ("none", "label", "scope", "identity")
 
+# The endpoint role of a field that selects where a collector sends its
+# credentials, or how it checks the server there.
+# A change of a DESTINATION value moves the endpoint.
+# A change of a VERIFY value from true to false turns off the certificate check.
+# A new non-empty TRUST value that differs from the stored one adds a trust anchor.
+# A change of a stored non-empty PIN value drops a pinned key or certificate.
+DESTINATION = "destination"
+VERIFY = "verify"
+TRUST = "trust"
+PIN = "pin"
+ENDPOINT_ROLES = ("", DESTINATION, VERIFY, TRUST, PIN)
+
 
 class FieldClassification(NamedTuple):
     path: str
@@ -16,6 +28,7 @@ class FieldClassification(NamedTuple):
     identity_sensitivity: str
     profile_applicability: str
     label: str
+    endpoint: str = ""
 
 
 class CollectorClassification(NamedTuple):
@@ -28,6 +41,11 @@ class CollectorClassification(NamedTuple):
 def secret_paths(collector_type: str) -> frozenset[str]:
     """Dotted paths of every secret field of a collector, across all variants."""
     return frozenset(f.path for f in COLLECTORS[collector_type].fields if f.secret)
+
+
+def endpoint_fields(collector_type: str) -> dict[str, str]:
+    """The endpoint role of each dotted path of a collector that has one."""
+    return {f.path: f.endpoint for f in COLLECTORS[collector_type].fields if f.endpoint}
 
 
 def classification_of(collector_type: str, path: str, variant: str | None) -> FieldClassification | None:
@@ -114,6 +132,7 @@ COLLECTORS: dict[str, CollectorClassification] = {
                 identity_sensitivity="none",
                 profile_applicability="n/a",
                 label="APIC URL",
+                endpoint=DESTINATION,
             ),
             FieldClassification(
                 path="auth.method",
@@ -168,6 +187,7 @@ COLLECTORS: dict[str, CollectorClassification] = {
                 identity_sensitivity="none",
                 profile_applicability="apic",
                 label="Verify TLS certificate",
+                endpoint=VERIFY,
             ),
             FieldClassification(
                 path="tls.ca_bundle",
@@ -177,6 +197,7 @@ COLLECTORS: dict[str, CollectorClassification] = {
                 identity_sensitivity="none",
                 profile_applicability="apic",
                 label="CA bundle",
+                endpoint=TRUST,
             ),
             FieldClassification(
                 path="tls.client_cert.cert",
@@ -274,6 +295,7 @@ COLLECTORS: dict[str, CollectorClassification] = {
                 identity_sensitivity="identity",
                 profile_applicability="n/a",
                 label="Management server host",
+                endpoint=DESTINATION,
             ),
             FieldClassification(
                 path="port",
@@ -283,6 +305,7 @@ COLLECTORS: dict[str, CollectorClassification] = {
                 identity_sensitivity="none",
                 profile_applicability="n/a",
                 label="Management server port",
+                endpoint=DESTINATION,
             ),
             FieldClassification(
                 path="auth.method",
@@ -346,6 +369,7 @@ COLLECTORS: dict[str, CollectorClassification] = {
                 identity_sensitivity="none",
                 profile_applicability="checkpoint",
                 label="Verify TLS certificate",
+                endpoint=VERIFY,
             ),
             FieldClassification(
                 path="tls.ca_bundle",
@@ -355,6 +379,7 @@ COLLECTORS: dict[str, CollectorClassification] = {
                 identity_sensitivity="none",
                 profile_applicability="checkpoint",
                 label="CA bundle",
+                endpoint=TRUST,
             ),
             FieldClassification(
                 path="tls.client_cert.cert",
@@ -452,6 +477,7 @@ COLLECTORS: dict[str, CollectorClassification] = {
                 identity_sensitivity="identity",
                 profile_applicability="n/a",
                 label="Host",
+                endpoint=DESTINATION,
             ),
             FieldClassification(
                 path="auth.method",
@@ -542,6 +568,7 @@ COLLECTORS: dict[str, CollectorClassification] = {
                 identity_sensitivity="none",
                 profile_applicability="n/a",
                 label="Port",
+                endpoint=DESTINATION,
             ),
             FieldClassification(
                 path="jump_host.host",
@@ -551,6 +578,7 @@ COLLECTORS: dict[str, CollectorClassification] = {
                 identity_sensitivity="none",
                 profile_applicability="checkpoint_gateway",
                 label="Jump host",
+                endpoint=DESTINATION,
             ),
             FieldClassification(
                 path="jump_host.port",
@@ -560,6 +588,7 @@ COLLECTORS: dict[str, CollectorClassification] = {
                 identity_sensitivity="none",
                 profile_applicability="checkpoint_gateway",
                 label="Jump host port",
+                endpoint=DESTINATION,
             ),
             FieldClassification(
                 path="jump_host.auth.method",
@@ -650,6 +679,7 @@ COLLECTORS: dict[str, CollectorClassification] = {
                 identity_sensitivity="none",
                 profile_applicability="checkpoint_gateway",
                 label="Jump host key",
+                endpoint=PIN,
             ),
             FieldClassification(
                 path="host_key",
@@ -659,6 +689,7 @@ COLLECTORS: dict[str, CollectorClassification] = {
                 identity_sensitivity="none",
                 profile_applicability="n/a",
                 label="Host key",
+                endpoint=PIN,
             ),
             FieldClassification(
                 path="transport",
@@ -936,6 +967,7 @@ COLLECTORS: dict[str, CollectorClassification] = {
                 identity_sensitivity="none",
                 profile_applicability="n/a",
                 label="API URL",
+                endpoint=DESTINATION,
             ),
             FieldClassification(
                 path="auth.method",
@@ -972,6 +1004,7 @@ COLLECTORS: dict[str, CollectorClassification] = {
                 identity_sensitivity="none",
                 profile_applicability="equinix",
                 label="Verify TLS certificate",
+                endpoint=VERIFY,
             ),
             FieldClassification(
                 path="tls.ca_bundle",
@@ -981,6 +1014,7 @@ COLLECTORS: dict[str, CollectorClassification] = {
                 identity_sensitivity="none",
                 profile_applicability="equinix",
                 label="CA bundle",
+                endpoint=TRUST,
             ),
             FieldClassification(
                 path="tls.client_cert.cert",
@@ -1123,6 +1157,7 @@ COLLECTORS: dict[str, CollectorClassification] = {
                 identity_sensitivity="identity",
                 profile_applicability="n/a",
                 label="Device host",
+                endpoint=DESTINATION,
             ),
             FieldClassification(
                 path="auth.method",
@@ -1213,6 +1248,7 @@ COLLECTORS: dict[str, CollectorClassification] = {
                 identity_sensitivity="none",
                 profile_applicability="n/a",
                 label="Device port",
+                endpoint=DESTINATION,
             ),
             FieldClassification(
                 path="jump_host.host",
@@ -1222,6 +1258,7 @@ COLLECTORS: dict[str, CollectorClassification] = {
                 identity_sensitivity="none",
                 profile_applicability="iosxe",
                 label="Jump host address",
+                endpoint=DESTINATION,
             ),
             FieldClassification(
                 path="jump_host.port",
@@ -1231,6 +1268,7 @@ COLLECTORS: dict[str, CollectorClassification] = {
                 identity_sensitivity="none",
                 profile_applicability="iosxe",
                 label="Jump host port",
+                endpoint=DESTINATION,
             ),
             FieldClassification(
                 path="jump_host.auth.method",
@@ -1321,6 +1359,7 @@ COLLECTORS: dict[str, CollectorClassification] = {
                 identity_sensitivity="none",
                 profile_applicability="iosxe",
                 label="Jump host key pin",
+                endpoint=PIN,
             ),
             FieldClassification(
                 path="host_key",
@@ -1330,6 +1369,7 @@ COLLECTORS: dict[str, CollectorClassification] = {
                 identity_sensitivity="none",
                 profile_applicability="n/a",
                 label="Device host key pin",
+                endpoint=PIN,
             ),
             FieldClassification(
                 path="transport",
@@ -1472,6 +1512,7 @@ COLLECTORS: dict[str, CollectorClassification] = {
                 identity_sensitivity="identity",
                 profile_applicability="n/a",
                 label="Host",
+                endpoint=DESTINATION,
             ),
             FieldClassification(
                 path="auth.method",
@@ -1562,6 +1603,7 @@ COLLECTORS: dict[str, CollectorClassification] = {
                 identity_sensitivity="none",
                 profile_applicability="n/a",
                 label="Port",
+                endpoint=DESTINATION,
             ),
             FieldClassification(
                 path="jump_host.host",
@@ -1571,6 +1613,7 @@ COLLECTORS: dict[str, CollectorClassification] = {
                 identity_sensitivity="none",
                 profile_applicability="iosxr",
                 label="Jump host address",
+                endpoint=DESTINATION,
             ),
             FieldClassification(
                 path="jump_host.port",
@@ -1580,6 +1623,7 @@ COLLECTORS: dict[str, CollectorClassification] = {
                 identity_sensitivity="none",
                 profile_applicability="iosxr",
                 label="Jump host port",
+                endpoint=DESTINATION,
             ),
             FieldClassification(
                 path="jump_host.auth.method",
@@ -1670,6 +1714,7 @@ COLLECTORS: dict[str, CollectorClassification] = {
                 identity_sensitivity="none",
                 profile_applicability="iosxr",
                 label="Jump host key",
+                endpoint=PIN,
             ),
             FieldClassification(
                 path="host_key",
@@ -1679,6 +1724,7 @@ COLLECTORS: dict[str, CollectorClassification] = {
                 identity_sensitivity="none",
                 profile_applicability="n/a",
                 label="Host key",
+                endpoint=PIN,
             ),
             FieldClassification(
                 path="transport",
@@ -1927,6 +1973,7 @@ COLLECTORS: dict[str, CollectorClassification] = {
                 identity_sensitivity="identity",
                 profile_applicability="n/a",
                 label="Nautobot URL",
+                endpoint=DESTINATION,
             ),
             FieldClassification(
                 path="auth.method",
@@ -1954,6 +2001,7 @@ COLLECTORS: dict[str, CollectorClassification] = {
                 identity_sensitivity="none",
                 profile_applicability="nautobot",
                 label="Verify TLS certificate",
+                endpoint=VERIFY,
             ),
             FieldClassification(
                 path="tls.ca_bundle",
@@ -1963,6 +2011,7 @@ COLLECTORS: dict[str, CollectorClassification] = {
                 identity_sensitivity="none",
                 profile_applicability="nautobot",
                 label="CA bundle",
+                endpoint=TRUST,
             ),
             FieldClassification(
                 path="tls.client_cert.cert",
@@ -2060,6 +2109,7 @@ COLLECTORS: dict[str, CollectorClassification] = {
                 identity_sensitivity="identity",
                 profile_applicability="n/a",
                 label="NDO URL",
+                endpoint=DESTINATION,
             ),
             FieldClassification(
                 path="auth.method",
@@ -2096,6 +2146,7 @@ COLLECTORS: dict[str, CollectorClassification] = {
                 identity_sensitivity="none",
                 profile_applicability="ndo",
                 label="Verify TLS certificate",
+                endpoint=VERIFY,
             ),
             FieldClassification(
                 path="tls.ca_bundle",
@@ -2105,6 +2156,7 @@ COLLECTORS: dict[str, CollectorClassification] = {
                 identity_sensitivity="none",
                 profile_applicability="ndo",
                 label="CA bundle",
+                endpoint=TRUST,
             ),
             FieldClassification(
                 path="tls.client_cert.cert",
@@ -2211,6 +2263,7 @@ COLLECTORS: dict[str, CollectorClassification] = {
                 identity_sensitivity="identity",
                 profile_applicability="n/a",
                 label="NSIP management address",
+                endpoint=DESTINATION,
             ),
             FieldClassification(
                 path="auth.method",
@@ -2247,6 +2300,7 @@ COLLECTORS: dict[str, CollectorClassification] = {
                 identity_sensitivity="none",
                 profile_applicability="netscaler",
                 label="Verify TLS certificate",
+                endpoint=VERIFY,
             ),
             FieldClassification(
                 path="tls.ca_bundle",
@@ -2256,6 +2310,7 @@ COLLECTORS: dict[str, CollectorClassification] = {
                 identity_sensitivity="none",
                 profile_applicability="netscaler",
                 label="CA bundle",
+                endpoint=TRUST,
             ),
             FieldClassification(
                 path="tls.client_cert.cert",
@@ -2407,6 +2462,7 @@ COLLECTORS: dict[str, CollectorClassification] = {
                 identity_sensitivity="identity",
                 profile_applicability="n/a",
                 label="Host",
+                endpoint=DESTINATION,
             ),
             FieldClassification(
                 path="auth.method",
@@ -2497,6 +2553,7 @@ COLLECTORS: dict[str, CollectorClassification] = {
                 identity_sensitivity="none",
                 profile_applicability="n/a",
                 label="Port",
+                endpoint=DESTINATION,
             ),
             FieldClassification(
                 path="jump_host.host",
@@ -2506,6 +2563,7 @@ COLLECTORS: dict[str, CollectorClassification] = {
                 identity_sensitivity="none",
                 profile_applicability="nxos",
                 label="Jump host",
+                endpoint=DESTINATION,
             ),
             FieldClassification(
                 path="jump_host.port",
@@ -2515,6 +2573,7 @@ COLLECTORS: dict[str, CollectorClassification] = {
                 identity_sensitivity="none",
                 profile_applicability="nxos",
                 label="Jump host port",
+                endpoint=DESTINATION,
             ),
             FieldClassification(
                 path="jump_host.auth.method",
@@ -2605,6 +2664,7 @@ COLLECTORS: dict[str, CollectorClassification] = {
                 identity_sensitivity="none",
                 profile_applicability="nxos",
                 label="Jump host key pin",
+                endpoint=PIN,
             ),
             FieldClassification(
                 path="host_key",
@@ -2614,6 +2674,7 @@ COLLECTORS: dict[str, CollectorClassification] = {
                 identity_sensitivity="none",
                 profile_applicability="n/a",
                 label="Host key pin",
+                endpoint=PIN,
             ),
             FieldClassification(
                 path="transport",
@@ -2765,6 +2826,7 @@ COLLECTORS: dict[str, CollectorClassification] = {
                 identity_sensitivity="none",
                 profile_applicability="n/a",
                 label="Controller URL",
+                endpoint=DESTINATION,
             ),
             FieldClassification(
                 path="auth.method",
@@ -2810,6 +2872,7 @@ COLLECTORS: dict[str, CollectorClassification] = {
                 identity_sensitivity="none",
                 profile_applicability="unifi",
                 label="Verify TLS certificate",
+                endpoint=VERIFY,
             ),
             FieldClassification(
                 path="tls.ca_bundle",
@@ -2819,6 +2882,7 @@ COLLECTORS: dict[str, CollectorClassification] = {
                 identity_sensitivity="none",
                 profile_applicability="unifi",
                 label="CA bundle",
+                endpoint=TRUST,
             ),
             FieldClassification(
                 path="tls.client_cert.cert",
@@ -2855,6 +2919,7 @@ COLLECTORS: dict[str, CollectorClassification] = {
                 identity_sensitivity="none",
                 profile_applicability="n/a",
                 label="Console certificate SHA-256 fingerprint",
+                endpoint=PIN,
             ),
         ),
     ),
@@ -2934,6 +2999,7 @@ COLLECTORS: dict[str, CollectorClassification] = {
                 identity_sensitivity="identity",
                 profile_applicability="n/a",
                 label="Orchestrator URL",
+                endpoint=DESTINATION,
             ),
             FieldClassification(
                 path="enterprise_logical_ids",
@@ -2979,6 +3045,7 @@ COLLECTORS: dict[str, CollectorClassification] = {
                 identity_sensitivity="none",
                 profile_applicability="velocloud",
                 label="Verify TLS certificate",
+                endpoint=VERIFY,
             ),
             FieldClassification(
                 path="tls.ca_bundle",
@@ -2988,6 +3055,7 @@ COLLECTORS: dict[str, CollectorClassification] = {
                 identity_sensitivity="none",
                 profile_applicability="velocloud",
                 label="CA bundle",
+                endpoint=TRUST,
             ),
             FieldClassification(
                 path="tls.client_cert.cert",
@@ -3042,6 +3110,7 @@ COLLECTORS: dict[str, CollectorClassification] = {
                 identity_sensitivity="none",
                 profile_applicability="velocloud",
                 label="Jump host address",
+                endpoint=DESTINATION,
             ),
             FieldClassification(
                 path="jump_host.port",
@@ -3051,6 +3120,7 @@ COLLECTORS: dict[str, CollectorClassification] = {
                 identity_sensitivity="none",
                 profile_applicability="velocloud",
                 label="Jump host port",
+                endpoint=DESTINATION,
             ),
             FieldClassification(
                 path="jump_host.auth.method",
@@ -3141,6 +3211,7 @@ COLLECTORS: dict[str, CollectorClassification] = {
                 identity_sensitivity="none",
                 profile_applicability="velocloud",
                 label="Jump host key pin",
+                endpoint=PIN,
             ),
             FieldClassification(
                 path="poll_concurrency",
@@ -3247,6 +3318,7 @@ COLLECTORS: dict[str, CollectorClassification] = {
                 identity_sensitivity="identity",
                 profile_applicability="n/a",
                 label="Host",
+                endpoint=DESTINATION,
             ),
             FieldClassification(
                 path="auth.method",
@@ -3337,6 +3409,7 @@ COLLECTORS: dict[str, CollectorClassification] = {
                 identity_sensitivity="none",
                 profile_applicability="n/a",
                 label="Port",
+                endpoint=DESTINATION,
             ),
             FieldClassification(
                 path="jump_host.host",
@@ -3346,6 +3419,7 @@ COLLECTORS: dict[str, CollectorClassification] = {
                 identity_sensitivity="none",
                 profile_applicability="vyos",
                 label="Jump host",
+                endpoint=DESTINATION,
             ),
             FieldClassification(
                 path="jump_host.port",
@@ -3355,6 +3429,7 @@ COLLECTORS: dict[str, CollectorClassification] = {
                 identity_sensitivity="none",
                 profile_applicability="vyos",
                 label="Jump host port",
+                endpoint=DESTINATION,
             ),
             FieldClassification(
                 path="jump_host.auth.method",
@@ -3445,6 +3520,7 @@ COLLECTORS: dict[str, CollectorClassification] = {
                 identity_sensitivity="none",
                 profile_applicability="vyos",
                 label="Jump host key pin",
+                endpoint=PIN,
             ),
             FieldClassification(
                 path="host_key",
@@ -3454,6 +3530,7 @@ COLLECTORS: dict[str, CollectorClassification] = {
                 identity_sensitivity="none",
                 profile_applicability="n/a",
                 label="Host key pin",
+                endpoint=PIN,
             ),
             FieldClassification(
                 path="transport",
@@ -3587,6 +3664,7 @@ COLLECTORS: dict[str, CollectorClassification] = {
                 identity_sensitivity="none",
                 profile_applicability="n/a",
                 label="Vanity domain",
+                endpoint=DESTINATION,
             ),
             FieldClassification(
                 path="tenant",
@@ -3711,6 +3789,7 @@ COLLECTORS: dict[str, CollectorClassification] = {
                 identity_sensitivity="none",
                 profile_applicability="n/a",
                 label="Vanity domain",
+                endpoint=DESTINATION,
             ),
             FieldClassification(
                 path="tenant",
