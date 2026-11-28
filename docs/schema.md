@@ -1286,7 +1286,7 @@ No code writes `bandwidth_mbps` or `bandwidth_source` on a `Tunnel` or on a `Wan
 |---|---|
 | `src/hst/collectors/apic.py` `_tenant_stage` | `Tenant`, `AppProfile`, `Epg` |
 | `src/hst/collectors/apic.py` `_contract_stage` | `Contract`, `ContractSubject`, `AciFilter`, `FilterEntry`, `L3Out`, `ExtEpg` |
-| `src/hst/collectors/apic.py` `_service_stage` | `ServiceGraphTemplate`, `ServiceGraphInstance`, `PbrPolicy`, `PbrDest`, `DvPortgroup` |
+| `src/hst/collectors/apic.py` `_service_stage` | `ServiceGraphTemplate`, `ServiceNode`, `ServiceGraphInstance`, `PbrPolicy`, `PbrDest`, `DvPortgroup` |
 
 Each of these nodes holds the DN of its APIC object in `dn`. The tables below do not list `dn`. A relationship cell gives the 2 labels of the collector record. The loader finds each end of a relationship by `uid`.
 
@@ -1371,6 +1371,9 @@ The start of each `HAS` relationship is the parent DN of the child object.
 | Relationship | Properties | Written by |
 |---|---|---|
 | `(Contract)-[:HAS]->(ContractSubject)` | | `apic` |
+| `(Contract)-[:REDIRECTS_VIA]->(PbrPolicy)` | `graph`, `node`, `connector` | `apic` |
+
+`REDIRECTS_VIA` comes from the device selection policies of the tenant of the contract (`vnsLDevCtx`). A policy matches a contract and a graph by `ctrctNameOrLbl` and `graphNameOrLbl`, and the value `any` matches each name. `_service_stage` writes 1 relationship for each matching policy, each graph that a subject of the contract applies and each `vnsLIfCtx` of the policy that has a `vnsRsLIfCtxToSvcRedirectPol`. `graph` holds the uid of the `ServiceGraphTemplate`, `node` holds `nodeNameOrLbl` and `connector` holds `connNameOrLbl`. The 3 properties are the key of the relationship.
 
 #### ContractSubject
 
@@ -1428,7 +1431,17 @@ The start of each `HAS` relationship is the parent DN of the child object.
 |---|---|---|
 | `name` | `name` of the `vnsAbsGraph` object | `apic` |
 
-No relationship starts at a `ServiceGraphTemplate`.
+| Relationship | Properties | Written by |
+|---|---|---|
+| `(ServiceGraphTemplate)-[:HAS_NODE]->(ServiceNode)` | | `apic` |
+
+#### ServiceNode
+
+| Property | Content | Written by |
+|---|---|---|
+| `name` | `name` of the `vnsAbsNode` object | `apic` |
+
+No relationship starts at a `ServiceNode`.
 
 #### ServiceGraphInstance
 

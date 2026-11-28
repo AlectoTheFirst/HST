@@ -245,6 +245,7 @@
 | Relationship | Properties |
 |---|---|
 | `(Contract)-[:HAS]->(ContractSubject)` |  |
+| `(Contract)-[:REDIRECTS_VIA]->(PbrPolicy)` | `graph`, `node`, `connector` |
 
 ### ContractSubject of `apic`
 
@@ -287,6 +288,16 @@
 | Property | Content |
 |---|---|
 | `name` | `name` of the `vnsAbsGraph` object |
+
+| Relationship | Properties |
+|---|---|
+| `(ServiceGraphTemplate)-[:HAS_NODE]->(ServiceNode)` |  |
+
+### ServiceNode of `apic`
+
+| Property | Content |
+|---|---|
+| `name` | `name` of the `vnsAbsNode` object |
 
 ### ServiceGraphInstance of `apic`
 

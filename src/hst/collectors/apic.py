@@ -77,9 +77,13 @@ CLASSES: tuple[str, ...] = (
     "l3extRsEctx",
     "l3extSubnet",
     "vnsAbsGraph",
+    "vnsAbsNode",
     "vnsGraphInst",
     "vnsSvcRedirectPol",
     "vnsRedirectDest",
+    "vnsLDevCtx",
+    "vnsLIfCtx",
+    "vnsRsLIfCtxToSvcRedirectPol",
     "fvCEp",
     "fvIp",
     "fvRsPathAtt",
@@ -793,8 +797,15 @@ def _service_stage(
     resolver: DeviceResolver,
 ) -> None:
     """Write the service graphs, PBR, endpoints and static and VMM bindings from
-    vnsAbsGraph, vnsGraphInst, vzRsSubjGraphAtt, vnsSvcRedirectPol, vnsRedirectDest,
-    fvCEp, fvIp, fvRsPathAtt and fvRsDomAtt."""
+    vnsAbsGraph, vnsAbsNode, vnsGraphInst, vzRsSubjGraphAtt, vnsSvcRedirectPol,
+    vnsRedirectDest, vnsLDevCtx, vnsLIfCtx, vnsRsLIfCtxToSvcRedirectPol, fvCEp, fvIp,
+    fvRsPathAtt and fvRsDomAtt.
+
+    A device selection policy (vnsLDevCtx) binds the redirect policy of a connector to
+    a contract, a graph and a node of its tenant. The value "any" of a name matches each
+    contract, graph or node. Each contract of the tenant that applies a matching graph
+    gets 1 REDIRECTS_VIA relationship for each connector with a redirect policy. The
+    relationship holds the graph, the node name of the policy and the connector."""
 
     def aci_node(label: str, dn: str, **props) -> str:
         return b.node(label, uid.aci(fabric, dn), dn=dn, **props)
@@ -819,16 +830,26 @@ def _service_stage(
         for mo in raw.get("fabricNode", [])
     }
 
+    graph_names: dict[str, str] = {}
     for mo in raw.get("vnsAbsGraph", []):
         a = _attrs(mo)
         aci_node("ServiceGraphTemplate", a["dn"], name=a.get("name"))
+        graph_names[a["dn"]] = str(a.get("name") or "")
+    for mo in raw.get("vnsAbsNode", []):
+        a = _attrs(mo)
+        if _parent_dn(a["dn"]) not in graph_names:
+            continue
+        node = aci_node("ServiceNode", a["dn"], name=a.get("name"))
+        b.rel("HAS_NODE", "ServiceGraphTemplate", uid.aci(fabric, _parent_dn(a["dn"])), "ServiceNode", node)
     for mo in raw.get("vnsGraphInst", []):
         a = _attrs(mo)
         aci_node("ServiceGraphInstance", a["dn"], ctrct_dn=a.get("ctrctDn"))
-    contract_dns = {_attrs(mo)["dn"] for mo in raw.get("vzBrCP", [])}
+    contract_names = {_attrs(mo)["dn"]: str(_attrs(mo).get("name") or "") for mo in raw.get("vzBrCP", [])}
     kept_subject_dns = {
-        _attrs(mo)["dn"] for mo in raw.get("vzSubj", []) if _parent_dn(_attrs(mo)["dn"]) in contract_dns
+        _attrs(mo)["dn"] for mo in raw.get("vzSubj", []) if _parent_dn(_attrs(mo)["dn"]) in contract_names
     }
+    # the (contract dn, graph dn) pairs of the subjects that apply a graph
+    applied: set[tuple[str, str]] = set()
     for mo in raw.get("vzRsSubjGraphAtt", []):
         a = _attrs(mo)
         tdn = a.get("tDn")
@@ -843,9 +864,47 @@ def _service_stage(
             "ServiceGraphTemplate",
             uid.aci(fabric, tdn),
         )
+        applied.add((_parent_dn(_parent_dn(a["dn"])), tdn))
+    policy_dns: set[str] = set()
     for mo in raw.get("vnsSvcRedirectPol", []):
         a = _attrs(mo)
         aci_node("PbrPolicy", a["dn"], name=a.get("name"))
+        policy_dns.add(a["dn"])
+    # redirect policy dn by vnsLIfCtx dn
+    redirect_of = {
+        _parent_dn(a["dn"]): a["tDn"]
+        for a in map(_attrs, raw.get("vnsRsLIfCtxToSvcRedirectPol", []))
+        if a.get("tDn") in policy_dns
+    }
+    # the (connector, redirect policy dn) pairs by vnsLDevCtx dn
+    connectors: dict[str, list[tuple[str, str]]] = {}
+    for mo in raw.get("vnsLIfCtx", []):
+        a = _attrs(mo)
+        if a["dn"] in redirect_of and a.get("connNameOrLbl"):
+            connectors.setdefault(_parent_dn(a["dn"]), []).append((a["connNameOrLbl"], redirect_of[a["dn"]]))
+    for mo in raw.get("vnsLDevCtx", []):
+        a = _attrs(mo)
+        tenant = _parent_dn(a["dn"])
+        contract, graph, node = a.get("ctrctNameOrLbl"), a.get("graphNameOrLbl"), a.get("nodeNameOrLbl")
+        if not contract or not graph or not node:
+            continue
+        for contract_dn, graph_dn in sorted(applied):
+            if _parent_dn(contract_dn) != tenant or graph_dn not in graph_names:
+                continue
+            if contract not in {"any", contract_names[contract_dn]} or graph not in {
+                "any",
+                graph_names[graph_dn],
+            }:
+                continue
+            for connector, policy_dn in connectors.get(a["dn"], ()):
+                b.rel(
+                    "REDIRECTS_VIA",
+                    "Contract",
+                    uid.aci(fabric, contract_dn),
+                    "PbrPolicy",
+                    uid.aci(fabric, policy_dn),
+                    key={"graph": uid.aci(fabric, graph_dn), "node": node, "connector": connector},
+                )
     for mo in raw.get("vnsRedirectDest", []):
         a = _attrs(mo)
         dest = aci_node("PbrDest", a["dn"], ip=a.get("ip"), mac=a.get("mac"))

@@ -53,12 +53,12 @@ Each section gives the fields that the `ConfigModel` adds to the base models of 
 
 | Item | Values |
 |---|---|
-| Classes of `CLASSES` | `fabricNode`, `topSystem`, `l1PhysIf`, `lldpAdjEp`, `pcAggrIf`, `cdpAdjEp`, `fvTenant`, `fvAp`, `fvAEPg`, `fvBD`, `fvSubnet`, `fvCtx`, `fvRsCtx`, `fvRsBd`, `vzBrCP`, `vzSubj`, `vzRsSubjFiltAtt`, `vzRsFiltAtt`, `vzRsSubjGraphAtt`, `vzFilter`, `vzEntry`, `fvRsProv`, `fvRsCons`, `l3extOut`, `l3extInstP`, `l3extRsEctx`, `l3extSubnet`, `vnsAbsGraph`, `vnsGraphInst`, `vnsSvcRedirectPol`, `vnsRedirectDest`, `fvCEp`, `fvIp`, `fvRsPathAtt`, `fvRsDomAtt`, `ospfDom`, `ospfArea`, `ospfIf`, `ospfAdjEp` |
+| Classes of `CLASSES` | `fabricNode`, `topSystem`, `l1PhysIf`, `lldpAdjEp`, `pcAggrIf`, `cdpAdjEp`, `fvTenant`, `fvAp`, `fvAEPg`, `fvBD`, `fvSubnet`, `fvCtx`, `fvRsCtx`, `fvRsBd`, `vzBrCP`, `vzSubj`, `vzRsSubjFiltAtt`, `vzRsFiltAtt`, `vzRsSubjGraphAtt`, `vzFilter`, `vzEntry`, `fvRsProv`, `fvRsCons`, `l3extOut`, `l3extInstP`, `l3extRsEctx`, `l3extSubnet`, `vnsAbsGraph`, `vnsAbsNode`, `vnsGraphInst`, `vnsSvcRedirectPol`, `vnsRedirectDest`, `vnsLDevCtx`, `vnsLIfCtx`, `vnsRsLIfCtxToSvcRedirectPol`, `fvCEp`, `fvIp`, `fvRsPathAtt`, `fvRsDomAtt`, `ospfDom`, `ospfArea`, `ospfIf`, `ospfAdjEp` |
 | Classes of `CONTRACT_BYPASS_CLASSES` | `vzAny`, `vzRsAnyToProv`, `vzRsAnyToCons`, `vzRsAnyToConsIf`, `fvESg`, `fvRsScope` |
 | Classes of `BGP_CLASSES`, unless `capture_bgp` is `none` | `bgpPeerEntry`, `bgpPeerAfEntry` |
 | Classes of `MTU_CLASSES`, with `capture_mtu` | `l2InstPol`, `l3extRsPathL3OutAtt`, `l3extVirtualLIfP`, `pcRsMbrIfs` |
 | Sections | `policy`, `endpoint`, `mtu:<class>` for each class of `MTU_CLASSES`, `mtu:operational`, `mtu:member_state` |
-| Labels | `AciFilter`, `AppProfile`, `BridgeDomain`, `Contract`, `ContractSubject`, `Device`, `DvPortgroup`, `Endpoint`, `Epg`, `ExtEpg`, `Fabric`, `FilterEntry`, `Interface`, `IpAddress`, `L3Out`, `Lag`, `MtuObservation`, `OspfAdjacency`, `OspfArea`, `PbrDest`, `PbrPolicy`, `Pod`, `Port`, `Prefix`, `RoutingProcess`, `ServiceGraphInstance`, `ServiceGraphTemplate`, `Tenant`, `VrfInstance` |
+| Labels | `AciFilter`, `AppProfile`, `BridgeDomain`, `Contract`, `ContractSubject`, `Device`, `DvPortgroup`, `Endpoint`, `Epg`, `ExtEpg`, `Fabric`, `FilterEntry`, `Interface`, `IpAddress`, `L3Out`, `Lag`, `MtuObservation`, `OspfAdjacency`, `OspfArea`, `PbrDest`, `PbrPolicy`, `Pod`, `Port`, `Prefix`, `RoutingProcess`, `ServiceGraphInstance`, `ServiceGraphTemplate`, `ServiceNode`, `Tenant`, `VrfInstance` |
 | `SIDE_TABLES` | `ospf_lsdb`, `bgp_session_routes`, `bgp_sessions` |
 | `AUTHORITATIVE_SECTIONS` | none |
 

@@ -590,6 +590,22 @@ RAW["vzRsSubjGraphAtt"] = [
         tDn="uni/tn-prod/AbsGraph-fw-insert",
     )
 ]
+RAW["vnsAbsNode"] = [_mo("vnsAbsNode", dn="uni/tn-prod/AbsGraph-fw-insert/AbsNode-FW", name="FW")]
+_LDEV = "uni/tn-prod/ldevCtx-c-web-to-be-g-fw-insert-n-FW"
+RAW["vnsLDevCtx"] = [
+    _mo("vnsLDevCtx", dn=_LDEV, ctrctNameOrLbl="web-to-be", graphNameOrLbl="fw-insert", nodeNameOrLbl="FW")
+]
+RAW["vnsLIfCtx"] = [
+    _mo("vnsLIfCtx", dn=f"{_LDEV}/lIfCtx-c-consumer", connNameOrLbl="consumer"),
+    _mo("vnsLIfCtx", dn=f"{_LDEV}/lIfCtx-c-provider", connNameOrLbl="provider"),
+]
+RAW["vnsRsLIfCtxToSvcRedirectPol"] = [
+    _mo(
+        "vnsRsLIfCtxToSvcRedirectPol",
+        dn=f"{_LDEV}/lIfCtx-c-consumer/rsLIfCtxToSvcRedirectPol",
+        tDn="uni/tn-prod/svcCont/svcRedirectPol-to-fw",
+    )
+]
 RAW["fvRsDomAtt"] = [
     _mo(
         "fvRsDomAtt",
@@ -619,6 +635,77 @@ def test_pbr_and_service_graph():
     dest = next(n for n in batch.nodes if n.label == "PbrDest")
     assert dest.props["ip"] == "10.1.9.1"
     assert ("HAS_DEST", pol.uid, dest.uid) in rels
+
+
+def _redirects(batch):
+    return {
+        (r.start_uid, r.end_uid, r.key["graph"], r.key["node"], r.key["connector"])
+        for r in batch.rels
+        if r.rel_type == "REDIRECTS_VIA"
+    }
+
+
+def test_a_graph_node_is_a_service_node_of_its_template():
+    batch = _norm()
+    from hst.core import uid as uidmod
+
+    tmpl = uidmod.aci("fab1", "uni/tn-prod/AbsGraph-fw-insert")
+    node = next(n for n in batch.nodes if n.label == "ServiceNode")
+    assert node.props["name"] == "FW"
+    assert ("HAS_NODE", tmpl, node.uid) in {(r.rel_type, r.start_uid, r.end_uid) for r in batch.rels}
+
+
+def test_a_device_selection_policy_binds_the_redirect_policy_of_a_connector_to_its_contract():
+    from hst.core import uid as uidmod
+
+    contract = uidmod.aci("fab1", "uni/tn-prod/brc-web-to-be")
+    policy = uidmod.aci("fab1", "uni/tn-prod/svcCont/svcRedirectPol-to-fw")
+    tmpl = uidmod.aci("fab1", "uni/tn-prod/AbsGraph-fw-insert")
+    # the provider connector has no redirect policy
+    assert _redirects(_norm()) == {(contract, policy, tmpl, "FW", "consumer")}
+
+
+def test_a_device_selection_policy_with_the_name_any_matches_each_contract_that_applies_the_graph():
+    from hst.core import uid as uidmod
+
+    raw = dict(RAW)
+    raw["vnsLDevCtx"] = [
+        _mo("vnsLDevCtx", dn=_LDEV, ctrctNameOrLbl="any", graphNameOrLbl="any", nodeNameOrLbl="any")
+    ]
+    contract = uidmod.aci("fab1", "uni/tn-prod/brc-web-to-be")
+    policy = uidmod.aci("fab1", "uni/tn-prod/svcCont/svcRedirectPol-to-fw")
+    tmpl = uidmod.aci("fab1", "uni/tn-prod/AbsGraph-fw-insert")
+    assert _redirects(_norm(raw)) == {(contract, policy, tmpl, "any", "consumer")}
+
+
+@pytest.mark.parametrize(
+    "attrs",
+    [
+        {"ctrctNameOrLbl": "other", "graphNameOrLbl": "fw-insert", "nodeNameOrLbl": "FW"},
+        {"ctrctNameOrLbl": "web-to-be", "graphNameOrLbl": "other", "nodeNameOrLbl": "FW"},
+    ],
+)
+def test_a_device_selection_policy_of_another_contract_or_graph_binds_no_redirect_policy(attrs):
+    raw = dict(RAW)
+    raw["vnsLDevCtx"] = [_mo("vnsLDevCtx", dn=_LDEV, **attrs)]
+    assert _redirects(_norm(raw)) == set()
+
+
+def test_a_device_selection_policy_of_another_tenant_binds_no_redirect_policy():
+    raw = dict(RAW)
+    other = _LDEV.replace("tn-prod", "tn-other")
+    raw["vnsLDevCtx"] = [
+        _mo("vnsLDevCtx", dn=other, ctrctNameOrLbl="any", graphNameOrLbl="any", nodeNameOrLbl="any")
+    ]
+    raw["vnsLIfCtx"] = [_mo("vnsLIfCtx", dn=f"{other}/lIfCtx-c-consumer", connNameOrLbl="consumer")]
+    raw["vnsRsLIfCtxToSvcRedirectPol"] = [
+        _mo(
+            "vnsRsLIfCtxToSvcRedirectPol",
+            dn=f"{other}/lIfCtx-c-consumer/rsLIfCtxToSvcRedirectPol",
+            tDn="uni/tn-prod/svcCont/svcRedirectPol-to-fw",
+        )
+    ]
+    assert _redirects(_norm(raw)) == set()
 
 
 def test_endpoints_and_bindings():
