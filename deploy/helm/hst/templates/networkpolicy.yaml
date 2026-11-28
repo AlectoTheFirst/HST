@@ -5,10 +5,16 @@ account on the bolt port is the built-in `neo4j` admin, and Neo4j Community has 
 privileges per user. The egress of both pods is port 53. With an empty
 `networkPolicy.dnsTo` the DNS rule has no `to` and matches every destination.
 
-The app policy renders with a peer in `networkPolicy.ingressFrom`. It admits those peers to
-port 8787. It has no Egress rule, so the collectors reach every device and controller.
-A NetworkPolicy does not block traffic from the node of the pod, so the kubelet probes need
-no rule.
+The app policy admits the peers in `networkPolicy.ingressFrom` to port 8787. Without a peer
+it has no Ingress type, and every pod reaches port 8787. A NetworkPolicy does not block
+traffic from the node of the pod, so the kubelet probes need no rule.
+
+With `networkPolicy.egress.enabled` the policies of the app, worker, backup, migrate and
+initdb pods have the egress rules of hst.egressRules. Each pod reaches DNS and the bundled
+database that it opens. The app, worker and backup pods reach every address outside
+`networkPolicy.egress.except`, for the devices, the controllers, the external databases
+and the S3 endpoint. The migrate and initdb pods reach those addresses only with an
+external Postgres or an external Neo4j.
 */}}
 {{- if .Values.neo4j.enabled }}
 apiVersion: networking.k8s.io/v1
@@ -69,23 +75,45 @@ spec:
       to: {{- toYaml . | nindent 8 }}
       {{- end }}
 {{- end }}
-{{- with .Values.networkPolicy.ingressFrom }}
+{{- $egress := .Values.networkPolicy.egress.enabled }}
+{{- $neo4j := .Values.neo4j.enabled }}
+{{- $postgres := .Values.postgres.enabled }}
+{{- $egressTo := dict
+  "app" (dict "neo4j" $neo4j "postgres" $postgres "other" true)
+  "worker" (dict "neo4j" $neo4j "postgres" $postgres "other" true)
+  "backup" (dict "neo4j" $neo4j "postgres" $postgres "other" true)
+  "migrate" (dict "neo4j" false "postgres" $postgres "other" (not $postgres))
+  "initdb" (dict "neo4j" $neo4j "postgres" false "other" (not $neo4j)) }}
+{{- if or .Values.networkPolicy.ingressFrom $egress }}
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: {{ include "hst.fullname" $ }}-app
-  labels: {{- include "hst.labels" $ | nindent 4 }}
+  name: {{ include "hst.fullname" . }}-app
+  labels: {{- include "hst.labels" . | nindent 4 }}
 spec:
   podSelector:
-    matchLabels: {{- include "hst.selectorLabels" $ | nindent 6 }}
+    matchLabels: {{- include "hst.selectorLabels" . | nindent 6 }}
       app.kubernetes.io/component: app
-  policyTypes: [Ingress]
+  {{- $types := list }}
+  {{- if .Values.networkPolicy.ingressFrom }}
+  {{- $types = append $types "Ingress" }}
+  {{- end }}
+  {{- if $egress }}
+  {{- $types = append $types "Egress" }}
+  {{- end }}
+  policyTypes: [{{ join ", " $types }}]
+  {{- with .Values.networkPolicy.ingressFrom }}
   ingress:
     - from: {{- toYaml . | nindent 8 }}
       ports:
         - port: 8787
           protocol: TCP
+  {{- end }}
+  {{- if $egress }}
+  {{- $to := get $egressTo "app" }}
+  egress: {{- include "hst.egressRules" (dict "root" . "neo4j" $to.neo4j "postgres" $to.postgres "other" $to.other) | nindent 4 }}
+  {{- end }}
 {{- end }}
 {{- range $component, $enabled := dict "worker" .Values.worker.enabled "backup" .Values.backup.enabled "migrate" .Values.migrations.enabled "initdb" .Values.initDb.enabled }}
 {{- if $enabled }}
@@ -99,7 +127,13 @@ spec:
   podSelector:
     matchLabels: {{- include "hst.selectorLabels" $ | nindent 6 }}
       app.kubernetes.io/component: {{ $component }}
+  {{- if $egress }}
+  {{- $to := get $egressTo $component }}
+  policyTypes: [Ingress, Egress]
+  egress: {{- include "hst.egressRules" (dict "root" $ "neo4j" $to.neo4j "postgres" $to.postgres "other" $to.other) | nindent 4 }}
+  {{- else }}
   policyTypes: [Ingress]
+  {{- end }}
 {{- end }}
 {{- end }}
 {{- end }}

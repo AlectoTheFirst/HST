@@ -296,20 +296,42 @@ neo4j:
 networkPolicy:
   # With true only the pods of this release reach the bundled Neo4j and Postgres, and
   # only the peers in ingressFrom reach port 8787 of the app pod. No peer reaches the
-  # worker, backup, migrate and initdb pods. The CNI must enforce NetworkPolicy.
+  # worker, backup, migrate and initdb pods. The egress of the app, worker, backup,
+  # migrate and initdb pods follows `egress` below. The CNI must enforce NetworkPolicy.
   enabled: true
   # The `from` peers of port 8787 of the app pod, in the form of a NetworkPolicy. They
   # are the pods of the ingress controller. app.forwardedAllowIps requires 1 peer or
-  # more. With no peer the chart renders no policy for the app pod, and every pod in the
-  # cluster reaches port 8787. A controller on the host network is no pod peer and needs
+  # more. With no peer the app policy has no Ingress type, and every pod in the cluster
+  # reaches port 8787. A controller on the host network is no pod peer and needs
   # an ipBlock with the node addresses.
   #   - namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: ingress-nginx}}
   ingressFrom: []
-  # The `to` peers of the DNS egress rule of the databases. Empty allows port 53 to any
-  # host. With the DNS pods of the cluster as peers, port 53 reaches only them, e.g.
+  # The `to` peers of the DNS egress rule of every pod of the release. Empty allows
+  # port 53 to any host. With the DNS pods of the cluster as peers, port 53 reaches only
+  # them, e.g.
   #   - namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: kube-system}}
   #     podSelector: {matchLabels: {k8s-app: kube-dns}}
   dnsTo: []
+  # The egress rules of the app, worker, backup, migrate and initdb pods. With
+  # enabled=true each pod reaches DNS (dnsTo) and the pod of each bundled database that
+  # it opens, Neo4j on port 7687 and Postgres on port 5432. The migrate pod opens Postgres,
+  # and the initdb pod opens Neo4j. The app, worker and backup pods also reach every IPv4
+  # and IPv6 address outside `except`. The migrate and initdb pods reach those addresses only with
+  # an external Postgres or an external Neo4j. With enabled=false these pods have no
+  # egress rule.
+  egress:
+    enabled: true
+    # The CIDRs that the rule of every other address excludes. The defaults are the
+    # IPv4 link-local range with the cloud metadata address 169.254.169.254, the IPv6
+    # link-local range and the IPv6 metadata address of AWS. Add the pod CIDR, the
+    # service CIDR, the node and control-plane addresses and the other ranges of the
+    # cluster, so that the pods reach no other namespace and no Kubernetes API. On some
+    # CNIs an ipBlock does not match the address of a pod. There the pods reach no other
+    # pod than DNS and the bundled databases, and an entry here does not block a pod.
+    except:
+      - 169.254.0.0/16
+      - fe80::/10
+      - fd00:ec2::254/128
 
 serviceAccount:
   create: true

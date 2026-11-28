@@ -4,6 +4,7 @@ each pod, the pod hardening and the opt-in TLS listeners of the bundled database
 
 from __future__ import annotations
 
+import ipaddress
 import json
 import shutil
 import subprocess
@@ -86,7 +87,7 @@ def test_an_existing_extra_env_setting_stays_the_only_one():
 def test_the_app_policy_admits_the_named_peers_to_port_8787():
     policy = _find(_docs(), "NetworkPolicy", "r-hst-app")["spec"]
     assert policy["podSelector"]["matchLabels"]["app.kubernetes.io/component"] == "app"
-    assert policy["policyTypes"] == ["Ingress"]
+    assert policy["policyTypes"] == ["Ingress", "Egress"]
     assert policy["ingress"] == [{"from": [PEER], "ports": [{"port": 8787, "protocol": "TCP"}]}]
 
 
@@ -100,9 +101,17 @@ def test_the_proxy_trust_without_the_app_policy_fails_the_render(base, args):
     assert "app.forwardedAllowIps needs networkPolicy.enabled=true and a peer" in out.stderr
 
 
-def test_no_peer_and_no_proxy_trust_renders_no_app_policy():
+def test_no_peer_and_no_proxy_trust_renders_an_app_policy_without_ingress():
     docs = _docs("--set", "app.forwardedAllowIps=", base=NO_PEERS)
     assert _fwd(docs) == []
+    policy = _find(docs, "NetworkPolicy", "r-hst-app")["spec"]
+    assert policy["policyTypes"] == ["Egress"]
+    assert "ingress" not in policy
+
+
+def test_no_peer_and_no_egress_renders_no_app_policy():
+    no_egress = ["--set", "networkPolicy.egress.enabled=false"]
+    docs = _docs("--set", "app.forwardedAllowIps=", *no_egress, base=NO_PEERS)
     assert [d["metadata"]["name"] for d in docs if d["kind"] == "NetworkPolicy"] == [
         "r-hst-neo4j",
         "r-hst-postgres",
@@ -122,22 +131,117 @@ def _pod_labels(docs: list[dict]) -> dict[str, dict]:
     return pods
 
 
-def test_the_worker_the_backup_and_the_jobs_admit_no_ingress():
-    docs = _docs(
-        "--set", "worker.enabled=true",
-        "--set", "backup.enabled=true", "--set", "backup.s3.bucket=b",
-        "--set", "backup.s3.endpoint=https://s3.example", "--set", "backup.s3.secretName=s",
-        "--set", "backup.recoverySecretName=r",
-    )  # fmt: skip
+WORKER_AND_BACKUP = [
+    "--set", "worker.enabled=true",
+    "--set", "backup.enabled=true", "--set", "backup.s3.bucket=b",
+    "--set", "backup.s3.endpoint=https://s3.example", "--set", "backup.s3.secretName=s",
+    "--set", "backup.recoverySecretName=r",
+]  # fmt: skip
+
+
+@pytest.mark.parametrize(
+    ("args", "types"),
+    [([], ["Ingress", "Egress"]), (["--set", "networkPolicy.egress.enabled=false"], ["Ingress"])],
+)
+def test_the_worker_the_backup_and_the_jobs_admit_no_ingress(args, types):
+    docs = _docs(*WORKER_AND_BACKUP, *args)
     pods = _pod_labels(docs)
     assert set(pods) == {"app", "worker", "backup", "migrate", "initdb", "neo4j", "postgres"}
     for component in ("worker", "backup", "migrate", "initdb"):
         policy = _find(docs, "NetworkPolicy", f"r-hst-{component}")["spec"]
-        assert policy["policyTypes"] == ["Ingress"]
+        assert policy["policyTypes"] == types
         assert "ingress" not in policy
-        assert "egress" not in policy
+        assert ("egress" in policy) == ("Egress" in types)
         selector = policy["podSelector"]["matchLabels"]
         assert [name for name, labels in pods.items() if selector.items() <= labels.items()] == [component]
+
+
+DNS = {"ports": [{"port": 53, "protocol": "UDP"}, {"port": 53, "protocol": "TCP"}]}
+
+
+def _to_pod(component: str, port: int) -> dict:
+    labels = {"app.kubernetes.io/name": "hst", "app.kubernetes.io/instance": "r"}
+    return {
+        "to": [{"podSelector": {"matchLabels": {**labels, "app.kubernetes.io/component": component}}}],
+        "ports": [{"port": port, "protocol": "TCP"}],
+    }
+
+
+NEO4J = _to_pod("neo4j", 7687)
+POSTGRES = _to_pod("postgres", 5432)
+OTHER = {
+    "to": [
+        {"ipBlock": {"cidr": "0.0.0.0/0", "except": ["169.254.0.0/16"]}},
+        {"ipBlock": {"cidr": "::/0", "except": ["fe80::/10", "fd00:ec2::254/128"]}},
+    ]
+}
+EXTERNAL = [
+    "--set", "neo4j.enabled=false", "--set", "neo4j.externalUri=bolt://neo4j.example:7687",
+    "--set", "postgres.enabled=false", "--set", "postgres.externalDsn=postgresql+asyncpg://u:p@pg.example:5432/d",
+]  # fmt: skip
+
+
+def _egress(docs: list[dict]) -> dict[str, list[dict]]:
+    return {
+        d["metadata"]["name"].removeprefix("r-hst-"): d["spec"].get("egress")
+        for d in docs
+        if d["kind"] == "NetworkPolicy"
+    }
+
+
+def test_each_pod_reaches_dns_and_the_bundled_databases_that_it_opens():
+    egress = _egress(_docs(*WORKER_AND_BACKUP))
+    assert egress["app"] == [DNS, NEO4J, POSTGRES, OTHER]
+    assert egress["worker"] == [DNS, NEO4J, POSTGRES, OTHER]
+    assert egress["backup"] == [DNS, NEO4J, POSTGRES, OTHER]
+    assert egress["migrate"] == [DNS, POSTGRES]
+    assert egress["initdb"] == [DNS, NEO4J]
+
+
+def test_the_jobs_reach_other_addresses_with_external_databases():
+    egress = _egress(_docs(*EXTERNAL, "--set", "worker.enabled=true"))
+    assert egress["app"] == [DNS, OTHER]
+    assert egress["worker"] == [DNS, OTHER]
+    assert egress["migrate"] == [DNS, OTHER]
+    assert egress["initdb"] == [DNS, OTHER]
+
+
+def test_the_except_list_splits_by_address_family():
+    docs = _docs("--set-json", 'networkPolicy.egress.except=["169.254.0.0/16","10.244.0.0/16","fe80::/10"]')
+    blocks = [peer["ipBlock"] for peer in _egress(docs)["app"][-1]["to"]]
+    assert blocks == [
+        {"cidr": "0.0.0.0/0", "except": ["169.254.0.0/16", "10.244.0.0/16"]},
+        {"cidr": "::/0", "except": ["fe80::/10"]},
+    ]
+    empty = _docs("--set-json", "networkPolicy.egress.except=[]")
+    blocks = [peer["ipBlock"] for peer in _egress(empty)["app"][-1]["to"]]
+    assert blocks == [{"cidr": "0.0.0.0/0"}, {"cidr": "::/0"}]
+
+
+def test_each_default_except_entry_lies_inside_its_cidr():
+    for block in OTHER["to"]:
+        cidr = ipaddress.ip_network(block["ipBlock"]["cidr"])
+        for entry in block["ipBlock"]["except"]:
+            assert ipaddress.ip_network(entry).subnet_of(cidr)
+    values = yaml.safe_load((CHART / "values.yaml").read_text())
+    assert values["networkPolicy"]["egress"]["except"] == ["169.254.0.0/16", "fe80::/10", "fd00:ec2::254/128"]
+
+
+def test_the_dns_rule_goes_to_the_dns_peers():
+    peer = {"namespaceSelector": {"matchLabels": {"kubernetes.io/metadata.name": "kube-system"}}}
+    egress = _egress(_docs("--set-json", f"networkPolicy.dnsTo={json.dumps([peer])}"))
+    assert egress["app"][0] == {**DNS, "to": [peer]}
+    assert egress["migrate"][0] == {**DNS, "to": [peer]}
+
+
+def test_the_schema_refuses_an_except_entry_that_is_not_a_cidr():
+    out = _render("--set-json", 'networkPolicy.egress.except=["169.254.169.254"]')
+    assert out.returncode != 0
+
+
+def test_no_network_policy_renders_without_network_policy_enabled():
+    docs = _docs("--set", "networkPolicy.enabled=false", "--set", "app.forwardedAllowIps=")
+    assert [d for d in docs if d["kind"] == "NetworkPolicy"] == []
 
 
 def test_a_pod_that_the_chart_does_not_render_has_no_policy():

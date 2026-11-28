@@ -82,6 +82,13 @@ helm-check:  ## Lint the chart and prove it renders, with bundled and external b
 	@helm template lint-bundled $(CHART) $(HELM_FAKE) $(HELM_INSECURE_OK) \
 	  --show-only templates/networkpolicy.yaml | grep -q 'name: lint-bundled-hst-app$$' \
 	  || (echo "the default render has no NetworkPolicy for the app pod"; exit 1)
+	@# The default egress rules exclude the cloud metadata range, and egress.enabled=false removes them.
+	@helm template lint-bundled $(CHART) $(HELM_FAKE) $(HELM_INSECURE_OK) \
+	  --show-only templates/networkpolicy.yaml | grep -q -- '- 169.254.0.0/16$$' \
+	  || (echo "the default egress rules do not exclude 169.254.0.0/16"; exit 1)
+	@! helm template lint-no-egress $(CHART) $(HELM_FAKE) $(HELM_INSECURE_OK) --set networkPolicy.egress.enabled=false \
+	  --show-only templates/networkpolicy.yaml | grep -q 'ipBlock' \
+	  || (echo "networkPolicy.egress.enabled=false rendered an egress ipBlock"; exit 1)
 	@# app.forwardedAllowIps without a peer in networkPolicy.ingressFrom must fail.
 	@! helm template lint-no-peers $(CHART) $(HELM_NO_PEERS) $(HELM_INSECURE_OK) >/dev/null 2>&1 \
 	  || (echo "chart rendered app.forwardedAllowIps without networkPolicy.ingressFrom"; exit 1)

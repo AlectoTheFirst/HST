@@ -257,6 +257,65 @@ image.buildRevision overrides it.
 {{- end -}}
 
 {{/*
+The egress rules of a pod of the release. The argument is a dict. `root` is the chart
+context. `neo4j` and `postgres` add the rule to the pod of the bundled database. `other`
+adds the rule to every address outside networkPolicy.egress.except. The API server
+requires each `except` entry to lie inside the `cidr` of its ipBlock, so the entries with
+a colon go to ::/0 and the other entries go to 0.0.0.0/0.
+*/}}
+{{- define "hst.egressRules" -}}
+{{- $root := .root -}}
+- ports:
+    - port: 53
+      protocol: UDP
+    - port: 53
+      protocol: TCP
+  {{- with $root.Values.networkPolicy.dnsTo }}
+  to: {{- toYaml . | nindent 4 }}
+  {{- end }}
+{{- if .neo4j }}
+- to:
+    - podSelector:
+        matchLabels: {{- include "hst.selectorLabels" $root | nindent 10 }}
+          app.kubernetes.io/component: neo4j
+  ports:
+    - port: 7687
+      protocol: TCP
+{{- end }}
+{{- if .postgres }}
+- to:
+    - podSelector:
+        matchLabels: {{- include "hst.selectorLabels" $root | nindent 10 }}
+          app.kubernetes.io/component: postgres
+  ports:
+    - port: 5432
+      protocol: TCP
+{{- end }}
+{{- if .other }}
+{{- $v4 := list -}}
+{{- $v6 := list -}}
+{{- range $root.Values.networkPolicy.egress.except -}}
+{{- if contains ":" . -}}
+{{- $v6 = append $v6 . -}}
+{{- else -}}
+{{- $v4 = append $v4 . -}}
+{{- end -}}
+{{- end }}
+- to:
+    - ipBlock:
+        cidr: 0.0.0.0/0
+        {{- with $v4 }}
+        except: {{- toYaml . | nindent 10 }}
+        {{- end }}
+    - ipBlock:
+        cidr: ::/0
+        {{- with $v6 }}
+        except: {{- toYaml . | nindent 10 }}
+        {{- end }}
+{{- end }}
+{{- end -}}
+
+{{/*
 The init container of the app and worker pods. It ends when the Postgres schema is at the
 revision that the image expects.
 */}}
