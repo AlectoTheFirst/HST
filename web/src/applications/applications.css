@@ -15,6 +15,7 @@
 .application-fields label, .application-member label, .application-editor > label, .application-catalog label, .application-field { display: grid; gap: 5px; }
 .application-fields input, .application-fields select, .application-member input, .application-member select { width: 100%; }
 .application-member { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; align-items: end; border-top: 1px solid var(--line); padding: 10px 0; }
+.application-member .assessment-picker, .application-member .assessment-interface-picker { grid-column: 1 / -1; margin: 0; }
 .application-checks { display: flex; flex-wrap: wrap; gap: 10px; }
 .application-file { margin: 10px 0; }
 .application-empty { max-width: 520px; margin: 15vh auto; }

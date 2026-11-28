@@ -89,6 +89,25 @@ ORDER BY CASE WHEN $catalog THEN 0 WHEN n.uid IN $suggested THEN 0 ELSE 1 END,
 LIMIT $limit
 """
 
+# The interfaces of one device. The read starts at the device UID.
+_DEVICE_INTERFACES = """
+MATCH (d:Device:Obj {uid: $device})<-[on:ON]-(n:Interface:Obj)
+WHERE d.collection_ts = $snap AND NOT d:Retired
+  AND on.collection_ts = $snap AND on._retired_at IS NULL
+  AND n.collection_ts = $snap AND NOT n:Retired
+  AND ($uid IS NULL OR n.uid = $uid)
+  AND ($q = '' OR toLower(coalesce(n.name, '')) CONTAINS $q OR toLower(n.uid) CONTAINS $q)
+RETURN n.uid AS uid, labels(n) AS labels,
+       coalesce(n.name, n.hostname, n.uid) AS name,
+       n.source AS source, n.kind AS domain_kind, n.origin AS origin,
+       n.collector AS collector, n.evidence_reference AS evidence_reference,
+       n.evidence_section AS evidence_section, n.evidence_host AS evidence_host,
+       n.observed_ms AS observed_ms, n.valid_from_ms AS valid_from_ms,
+       n.valid_until_ms AS valid_until_ms, n._sources AS sources
+ORDER BY toLower(coalesce(n.name, n.uid)), n.uid
+LIMIT $limit
+"""
+
 # The query follows the directed relationships of the schema from an object to
 # the devices that own it.
 _OWNERS = """
@@ -311,18 +330,24 @@ def _read_options(
     *,
     after: str | None = None,
     catalog: bool = False,
+    device: str | None = None,
 ) -> dict:
-    rows = path._read(
-        session,
-        _OBJECTS,
-        labels=[KINDS[k] for k in kinds],
-        q=q.casefold(),
-        uid=uid,
-        suggested=sorted(suggested),
-        limit=limit + 1,
-        after=after,
-        catalog=catalog,
-    )
+    if device:
+        rows = path._read(
+            session, _DEVICE_INTERFACES, device=device, q=q.casefold(), uid=uid, limit=limit + 1
+        )
+    else:
+        rows = path._read(
+            session,
+            _OBJECTS,
+            labels=[KINDS[k] for k in kinds],
+            q=q.casefold(),
+            uid=uid,
+            suggested=sorted(suggested),
+            limit=limit + 1,
+            after=after,
+            catalog=catalog,
+        )
     truncated = len(rows) > limit
     rows = rows[:limit]
     uids = [row["uid"] for row in rows]
@@ -453,8 +478,13 @@ def search_options(
     location: str = "",
     application: str = "",
     saved_requirements: list[dict] | None = None,
+    device: str = "",
 ) -> dict:
-    """Find named candidates or resolve one UID at a pinned snapshot."""
+    """Find named candidates or resolve one UID at a pinned snapshot.
+
+    `device` is a device UID. It limits a search of kind `interface` to the
+    interfaces of that device.
+    """
     if not isinstance(snapshot, str) or not snapshot.isdigit() or int(snapshot) < 1:
         raise ValueError("Select a published snapshot before choosing assessment objects.")
     if len(q) > 200 or (uid is not None and (not uid or len(uid) > 500)):
@@ -471,6 +501,10 @@ def search_options(
         raise ValueError("Service clues must not exceed 500 characters.")
     if any((destination, client, location, application)) and kinds != ["service"]:
         raise ValueError("Traffic and application clues require kind=service.")
+    if len(device) > 500:
+        raise ValueError("Device UID must not exceed 500 characters.")
+    if device and kinds != ["interface"]:
+        raise ValueError("A device filter requires kind=interface.")
     reference = service.snapshot_reference(settings, snapshot)
     with db.session(settings) as raw:
         snap = snapshotmod.resolve(raw, settings, int(reference["snapshot"]))
@@ -502,7 +536,13 @@ def search_options(
             )
         else:
             result = _read_options(
-                session, kinds, q, uid, _suggested(dependencies or [], str(snap.cts)), limit
+                session,
+                kinds,
+                q,
+                uid,
+                _suggested(dependencies or [], str(snap.cts)),
+                limit,
+                device=device or None,
             )
             if kinds == ["service"] and uid is not None and saved_requirements:
                 from hst.assessment.service_discovery import _saved_items

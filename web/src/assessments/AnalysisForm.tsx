@@ -5,6 +5,7 @@ import { PinnedSnapshotPicker as SnapshotPicker } from "./PinnedSnapshotPicker";
 import type { AnalysisKind, Assessment, Requirement } from "./types";
 import { emptyRequirement, requirementError, conditionSentence } from "./types";
 import { Field, ListField, RequirementComposer } from "./RequirementComposer";
+import { InterfacePicker } from "./InterfacePicker";
 import { ObjectPicker } from "./ObjectPicker";
 import { ServicePicker } from "./ServicePicker";
 import { analysisQuestions, objectDescription, optionsPath, scopeFromRequest } from "./guided";
@@ -664,14 +665,25 @@ function GuidedAnalysisForm({
                   ))}
                 </select>
               </label>
-              <ObjectPicker
-                snapshot={snapshot}
-                kind={failureKind}
-                label="Find a failure target"
-                assessmentId={assessment.id}
-                selectedUids={failures.map((item) => item.uid)}
-                onSelect={(item) => void addFailure(item)}
-              />
+              {failureKind === "interface" ? (
+                <InterfacePicker
+                  snapshot={snapshot}
+                  deviceLabel="Find a device"
+                  interfaceLabel="Find a failure target"
+                  assessmentId={assessment.id}
+                  selectedUids={failures.map((item) => item.uid)}
+                  onSelect={(item) => void addFailure(item)}
+                />
+              ) : (
+                <ObjectPicker
+                  snapshot={snapshot}
+                  kind={failureKind}
+                  label="Find a failure target"
+                  assessmentId={assessment.id}
+                  selectedUids={failures.map((item) => item.uid)}
+                  onSelect={(item) => void addFailure(item)}
+                />
+              )}
               {resolving && <p role="status">Resolving recorded shared dependency members</p>}
               <ul className="assessment-selection-list">
                 {failures.map((item) => (

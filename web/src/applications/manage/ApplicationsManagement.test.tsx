@@ -505,7 +505,7 @@ describe("Application detail", () => {
 });
 
 describe("Member search", () => {
-  it("searches devices, interfaces, IP addresses and networks at the current snapshot and adds a result with its kind", async () => {
+  it("searches devices, IP addresses and networks at the current snapshot and adds a result with its kind", async () => {
     const puts: MockRequest[] = [];
     mockApi(
       routes(ME_OPERATOR, {
@@ -541,14 +541,13 @@ describe("Member search", () => {
         "10.1.20.0/24 network",
         "10.1.20.12 IP address",
         "api-02 device",
-        "eth0 interface api-02",
       ]),
     );
     const searches = (fetch as unknown as { mock: { calls: Array<[RequestInfo | URL]> } }).mock.calls
       .map(([input]) => new URL(String(input), "http://localhost"))
       .filter((url) => url.pathname === "/api/assessment-options");
     expect(searches.at(-1)!.searchParams.get("snapshot")).toBe("300");
-    expect(searches.at(-1)!.searchParams.get("kind")).toBe("device,interface,ip,network");
+    expect(searches.at(-1)!.searchParams.get("kind")).toBe("device,ip,network");
     expect(searches.at(-1)!.searchParams.get("q")).toBe("10");
 
     await user.click(within(results).getByRole("button", { name: /^10\.1\.20\.12/ }));
@@ -559,6 +558,50 @@ describe("Member search", () => {
       id: "member-2",
       name: "10.1.20.12",
       inventory: { kind: "ip", uid: "ip:home:10.1.20.12", role: "component" },
+    });
+  });
+
+  it("adds an interface from the interfaces of the selected device", async () => {
+    const puts: MockRequest[] = [];
+    const searches = () =>
+      (fetch as unknown as { mock: { calls: Array<[RequestInfo | URL]> } }).mock.calls
+        .map(([input]) => new URL(String(input), "http://localhost"))
+        .filter((url) => url.pathname === "/api/assessment-options")
+        .map((url) => url.searchParams);
+    mockApi(
+      routes(ME_OPERATOR, {
+        "GET /api/snapshots": () => ({ body: { snapshots: [], current: 300, truncated: false } }),
+        "GET /api/assessment-options": () => ({
+          body: {
+            snapshot: "300",
+            truncated: false,
+            items:
+              searches().at(-1)!.get("kind") === "interface"
+                ? [{ uid: "interface:api-02:eth0", name: "eth0", kind: "interface", device_name: "api-02", selectable: true }]
+                : [{ uid: "device:api-02", name: "api-02", kind: "device", selectable: true }],
+          },
+        }),
+        "PUT /api/business-applications/webshop": (req) => {
+          puts.push(req);
+          return { body: { ...WEBSHOP, revision: 3, definition: (req.body as { definition: BusinessApplicationDefinition }).definition } };
+        },
+      }),
+    );
+    mount("/applications/webshop?tab=components");
+    const user = userEvent.setup();
+    await user.click(await within(await screen.findByRole("region", { name: "Components" })).findByRole("button", { name: "API" }));
+    const add = screen.getByRole("region", { name: "Add member" });
+
+    await user.click(await within(await within(add).findByRole("list", { name: "Member results" })).findByRole("button", { name: /^api-02/ }));
+    await user.click(await within(within(add).getByRole("list", { name: "Find interface results" })).findByRole("button", { name: /^eth0/ }));
+    expect([searches().at(-1)!.get("kind"), searches().at(-1)!.get("device")]).toEqual(["interface", "device:api-02"]);
+    await user.click(within(add).getByRole("button", { name: "Add member" }));
+    await user.click(screen.getByRole("button", { name: "Save revision 3" }));
+    await waitFor(() => expect(puts).toHaveLength(1));
+    expect((puts[0].body as { definition: BusinessApplicationDefinition }).definition.groups[1].members[1]).toEqual({
+      id: "member-2",
+      name: "eth0",
+      inventory: { kind: "interface", uid: "interface:api-02:eth0", role: "component" },
     });
   });
 

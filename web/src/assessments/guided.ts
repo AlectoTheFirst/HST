@@ -79,11 +79,13 @@ export function optionsPath(
   query = "",
   assessmentId?: string,
   uid?: string,
+  device?: string,
 ): string {
   const params = new URLSearchParams({ snapshot, kind });
   if (query) params.set("q", query);
   if (assessmentId) params.set("assessment_id", assessmentId);
   if (uid) params.set("uid", uid);
+  if (device) params.set("device", device);
   return `/assessment-options?${params.toString()}`;
 }
 export interface RepairScope {

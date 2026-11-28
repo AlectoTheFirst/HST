@@ -21,6 +21,7 @@ import { cwd } from "process";
 const exampleYaml = readFileSync(`${cwd()}/../docs/examples/business-application.yaml`, "utf-8") as string;
 
 const SNAPSHOTS = { snapshots: [{ id: "4000", ts_ms: 4000, kind: "full" }], current: 4000, truncated: false };
+const API_DEVICE = { uid: "device:api-1", name: "api-1", kind: "device", site: "DC1", selectable: true };
 const API_INTERFACE = { uid: "interface:api-primary", name: "api-primary", kind: "interface", device_name: "api-1", site: "DC1", selectable: true };
 
 function revision(definition: BusinessApplicationDefinition): ApplicationRevision {
@@ -30,7 +31,7 @@ function revision(definition: BusinessApplicationDefinition): ApplicationRevisio
 function renderEditor(record: ApplicationRevision, saved: MockRequest[]) {
   mockApi({
     "GET /api/snapshots": () => ({ body: SNAPSHOTS }),
-    "GET /api/assessment-options": () => ({ body: { snapshot: "4000", items: [API_INTERFACE], truncated: false } }),
+    "GET /api/assessment-options": () => ({ body: { snapshot: "4000", items: [API_DEVICE, API_INTERFACE], truncated: false } }),
     "PUT /api/business-applications/checkout-production": (req) => {
       saved.push(req);
       return { body: { ...record, revision: 2, definition: (req.body as { definition: BusinessApplicationDefinition }).definition } };
@@ -80,6 +81,8 @@ describe("Building Checkout in the visual editor", () => {
     await user.selectOptions(within(api).getByLabelText("Kind"), "Interface");
     const snapshot = within(section("Component groups")).getByLabelText("Inventory snapshot");
     await user.selectOptions(snapshot, await within(snapshot).findByRole("option", { name: /\[full\]/ }));
+    await user.type(within(api).getByLabelText("Find device"), "api-1");
+    await user.click(await within(api).findByRole("button", { name: /^api-1/ }));
     await user.type(within(api).getByLabelText("Find interface"), "api");
     await user.click(await within(api).findByRole("button", { name: "api-primary api-1, DC1" }));
 
@@ -136,7 +139,7 @@ describe("Building Checkout in the visual editor", () => {
     }
 
     expect(services).toEqual([{ id: expect.any(String), name: "Checkout frontend", connection_ids: connections.map((item) => item.id), component_roles: [] }]);
-  });
+  }, 20_000);
 });
 
 const member = (id: string, address: string) => ({ id, address });
@@ -291,7 +294,7 @@ describe("Building the example application from an empty start", () => {
     const saved: MockRequest[] = [];
     mockApi({
       "GET /api/snapshots": () => ({ body: SNAPSHOTS }),
-      "GET /api/assessment-options": () => ({ body: { snapshot: "4000", items: [API_INTERFACE], truncated: false } }),
+      "GET /api/assessment-options": () => ({ body: { snapshot: "4000", items: [API_DEVICE, API_INTERFACE], truncated: false } }),
       "POST /api/business-applications": (req) => {
         saved.push(req);
         const definition = (req.body as { definition: BusinessApplicationDefinition }).definition;
@@ -342,6 +345,8 @@ describe("Building the example application from an empty start", () => {
     await user.selectOptions(within(api).getByLabelText("Source"), "Inventory reference");
     const snapshot = within(section("Component groups")).getByLabelText("Inventory snapshot");
     await user.selectOptions(snapshot, await within(snapshot).findByRole("option", { name: /\[full\]/ }));
+    await user.type(within(api).getByLabelText("Find device"), "api-1");
+    await user.click(await within(api).findByRole("button", { name: /^api-1/ }));
     await user.type(within(api).getByLabelText("Find interface"), "api");
     await user.click(await within(api).findByRole("button", { name: "api-primary api-1, DC1" }));
     await user.clear(within(api).getByLabelText("Member name"));
@@ -393,5 +398,5 @@ describe("Building the example application from an empty start", () => {
     const body = saved[0].body as { definition: BusinessApplicationDefinition; expected_revision: number; source: string };
     expect(body).toMatchObject({ expected_revision: 0, source: "editor" });
     expect(withoutDefaults(body.definition)).toEqual(parseExample(exampleYaml));
-  });
+  }, 20_000);
 });

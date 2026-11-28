@@ -26,6 +26,7 @@ async def assessment_options(
     client: str = Query(default="", max_length=500),
     location: str = Query(default="", max_length=500),
     application: str = Query(default="", max_length=500),
+    device: str = Query(default="", max_length=500, description="The device UID of an interface search"),
 ) -> dict[str, Any]:
     dependencies = []
     if assessment_id:
@@ -57,6 +58,8 @@ async def assessment_options(
         }.items()
         if value
     }
+    if device:
+        clues["device"] = device
     if kind == "service" and hasattr(request.app.state.store, "list_requirements"):
         saved = await request.app.state.store.list_requirements(limit=1000)
         if saved:

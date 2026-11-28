@@ -83,3 +83,64 @@ it("picks the source identity and the destination segment by name at the selecte
   expect(connection.source_context).toEqual({ identity_uid: "zpa:t:idp:azure-finance" });
   expect(connection.destination_context).toEqual({ segment_uid: "zpa:t:seg:101" });
 });
+
+const INVENTORY_OBJECTS = {
+  device: [{ uid: "device:core1", name: "core1", kind: "device", site: "DCEPP", selectable: true }],
+  interface: [
+    { uid: "interface:core1:eth0", name: "eth0", kind: "interface", device_name: "core1", site: "DCEPP", selectable: true },
+  ],
+};
+
+function renderInventory(value: BusinessApplicationDefinition) {
+  mockApi({
+    "GET /api/snapshots": () => ({ body: SNAPSHOTS }),
+    "GET /api/assessment-options": () => {
+      const kind = optionRequests().at(-1)!.get("kind") as "device" | "interface";
+      return { body: { snapshot: "4000", items: INVENTORY_OBJECTS[kind], truncated: false } };
+    },
+  });
+  render(
+    <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+      <ApplicationEditor record={{ ...record, definition: value }} canEdit onSaved={() => undefined} />
+    </QueryClientProvider>,
+  );
+}
+
+it("finds a member interface among the interfaces of the selected device", async () => {
+  renderInventory(definition);
+  const user = userEvent.setup();
+  const groups = screen.getByRole("group", { name: "Component groups" });
+  const snapshot = within(groups).getByLabelText("Inventory snapshot");
+  await user.selectOptions(snapshot, await within(snapshot).findByRole("option", { name: /\[full\]/ }));
+  const member = within(groups).getAllByLabelText("Member ID")[0].closest<HTMLElement>(".application-member")!;
+  await user.selectOptions(within(member).getByLabelText("Source"), "Inventory reference");
+
+  expect(within(member).queryByLabelText("Find interface")).not.toBeInTheDocument();
+  await user.click(await within(member).findByRole("button", { name: /^core1/ }));
+  await user.click(await within(member).findByRole("button", { name: /^eth0/ }));
+  expect(within(member).getByLabelText("Inventory UID")).toHaveDisplayValue("interface:core1:eth0");
+  const search = optionRequests().at(-1)!;
+  expect([search.get("kind"), search.get("device")]).toEqual(["interface", "device:core1"]);
+
+  await user.click(within(member).getByRole("button", { name: "Change device" }));
+  expect(within(member).getByLabelText("Find device")).toBeInTheDocument();
+  expect(within(member).queryByLabelText("Find interface")).not.toBeInTheDocument();
+});
+
+it("searches the ingress interfaces of the device of the context", async () => {
+  renderInventory({
+    ...definition,
+    connections: [{ ...definition.connections[0], destination_context: { device_uid: "device:core1" } }],
+  });
+  const user = userEvent.setup();
+  const snapshot = within(screen.getByRole("group", { name: "Component groups" })).getByLabelText("Inventory snapshot");
+  await user.selectOptions(snapshot, await within(snapshot).findByRole("option", { name: /\[full\]/ }));
+  const destination = screen.getByRole("group", { name: "Destination context" });
+
+  await user.click(within(destination).getByRole("button", { name: "Choose destination ingress interface" }));
+  const results = within(destination).getByRole("list", { name: "Find destination ingress interface results" });
+  await user.click(await within(results).findByRole("button", { name: /^eth0/ }));
+  expect(destination).toHaveTextContent("Destination ingress interface interface:core1:eth0");
+  const search = optionRequests().at(-1)!;
+  expect([search.get("kind"), search.get("device")]).toEqual(["interface", "device:core1"]);
+});

@@ -206,7 +206,7 @@ function AddMember({
         </button>
       </div>
       {mode === "inventory" ? (
-        <MemberSearch snapshot={searchSnapshot} selected={found?.uid ?? null} onSelect={setFound} />
+        <MemberSearch key={searchSnapshot} snapshot={searchSnapshot} selected={found?.uid ?? null} onSelect={setFound} />
       ) : (
         <label className="inv-field">
           <span>Address or network</span>

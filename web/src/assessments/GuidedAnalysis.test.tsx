@@ -97,6 +97,8 @@ function setup(items: DiscoveryObject[] = []) {
             (item) =>
               item.kind === url.searchParams.get("kind") &&
               (!url.searchParams.get("uid") || item.uid === url.searchParams.get("uid")) &&
+              (!url.searchParams.get("device") ||
+                item.device_uid === url.searchParams.get("device")) &&
               (!url.searchParams.get("q") ||
                 `${item.name} ${item.site || ""}`
                   .toLowerCase()
@@ -341,6 +343,38 @@ describe("Named guided assessment inputs", () => {
     expect(new Set(value.domains[0].members)).toEqual(
       new Set(value.targets.map((item: { id: string }) => item.id)),
     );
+  });
+
+  it("finds an interface failure target among the interfaces of the selected device", async () => {
+    const wan: DiscoveryObject = {
+      uid: "if:wan-a",
+      name: "wan-a",
+      kind: "interface",
+      device_uid: owner.uid,
+      device_name: owner.name,
+      selectable: true,
+    };
+    const calls = setup([device, wan]);
+    const submit = vi.fn();
+    render(
+      <Wrapper>
+        <AnalysisForm
+          assessment={assessment}
+          initialKind="resilience"
+          busy={false}
+          onSubmit={submit}
+        />
+      </Wrapper>,
+    );
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: "Continue to scope" }));
+    await user.selectOptions(screen.getByLabelText("Failure object type"), "interface");
+    expect(screen.queryByLabelText("Find a failure target")).not.toBeInTheDocument();
+    await user.click(await screen.findByRole("button", { name: /^Frankfurt gateway/ }));
+    await user.click(await screen.findByRole("button", { name: /^wan-a/ }));
+    expect(calls.some((call) => call.includes("kind=interface") && call.includes("device=device%3Afrankfurt"))).toBe(true);
+    await user.click(screen.getByRole("button", { name: "Review analysis" }));
+    expect(screen.getByRole("region", { name: "Analysis review" })).toHaveTextContent("wan-a (interface)");
   });
 
   it("resolves AI draft identifiers and rejects claimed endpoints without starting anything", async () => {

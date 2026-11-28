@@ -84,3 +84,19 @@ async def test_invalid_discovery_scope_reports_validation_error(client, monkeypa
     assert response.status_code == 422
     assert "published snapshot" in response.json()["error"]
     assert (await client.get("/api/assessment-options?snapshot=100&limit=101")).status_code == 422
+
+
+async def test_discovery_passes_the_device_filter(client, monkeypatch):
+    calls = []
+
+    def search(settings, snapshot, kind, q, uid, **kwargs):
+        calls.append(kwargs)
+        return {"snapshot": snapshot, "items": [], "truncated": False}
+
+    monkeypatch.setattr(assessment_discovery, "search_options", search)
+    await login(client, "vera")
+    response = await client.get(
+        "/api/assessment-options", params={"snapshot": "100", "kind": "interface", "device": "router:a"}
+    )
+    assert response.status_code == 200, response.text
+    assert calls == [{"dependencies": [], "limit": 50, "device": "router:a"}]

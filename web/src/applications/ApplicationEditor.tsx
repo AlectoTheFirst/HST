@@ -1,6 +1,7 @@
 import { Fragment, useEffect, useState, type ReactNode } from "react";
 import { MtuRequirementFields } from "../assessments/MtuRequirementFields";
 import { ObjectPicker } from "../assessments/ObjectPicker";
+import { InterfacePicker } from "../assessments/InterfacePicker";
 import { PinnedSnapshotPicker } from "../assessments/PinnedSnapshotPicker";
 import { ConditionEditor } from "../assessments/RequirementComposer";
 import type { Condition } from "../assessments/types";
@@ -723,11 +724,26 @@ export function MemberEditor({
               ))}
             </select>
           </label>
-          {(member.inventory!.kind === "device" || member.inventory!.kind === "interface") && (
+          {member.inventory!.kind === "device" && (
             <ObjectPicker
               snapshot={snapshot}
-              kind={member.inventory!.kind}
-              label={`Find ${member.inventory!.kind}`}
+              kind="device"
+              label="Find device"
+              selectedUids={member.inventory!.uid ? [member.inventory!.uid] : []}
+              onSelect={(item) =>
+                onChange({
+                  ...member,
+                  name: member.name ?? item.name,
+                  inventory: { ...member.inventory!, uid: item.uid },
+                })
+              }
+            />
+          )}
+          {member.inventory!.kind === "interface" && (
+            <InterfacePicker
+              snapshot={snapshot}
+              deviceLabel="Find device"
+              interfaceLabel="Find interface"
               selectedUids={member.inventory!.uid ? [member.inventory!.uid] : []}
               onSelect={(item) =>
                 onChange({
@@ -977,7 +993,19 @@ export function ContextEditor({
       ).map(([key, kind, text]) => (
         <div key={key}>
           {selected(key, text)}
-          {finding === key ? (
+          {finding === key && kind === "interface" ? (
+            <InterfacePicker
+              snapshot={snapshot}
+              deviceLabel={`Find ${end} device`}
+              interfaceLabel={`Find ${end} ${text}`}
+              device={value?.device_uid ?? undefined}
+              selectedUids={value?.[key] ? [value[key]!] : []}
+              onSelect={(item) => {
+                set(key, item.uid);
+                setFinding(null);
+              }}
+            />
+          ) : finding === key ? (
             <ObjectPicker
               snapshot={snapshot}
               kind={kind}

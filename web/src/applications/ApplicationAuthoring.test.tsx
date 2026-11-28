@@ -131,6 +131,7 @@ describe("Endpoint contexts", () => {
     await user.type(within(source).getByLabelText("Source VRF"), "vrf:branch");
     await user.click(within(source).getByRole("button", { name: "Choose source device" }));
     await user.click(within(destination).getByRole("button", { name: "Choose destination ingress interface" }));
+    await user.click(await within(within(destination).getByRole("list", { name: "Find destination device results" })).findByRole("button", { name: /^edge-1/ }));
     await user.click(await within(within(source).getByRole("list", { name: "Find source device results" })).findByRole("button", { name: /^edge-1/ }));
     await user.click(await within(within(destination).getByRole("list", { name: "Find destination ingress interface results" })).findByRole("button", { name: /^eth0/ }));
     expect(source).toHaveTextContent("Source device device:edge-1");

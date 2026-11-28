@@ -29,6 +29,8 @@ def graph(monkeypatch):
             if params["uid"]:
                 values = [r for r in values if r["uid"] == params["uid"]]
             return values[: params["limit"]]
+        if query == discovery._DEVICE_INTERFACES:
+            return [r for r in data["objects"] if r.get("device") == params["device"]][: params["limit"]]
         if query == discovery._OWNERS:
             return data["owners"]
         if query == discovery._DETAILS:
@@ -244,3 +246,26 @@ def test_unpublished_snapshot_refusal_is_not_converted_to_empty_inventory(graph,
     with pytest.raises(ValueError, match="published snapshot"):
         discovery.search_options(None, "300", "device")
     assert graph["reads"] == []
+
+
+def test_a_device_filter_reads_the_interfaces_of_that_device(graph):
+    graph["objects"] = [
+        obj("if:a0", "Interface", "eth0", device="router:a"),
+        obj("if:a1", "Interface", "eth1", device="router:a"),
+        obj("if:b0", "Interface", "eth0", device="router:b"),
+    ]
+    found = discovery.search_options(None, "300", "interface", q="ETH", device="router:a")
+    assert [item["uid"] for item in found["items"]] == ["if:a0", "if:a1"]
+    query, params = graph["reads"][0][1:]
+    assert query == discovery._DEVICE_INTERFACES
+    assert params["device"] == "router:a"
+    assert params["q"] == "eth"
+
+
+@pytest.mark.parametrize(
+    ("kind", "device", "message"),
+    [("device", "router:a", "requires kind=interface"), ("interface", "x" * 501, "500 characters")],
+)
+def test_a_device_filter_is_bounded_to_interface_searches(graph, kind, device, message):
+    with pytest.raises(ValueError, match=message):
+        discovery.search_options(None, "300", kind, device=device)

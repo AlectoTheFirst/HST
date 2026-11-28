@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { api } from "../api/client";
 import { objectDescription, optionsPath } from "./guided";
 import type { ContextKind, DiscoveryObject, DiscoveryResponse, ObjectKind } from "./guided";
+import "./assessments.css";
 
 const PLURAL: Partial<Record<ObjectKind | ContextKind, string>> = {
   domain: "shared failure domains",
@@ -16,6 +17,7 @@ export function ObjectPicker({
   onSelect,
   assessmentId,
   selectedUids = [],
+  device,
 }: {
   snapshot: string;
   kind: ObjectKind | ContextKind;
@@ -23,16 +25,19 @@ export function ObjectPicker({
   onSelect: (item: DiscoveryObject) => void;
   assessmentId?: string;
   selectedUids?: string[];
+  /** The device UID that limits an interface search. */
+  device?: string;
 }) {
   return (
     <ObjectSearch
-      key={`${snapshot}:${kind}`}
+      key={`${snapshot}:${kind}:${device ?? ""}`}
       snapshot={snapshot}
       kind={kind}
       label={label}
       onSelect={onSelect}
       assessmentId={assessmentId}
       selectedUids={selectedUids}
+      device={device}
     />
   );
 }
@@ -43,6 +48,7 @@ function ObjectSearch({
   onSelect,
   assessmentId,
   selectedUids,
+  device,
 }: {
   snapshot: string;
   kind: ObjectKind | ContextKind;
@@ -50,12 +56,14 @@ function ObjectSearch({
   onSelect: (item: DiscoveryObject) => void;
   assessmentId?: string;
   selectedUids: string[];
+  device?: string;
 }) {
   const [query, setQuery] = useState("");
   const id = useId();
   const result = useQuery({
-    queryKey: ["assessment-options", snapshot, kind, query, assessmentId],
-    queryFn: () => api<DiscoveryResponse>(optionsPath(snapshot, kind, query, assessmentId)),
+    queryKey: ["assessment-options", snapshot, kind, query, assessmentId, device],
+    queryFn: () =>
+      api<DiscoveryResponse>(optionsPath(snapshot, kind, query, assessmentId, undefined, device)),
     enabled: !!snapshot,
   });
   const items = result.data?.items ?? [];
@@ -69,7 +77,7 @@ function ObjectSearch({
           value={query}
           disabled={!snapshot}
           placeholder={
-            kind === "identity" || kind === "segment" ? "Search name" : "Search name, device or site"
+            kind === "identity" || kind === "segment" || device ? "Search name" : "Search name, device or site"
           }
           onChange={(event) => setQuery(event.target.value)}
         />
