@@ -80,6 +80,7 @@ Limits:
 - The collector does not read the intra-EPG isolation of an EPG. `src/hst/path/gates/aci.py` `aci_contract_verdict` gives an intra-EPG flow the reason `intra-EPG flow; intra-EPG isolation is not collected`.
 - The collector reads `vzAny` with its preferred group and the ESG scope only as flags in `contract_bypass`.
 - From an L3Out, the collector reads `l3extOut`, `l3extInstP`, `l3extRsEctx` and `l3extSubnet`. An external EPG matches each subnet that has the scope `import-security`. With `capture_mtu`, it also reads `l3extRsPathL3OutAtt` and `l3extVirtualLIfP`.
+- From a service graph, the collector reads `vnsAbsGraph`, `vnsAbsNode`, `vnsGraphInst`, `vnsSvcRedirectPol`, `vnsRedirectDest`, `vnsLDevCtx`, `vnsLIfCtx` and `vnsRsLIfCtxToSvcRedirectPol`. A device selection policy binds the redirect policy of a connector to each contract of its tenant that applies a matching graph. The collector does not read the bridge domain of a connector.
 - The section `mtu:operational` and the section `mtu:member_state` always get `unsupported`.
 
 ### `checkpoint`

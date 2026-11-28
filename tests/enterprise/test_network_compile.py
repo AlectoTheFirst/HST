@@ -344,7 +344,7 @@ def test_two_attachments_enter_the_aci_gate_each_and_the_remainder_does_not(monk
     from hst.analysis_model import network as adapter
     from hst.analysis_model.gates import GateExpansion
 
-    def aci(_graph, context, downstream, *, sources, destinations):
+    def aci(_graph, context, downstream, *, sources, destinations, redirect_targets):
         key = StateKey(f"gate:aci:{downstream.location}", context, "aci")
         return GateExpansion(key, (NodeSpec(key, (EdgeSpec("aci:continue", downstream),)),), (), True)
 

@@ -33,7 +33,9 @@ from . import vsx_topology
 from .checkpoint_graph import checkpoint_bound, checkpoint_policy, unknown_checkpoint_policy
 from .evidence import EvidenceEvaluation, scope_evidence
 from .gates import (
+    aci_fabric_contexts,
     expand_aci_contracts,
+    expand_aci_reply_redirects,
     expand_device_gates,
     expand_zpa_broker,
     merge_choice_assignments,
@@ -107,6 +109,23 @@ def _redirect_targets(graph: GraphInventory, interface_uid: str) -> set[str]:
         for target in graph.targets(rule.uid, "REDIRECTS_VIA")
         if "VrfInstance" in target.labels
     }
+
+
+def _aci_redirect_owners(graph: GraphInventory, interfaces: _Interfaces) -> dict[str, Interface]:
+    """The interface that holds each redirect destination of a contract with a
+    service graph (`gates._aci_contract_redirect`).
+
+    An address that no interface holds, or that several interfaces hold, has
+    no entry."""
+    found: dict[str, Interface] = {}
+    for contract in graph.labels.get("Contract", ()):
+        for relation in graph.outgoing.get((contract, "REDIRECTS_VIA"), ()):
+            for destination in graph.targets(relation.end, "HAS_DEST"):
+                address = destination.props.get("ip")
+                owners = interfaces.holding(address) if address else ()
+                if len(owners) == 1 and owners[0].context_uid:
+                    found[str(address)] = owners[0]
+    return found
 
 
 def _attachment_interface(
@@ -1538,6 +1557,7 @@ def normalize_network(
     all_by_context = _by_context(all_rows)
     transit_graph = graph if has_vsx_transit else None
     visited: set[str] = set()
+    starts: set[str | None] | frozenset[str] = frozenset()
     # `routed` holds the destinations that discovery routes toward. None selects every route.
     routed: list[tuple[int, int]] | None = None
     if _all_routes:
@@ -1556,14 +1576,22 @@ def normalize_network(
         )
     else:
         routed = _member_ranges(request, af) + list(_rewrite_seeds)
-        rows, visited = _discover(
-            interfaces,
-            af,
-            all_by_context,
-            _request_starts(network, request, af),
-            routed,
-            transit_graph,
-        )
+        starts = _request_starts(network, request, af)
+        rows, visited = _discover(interfaces, af, all_by_context, starts, routed, transit_graph)
+    redirect_owners = _aci_redirect_owners(graph, interfaces)
+    if routed is not None and redirect_owners and visited & aci_fabric_contexts(graph, af):
+        # A contract with a service graph redirects into the context of its redirect destination.
+        redirected = {str(owner.context_uid) for owner in redirect_owners.values()} - visited
+        if redirected:
+            rows, visited = _discover(
+                interfaces,
+                af,
+                all_by_context,
+                {*starts, *redirected},
+                routed,
+                transit_graph,
+                redirects=graph if _reply_scope is not None else None,
+            )
     choices, alternatives, choices_complete = _choice_catalog(rows)
     routing_contexts = {str(item["uid"]): item for item in network.routing.contexts}
     contexts = {str(row["context_uid"]) for row in rows}
@@ -1586,6 +1614,11 @@ def normalize_network(
     for context_uid, extra in (_reply_ingresses or {}).items():
         if context_uid in contexts:
             ingresses.setdefault(context_uid, {None}).update(extra)
+    # A redirected packet enters the context of its redirect destination by the
+    # interface that holds the destination.
+    for owner in redirect_owners.values():
+        if owner.context_uid in contexts:
+            ingresses.setdefault(str(owner.context_uid), {None}).add(owner.uid)
     # Sources enter by the interface that holds them. The ingress-scoped policy
     # and the zone policy of that gateway interface judge them. In a context
     # without an owning device, the device of that interface is the device of
@@ -1673,6 +1706,11 @@ def normalize_network(
             choices = merge_choice_assignments(choices, pre.choices)
             nodes.extend(pre.nodes)
             pre_keys[context_uid, ingress] = pre.entry
+    redirect_targets = {
+        address: pre_keys[str(owner.context_uid), owner.uid]
+        for address, owner in redirect_owners.items()
+        if (str(owner.context_uid), owner.uid) in pre_keys
+    }
     tunnel_targets = _tunnel_targets(
         graph,
         network,
@@ -2015,6 +2053,7 @@ def normalize_network(
                     entry_key,
                     sources=attachments[context],
                     destinations=member.addresses,
+                    redirect_targets=redirect_targets,
                 )
                 nodes.extend(attached_aci.nodes)
                 entry_specs.append(
@@ -2056,7 +2095,12 @@ def normalize_network(
                 or source_key
             )
         aci = expand_aci_contracts(
-            graph, source_key.context, source_key, sources=request.sources, destinations=member.addresses
+            graph,
+            source_key.context,
+            source_key,
+            sources=request.sources,
+            destinations=member.addresses,
+            redirect_targets=redirect_targets,
         )
         nodes.extend(aci.nodes)
         entry_specs.append(
@@ -2373,6 +2417,22 @@ def normalize_reply_network(
         if node.key.stage in {"dnat", "pbr"}:
             for target in dict.fromkeys(edge.target for edge in node.edges):
                 feeding[target].append(node.key)
+
+    def entered(routing: StateKey) -> StateKey:
+        """The first state of the DNAT and PBR gates before a routing state."""
+        entry = routing
+        while True:
+            predecessors = [key for key in feeding.get(entry, ()) if key.context == routing.context]
+            if len(predecessors) != 1:
+                return entry
+            entry = predecessors[0]
+
+    redirect_targets: dict[str, StateKey] = {}
+    for address, owner in _aci_redirect_owners(graph, _Interfaces(network)).items():
+        owner_context = str(owner.context_uid)
+        owner_state = by_location.get((owner_context, f"routing:{owner_context}:ingress:{owner.uid}"))
+        if owner_state is not None:
+            redirect_targets[address] = entered(owner_state)
     entries: list[EntrySpec] = []
     for terminal in entry_states:
         ingress = reply_ingress(terminal)
@@ -2383,13 +2443,11 @@ def normalize_reply_network(
             nodes[unknown] = NodeSpec(unknown, terminal="unknown", complete=False)
             entries.append(EntrySpec(unknown, Constant(True)))
             continue
-        entry = routing
-        while True:
-            predecessors = [key for key in feeding.get(entry, ()) if key.context == routing.context]
-            if len(predecessors) != 1:
-                break
-            entry = predecessors[0]
-        entries.append(EntrySpec(entry, Constant(True)))
+        # The reply of a pair whose contract has a service graph goes to the
+        # redirect destination of the provider connector.
+        redirected = expand_aci_reply_redirects(graph, routing.context, entered(routing), redirect_targets)
+        nodes.update({node.key: node for node in redirected.nodes})
+        entries.append(EntrySpec(redirected.entry, Constant(True)))
     if masquerading:
         _picked_port_replies(nodes, entries, masquerading)
     return ModelInput(

@@ -14,7 +14,7 @@ from types import MappingProxyType
 import pytest
 
 import hst.path as path
-from hst.analysis_model.gates import expand_aci_contracts
+from hst.analysis_model.gates import expand_aci_contracts, expand_aci_reply_redirects
 from hst.analysis_model.graph import GraphInventory, GraphNode, GraphRelation
 from hst.analysis_model.model import StateKey
 from hst.collectors.apic import normalize_apic
@@ -1062,3 +1062,110 @@ def test_an_address_of_a_subnet_of_the_fabric_has_no_external_epg(shape):
     # an address outside the subnets of the fabric has the external EPG
     assert _model_in(graph, "vrf", source="10.1.1.10", destination="10.7.0.1")[0] == {"pass"}
     assert _model_in(graph, "outside", source="10.7.0.1", destination="10.1.2.10")[0] == {"pass"}
+
+
+# --- a contract with a service graph ------------------------------------------------------
+
+_FIREWALL = StateKey("firewall", ExecutionContext("e", "graph", "graph", "fw", "fw-vrf", 4))
+_REDIRECT_TARGETS = {"10.9.9.1": _FIREWALL}
+
+
+def _graph_fabric(*, connectors=("consumer", "provider"), graph_nodes=1, destinations=1, plain_subject=False):
+    """`_contracted_fabric` whose subject applies the graph "sg". The device
+    selection binds each connector of `connectors` to the redirect policy "pbr"."""
+    nodes, relations = _contracted_fabric()
+    nodes += [("sg", {"ServiceGraphTemplate"}, {"name": "fw"}), ("pbr", {"PbrPolicy"}, {})]
+    nodes += [(f"node{index}", {"ServiceNode"}, {"name": f"N{index}"}) for index in range(graph_nodes)]
+    nodes += [(f"dest{index}", {"PbrDest"}, {"ip": f"10.9.9.{index + 1}"}) for index in range(destinations)]
+    relations += [("APPLIES_GRAPH", "subj", "sg")]
+    relations += [("HAS_NODE", "sg", f"node{index}") for index in range(graph_nodes)]
+    relations += [("HAS_DEST", "pbr", f"dest{index}") for index in range(destinations)]
+    relations += [
+        ("REDIRECTS_VIA", "ct", "pbr", {"graph": "sg", "node": "N0", "connector": connector})
+        for connector in connectors
+    ]
+    if plain_subject:
+        nodes += [("subj2", {"ContractSubject"}, {})]
+        relations += [("HAS", "ct", "subj2"), ("USES_FILTER", "subj2", "flt")]
+    return _graph(nodes, relations)
+
+
+def _outcomes(expansion, downstream, packet):
+    nodes = {node.key: node for node in expansion.nodes}
+    return {
+        "pass"
+        if edge.target == downstream
+        else "redirect"
+        if edge.target == _FIREWALL
+        else nodes[edge.target].terminal
+        for edge in nodes[expansion.entry].edges
+        if _holds(edge.predicate, packet)
+    }
+
+
+def _forward(graph, port=443, targets=_REDIRECT_TARGETS):
+    context = ExecutionContext("e", "graph", "graph", "leaf1", "vrf", 4)
+    downstream = StateKey("downstream", context)
+    expansion = expand_aci_contracts(graph, context, downstream, redirect_targets=targets)
+    packet = {
+        "source_address": int(ipaddress.ip_address("10.1.1.10")),
+        "destination_address": int(ipaddress.ip_address("10.1.2.10")),
+        "protocol": 6,
+        "source_port": 1000,
+        "destination_port": port,
+    }
+    return _outcomes(expansion, downstream, packet)
+
+
+def _reply(graph, source_port=443, targets=_REDIRECT_TARGETS):
+    context = ExecutionContext("e", "graph", "graph", "leaf1", "vrf", 4)
+    downstream = StateKey("downstream", context)
+    expansion = expand_aci_reply_redirects(graph, context, downstream, targets)
+    packet = {
+        "source_address": int(ipaddress.ip_address("10.1.2.10")),
+        "destination_address": int(ipaddress.ip_address("10.1.1.10")),
+        "protocol": 6,
+        "source_port": source_port,
+        "destination_port": 1000,
+    }
+    if expansion.entry == downstream:
+        return {"pass"}
+    return _outcomes(expansion, downstream, packet)
+
+
+def test_a_contract_with_a_service_graph_redirects_the_packets_of_its_filter():
+    assert _forward(_graph_fabric()) == {"redirect"}
+    assert _forward(_graph_fabric(), port=80) == {"deny"}
+
+
+@pytest.mark.parametrize(
+    "fabric",
+    [
+        {"connectors": ("consumer",)},
+        {"connectors": ()},
+        {"graph_nodes": 2},
+        {"graph_nodes": 0},
+        {"destinations": 2},
+        {"destinations": 0},
+        {"plain_subject": True},
+    ],
+)
+def test_a_service_graph_with_no_established_redirect_is_unknown(fabric):
+    assert _forward(_graph_fabric(**fabric)) == {"unknown"}
+    assert _reply(_graph_fabric(**fabric)) == {"pass"}
+
+
+def test_a_redirect_destination_with_no_state_is_unknown():
+    assert _forward(_graph_fabric(), targets={}) == {"unknown"}
+    assert _forward(_graph_fabric(), targets=None) == {"unknown"}
+
+
+def test_the_reply_of_a_contract_with_a_service_graph_goes_to_the_redirect_destination():
+    assert _reply(_graph_fabric()) == {"redirect"}
+    # a packet that is no reply of the filter
+    assert _reply(_graph_fabric(), source_port=80) == {"pass"}
+    assert _reply(_graph_fabric(), targets={}) == {"pass"}
+
+
+def test_a_contract_with_no_service_graph_has_no_reply_redirect():
+    assert _reply(_graph(*_contracted_fabric())) == {"pass"}
