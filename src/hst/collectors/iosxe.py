@@ -975,7 +975,7 @@ def parse_route_maps(text: str) -> dict[str, list[dict[str, Any]]]:
     return out
 
 
-_NAMES_A_LIST_RE = re.compile(r"^\s*(?:match community|match as-path|set comm-list)\s", re.MULTILINE)
+_NAMES_A_LIST_RE = re.compile(r"(?:\A|\n)[^\S\n]*(?:match community|match as-path|set comm-list)\s")
 
 
 def match_list_commands(route_map_text: str) -> list[str]:
@@ -1397,8 +1397,9 @@ def parse_bgp_sessions(text: str) -> list[dict[str, Any]]:
     writer does not hold it."""
     out: list[dict[str, Any]] = []
     # Dynamic peers have a '*' prefix. The installed TextFSM template accepts
-    # only a bare address at the start of the row.
-    text = re.sub(r"(?m)^\s*\*(?=\d+\.)", "", text)
+    # only a bare address at the start of the row. The match starts at the
+    # first line start in the whitespace before the '*'.
+    text = re.sub(r"(\A|(?<=\S)[^\S\n]*\n)\s*\*(?=\d+\.)", r"\1", text)
     for row in cli_parse.parse("iosxe", CMD_BGP_SESSIONS, text):
         peer_ip = row.get("bgp_neighbor")
         if not peer_ip:

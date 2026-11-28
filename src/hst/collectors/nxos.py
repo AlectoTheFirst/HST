@@ -443,7 +443,7 @@ _VLAN_RE = re.compile(r"\d+")
 # A port list entry that ends in a numeric range. `Ethernet1/3-4` expands to
 # Ethernet1/3 and Ethernet1/4. The stem holds every character before the low
 # number of the range. `Eth1/1/3-4` expands on its last element alone.
-_PORT_RANGE_RE = re.compile(r"^(?P<stem>.*?)(?P<lo>\d+)-(?P<hi>\d+)$")
+_PORT_RANGE_RE = re.compile(r"^(?P<stem>(?:.*[^\d\n])?)(?P<lo>\d+)-(?P<hi>\d+)$")
 _VLAN_RANGE_RE = re.compile(r"^(?P<lo>\d+)(?:-(?P<hi>\d+))?$")
 # Trunk allowed-list spellings that mean every VLAN.
 _ALL_VLANS = {"all", "1-4094", "1-4093"}
