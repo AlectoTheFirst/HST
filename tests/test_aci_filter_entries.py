@@ -1117,7 +1117,7 @@ def _forward(graph, port=443, targets=_REDIRECT_TARGETS):
     return _outcomes(expansion, downstream, packet)
 
 
-def _reply(graph, source_port=443, targets=_REDIRECT_TARGETS):
+def _reply(graph, targets=_REDIRECT_TARGETS):
     context = ExecutionContext("e", "graph", "graph", "leaf1", "vrf", 4)
     downstream = StateKey("downstream", context)
     expansion = expand_aci_reply_redirects(graph, context, downstream, targets)
@@ -1125,7 +1125,7 @@ def _reply(graph, source_port=443, targets=_REDIRECT_TARGETS):
         "source_address": int(ipaddress.ip_address("10.1.2.10")),
         "destination_address": int(ipaddress.ip_address("10.1.1.10")),
         "protocol": 6,
-        "source_port": source_port,
+        "source_port": 443,
         "destination_port": 1000,
     }
     if expansion.entry == downstream:
@@ -1162,8 +1162,6 @@ def test_a_redirect_destination_with_no_state_is_unknown():
 
 def test_the_reply_of_a_contract_with_a_service_graph_goes_to_the_redirect_destination():
     assert _reply(_graph_fabric()) == {"redirect"}
-    # a packet that is no reply of the filter
-    assert _reply(_graph_fabric(), source_port=80) == {"pass"}
     assert _reply(_graph_fabric(), targets={}) == {"pass"}
 
 

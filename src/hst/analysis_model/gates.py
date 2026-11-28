@@ -672,10 +672,11 @@ def expand_aci_reply_redirects(
     """Redirect the replies of the EPG pairs whose contract has a service graph.
 
     The reply of a pair enters in the VRF of the provider EPG. The gate sends
-    the packets from the provider EPG to the consumer EPG that the reversed
-    filter of the contract matches to the destination of the redirect policy
-    of the provider connector. Each other packet goes to `downstream`. The
-    pairs are those that `expand_aci_contracts` redirects."""
+    the packets from the provider EPG to the consumer EPG to the destination
+    of the redirect policy of the provider connector. Each other packet goes
+    to `downstream`. The pairs are those that `expand_aci_contracts`
+    redirects. Such a pair has 1 contract, and each packet that the forward
+    gate permits for the pair is redirected."""
     index = _aci_index(graph, context.address_family)
     if not index.epg_intervals or not redirect_targets:
         return GateExpansion(downstream, (), (), True)
@@ -687,18 +688,16 @@ def expand_aci_reply_redirects(
             redirect = index.redirect(graph, contract) if index.has_graph(graph, contract) else None
             if redirect is None or not all(address in redirect_targets for address in redirect):
                 continue
-            allowed = index.graph_filter(graph, contract, reverse=True)
+            known = index.graph_filter(graph, contract) is not None
             for consumer in sorted(index.consumers.get(contract, frozenset())):
                 if (
-                    allowed is None
+                    not known
                     or consumer == provider
                     or consumer not in scope.destination_predicates
                     or index.consumes[consumer] & index.provides[provider] != {contract}
                 ):
                     continue
-                predicate = AllOf(
-                    (scope.source_predicates[provider], scope.destination_predicates[consumer], allowed)
-                )
+                predicate = AllOf((scope.source_predicates[provider], scope.destination_predicates[consumer]))
                 edges.append(
                     EdgeSpec(
                         f"aci:reply-redirect:{provider}:{consumer}", redirect_targets[redirect[1]], predicate
@@ -1334,7 +1333,7 @@ class _AciIndex:
         self._scopes: dict[str, _AciScope] = {}
         self._external_scopes: dict[str, tuple[_AciScope, ...]] = {}
         self._filters: dict[str, Predicate | None] = {}
-        self._graph_filters: dict[tuple[str, bool], Predicate | None] = {}
+        self._graph_filters: dict[str, Predicate | None] = {}
         self._redirects: dict[str, tuple[str, str] | None] = {}
 
     def contract_filter(self, graph: GraphInventory, contract_uid: str) -> Predicate | None:
@@ -1347,15 +1346,13 @@ class _AciIndex:
             graph.targets(subject.uid, "APPLIES_GRAPH") for subject in graph.targets(contract_uid, "HAS")
         )
 
-    def graph_filter(
-        self, graph: GraphInventory, contract_uid: str, *, reverse: bool = False
-    ) -> Predicate | None:
-        """The filter of a contract with a service graph, or the filter of its replies."""
-        if (contract_uid, reverse) not in self._graph_filters:
-            self._graph_filters[contract_uid, reverse] = _aci_contract_filter(
-                graph, contract_uid, self.af, graphs=True, reverse=reverse
+    def graph_filter(self, graph: GraphInventory, contract_uid: str) -> Predicate | None:
+        """The filter of a contract with a service graph."""
+        if contract_uid not in self._graph_filters:
+            self._graph_filters[contract_uid] = _aci_contract_filter(
+                graph, contract_uid, self.af, graphs=True
             )
-        return self._graph_filters[contract_uid, reverse]
+        return self._graph_filters[contract_uid]
 
     def redirect(self, graph: GraphInventory, contract_uid: str) -> tuple[str, str] | None:
         if contract_uid not in self._redirects:
@@ -1615,7 +1612,6 @@ def _aci_contract_filter(
     af: int | None = None,
     *,
     graphs: bool = False,
-    reverse: bool = False,
 ) -> Predicate | None:
     """Return the collected permit filter, or None when its semantics are incomplete.
 
@@ -1627,8 +1623,7 @@ def _aci_contract_filter(
     filter makes its contract one with collected entries.
 
     A subject with a service graph makes the filter unknown. With `graphs`, the
-    filter of such a subject counts. With `reverse`, the result matches the
-    replies of the packets that the filter permits."""
+    filter of such a subject counts."""
     predicates: list[Predicate] = []
     collected = False
     for subject in graph.targets(contract_uid, "HAS"):
@@ -1655,8 +1650,8 @@ def _aci_contract_filter(
                     if spec.protocol is not None:
                         terms.append(Atom("protocol", "eq", spec.protocol))
                     for field, ports in (
-                        ("destination_port" if reverse else "source_port", spec.source_ports),
-                        ("source_port" if reverse else "destination_port", spec.destination_ports),
+                        ("source_port", spec.source_ports),
+                        ("destination_port", spec.destination_ports),
                     ):
                         if ports is not None:
                             terms.append(Atom(field, "range", ports[0], ports[1]))

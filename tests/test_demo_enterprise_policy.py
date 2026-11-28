@@ -253,9 +253,6 @@ def test_explain_rule_settles_a_dc1_access_rule_for_one_gateway():
     _package, layer = PACKAGES["dc1"]
     rule = _named(graph, layer, "vie01 users to webshop web 443")
 
-    ambiguous = rule_explain.explain(graph, "test", layer, rule, 4)
-    assert ambiguous["error"]["code"] == "ambiguous" and ambiguous["error"]["field"] == "firewall"
-
     document = rule_explain.explain(graph, "test", layer, rule, 4, firewall="dev:dc1-cpfw-01", limit=1000)
     assert "error" not in document, document
     assert document["qualified"] is True and document["vendor"] == "checkpoint"

@@ -264,19 +264,15 @@ def test_web_to_api_is_redirected_to_the_check_point_gateway_of_dc1(demo):
 
 
 @pytest.mark.parametrize("success", ["forward", "session", "round-trip"])
-def test_web_to_api_holds_through_the_check_point_gateway(demo, success):
+def test_web_to_api_is_not_established_at_the_check_point_gateway(demo, success):
     from hst.assessment.evaluation import load_network
 
     session, graph = demo
     request = replace(_web_to_api(), success=success)
     network = load_network(session, request)
     verdict, gaps = _verdict(network, graph, request)
-    forward = replace(request, success="forward")
-    assert (verdict, gaps) == ("holds", ()), (
-        verdict,
-        gaps,
-        sorted(map(str, _forward_walk(load_network(session, forward), graph, forward)[2])),
-    )
+    # the estate holds no installation evidence of the gateway
+    assert verdict == "not-established" and "INSTALLATION_UNKNOWN" in gaps, (verdict, gaps)
 
 
 def test_web_to_api_on_a_port_the_contract_does_not_list_is_proven_denied(demo):
