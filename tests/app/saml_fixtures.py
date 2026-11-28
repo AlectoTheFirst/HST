@@ -117,10 +117,11 @@ class FakeSamlIdp:
     entity_id: str = IDP_ENTITY_ID
     sso_url: str = IDP_SSO_URL
     metadata_url: str = IDP_METADATA_URL
+    key_cn: str = "idp.example"
     calls: list[str] = field(default_factory=list)
 
     def __post_init__(self) -> None:
-        self._key_pem, self._cert_pem = _generate_keypair("idp.example")
+        self._key_pem, self._cert_pem = _generate_keypair(self.key_cn)
         # the temp files are removed when the instance is garbage collected
         self._key_path = _write_temp_pem(self._key_pem)
         self._cert_path = _write_temp_pem(self._cert_pem)
@@ -140,6 +141,10 @@ class FakeSamlIdp:
             f'Location="{self.sso_url}"/>'
             "</IDPSSODescriptor></EntityDescriptor>"
         )
+
+    def entity_descriptor_xml(self) -> str:
+        """The EntityDescriptor of metadata_xml, without the XML declaration."""
+        return self.metadata_xml().removeprefix('<?xml version="1.0"?>')
 
     def generate_other_keypair(self) -> tuple[str, str]:
         """A second keypair, for the tampered and wrong-signer test."""

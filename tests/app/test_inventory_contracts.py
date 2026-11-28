@@ -612,6 +612,7 @@ def test_field_metadata_contract_shape():
         "identity_sensitivity": "none",
         "profile_applicability": "iosxe",
         "label": pw.label,
+        "endpoint": "",
     }
     assert c.field_metadata_for("velocloud").kind == c.ConnectionKind.CONTROLLER
     # management_host/management_domain are connection fields.

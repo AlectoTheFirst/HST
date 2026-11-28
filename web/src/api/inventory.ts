@@ -523,6 +523,8 @@ export interface ConnectionPatch {
   clear_profile?: boolean;
   enabled?: boolean | null;
   clear_jump_host_keys?: boolean;
+  /** The map holds every secret of the bound credential for an edit of the endpoint or of the TLS check. */
+  secrets?: Record<string, string>;
   expected_revision: number;
 }
 
@@ -960,6 +962,7 @@ export interface RoutingMembersChange {
 
 export interface ReplacementChange {
   endpoint_config: Record<string, unknown>;
+  secrets?: Record<string, string>;
 }
 
 export interface PreviewRequest {
@@ -1029,6 +1032,8 @@ export interface FieldMetadata {
   identity_sensitivity: IdentitySensitivity;
   profile_applicability: string;
   label: string;
+  /** The endpoint role from src/hst/app/inventory/field_metadata.py ENDPOINT_ROLES. */
+  endpoint?: "" | "destination" | "verify" | "trust" | "pin";
 }
 
 export interface CollectorFieldMetadata {

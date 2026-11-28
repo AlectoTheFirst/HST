@@ -32,7 +32,7 @@ from hst.applications.models import (
 from hst.applications.resolution import GraphInventoryReader, resolve_application
 from hst.applications.service import ImportMode
 from hst.applications.validation import FlowNotEvaluated, record_validation, validate_application
-from hst.applications.yaml_format import ApplicationFormatError, normalized_document
+from hst.applications.yaml_format import ApplicationFormatError, ParseBusy, normalized_document
 from hst.assessment import service as assessment_service
 from hst.assessment.store import RevisionConflict
 from hst.core import db
@@ -112,6 +112,8 @@ def _errors():
         yield
     except RevisionConflict as exc:
         raise HTTPException(409, str(exc)) from exc
+    except ParseBusy as exc:
+        raise HTTPException(503, str(exc)) from exc
     except (ApplicationFormatError, ValueError, TypeError) as exc:
         raise HTTPException(422, str(exc)) from exc
 
@@ -259,10 +261,11 @@ async def validate_import(
 
     Stage 1 and 2 errors come back with their line and column and the call
     still answers 200. A snapshot that cannot be pinned, or a resolution that
-    exceeds its address bound, answers 422 as POST .../resolve does. The import
-    preview is included only for a caller who may commit it. With `evaluate`,
-    each ready connection is evaluated in a child process before the call
-    answers, and `flows` holds the verdicts.
+    exceeds its address bound, answers 422 as POST .../resolve does. A parse
+    that gets no parse slot answers 503. The import preview is included only
+    for a caller who may commit it. With `evaluate`, each ready connection is
+    evaluated in a child process before the call answers, and `flows` holds
+    the verdicts.
 
     Without `record` nothing is written and `validation_digest` is null. With
     `record`, which needs changes.write, a result without stage 1 or 2 errors

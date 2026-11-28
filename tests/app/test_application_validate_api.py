@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import copy
+import threading
 from contextlib import contextmanager
 
 import pytest
@@ -12,7 +13,7 @@ from tests.app.fakes import FakeStore
 from tests.test_business_applications import GraphReferenceSession
 
 from hst.app.routes import business_applications as routes
-from hst.applications import validation
+from hst.applications import validation, yaml_format
 from hst.applications.yaml_format import definition_digest, parse_application_yaml
 from hst.assessment import direct
 from hst.assessment import service as assessment_service
@@ -299,6 +300,46 @@ async def test_requests_outside_the_body_bounds_are_refused(client, store, graph
     )
     assert unknown_field.status_code == 422
     assert graph.requested == []
+
+
+async def test_a_document_of_many_unknown_keys_answers_the_capped_issues(client, store, graph):
+    await login(client, "vera")
+    unknown = "".join(f"k{index}: 1\n" for index in range(3000))
+
+    result = await _validate(client, yaml=YAML + unknown)
+
+    assert len(result["errors"]) == 101
+    assert result["errors"][0] == {
+        "path": "k0",
+        "message": "Extra inputs are not permitted",
+        "line": 28,
+        "column": 1,
+    }
+    assert (
+        result["errors"][-1]["message"]
+        == "the document has 3000 schema errors and the list holds the first 100"
+    )
+    assert result["blocking"][-1] == "$"
+    assert graph.params == []
+
+
+async def test_a_parse_without_a_free_slot_answers_503(client, store, graph, monkeypatch):
+    slots = threading.BoundedSemaphore(1)
+    slots.acquire()
+    monkeypatch.setattr(yaml_format, "_PARSE_SLOTS", slots)
+    monkeypatch.setattr(yaml_format, "PARSE_WAIT_S", 0.0)
+    await login(client, "otto")
+
+    validate = await client.post(
+        "/api/business-applications/validate", json={"snapshot": "4000", "yaml": YAML}
+    )
+    preview = await client.post(
+        "/api/business-applications/import/preview", json={"yaml": YAML, "mode": "replace"}
+    )
+
+    assert (validate.status_code, preview.status_code) == (503, 503)
+    assert validate.json()["error"] == preview.json()["error"] == "Business Application parsing is busy"
+    assert await store.list_applications() == []
 
 
 async def test_a_snapshot_that_cannot_be_pinned_answers_422(client, store, monkeypatch):

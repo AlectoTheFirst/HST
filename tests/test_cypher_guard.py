@@ -286,6 +286,52 @@ def test_the_word_use_outside_a_use_clause_passes(query):
     check_readonly(query)
 
 
+@pytest.mark.parametrize(
+    ("query", "refusal"),
+    [
+        ("WITH 1 AS a LIMIT 1LOAD CSV FROM $u AS r RETURN r", "LOAD CSV"),
+        ("WITH 1 AS a LIMIT 0x1FLOAD CSV FROM $u AS r RETURN r", "LOAD CSV"),
+        ("WITH 1 AS a LIMIT 0o7LOAD CSV FROM $u AS r RETURN r", "LOAD CSV"),
+        ("WITH 1.5LOAD CSV FROM $u AS r RETURN r", "LOAD CSV"),
+        ("WITH 1e5LOAD CSV FROM $u AS r RETURN r", "LOAD CSV"),
+        ("WITH 1_000LOAD CSV FROM $u AS r RETURN r", "LOAD CSV"),
+        ("WITH 1 AS a LIMIT 1CALL db.stats.retrieve('QUERIES') YIELD data RETURN data", "procedure"),
+        ("WITH 1 AS a LIMIT 1CALL db.ping() YIELD success RETURN success", "procedure"),
+        ("WITH 1 AS a LIMIT 0o7CALL db.ping() YIELD success RETURN success", "procedure"),
+        ("WITH 1 AS a LIMIT 1CALL`db`.checkpoint()", "procedure"),
+        ("WITH 1 AS a LIMIT 1\\u0043ALL db.ping() YIELD success RETURN success", "procedure"),
+        ("WITH 1 AS a LIMIT 1USE system MATCH (n) RETURN n", "USE"),
+        ("CYPHER 5SHOW TRANSACTIONS", "SHOW"),
+        ("CYPHER 5TERMINATE TRANSACTIONS 'neo4j-transaction-1'", "TERMINATE"),
+        ("RETURN 1apoc.text.join(['a'], 'b') AS v", "namespaces"),
+        ("RETURN 1gds.version() AS v", "namespaces"),
+        ("RETURN 1dbms.components() AS v", "namespaces"),
+        ("RETURN 1genai.vector.encode($text, 'OpenAI', $conf) AS v", "namespaces"),
+        ("RETURN 1vector.similarity.cosine($a, $b) AS v", "namespaces"),
+        ("WITH 1 AS a LIMIT 1²LOAD CSV FROM $u AS r RETURN r", "LOAD CSV"),
+        ("WITH 1 AS a LIMIT ½CALL db.ping() YIELD success RETURN success", "procedure"),
+        ("WITH 1 AS a LIMIT x²5CALL db.ping() YIELD success RETURN success", "procedure"),
+    ],
+)
+def test_a_keyword_right_after_a_number_is_refused(query, refusal):
+    with pytest.raises(QueryRejected, match=refusal):
+        check_readonly(query)
+
+
+@pytest.mark.parametrize(
+    "query",
+    [
+        "MATCH (n:Device) WHERE n.x = 0x1F OR n.y = 1e5 OR n.z = 1_000 OR n.w = .5 RETURN n",
+        "MATCH p = (a:Device)-[:CONNECTED_TO*1..3]-(b) RETURN p",
+        "MATCH (d1call:Device) RETURN d1call.hostname AS h2load",
+        "MATCH (n:Device) RETURN n.x1 AS x1, [1, 2][0] AS y",
+        "MATCH (n:Device) RETURN n.hostname AS réseau1",
+    ],
+)
+def test_a_number_beside_a_name_passes(query):
+    check_readonly(query)
+
+
 PINNED = [
     "MATCH (d:Device:Obj) WHERE d.collection_ts = $snap RETURN d",
     "MATCH (d:Device) WHERE $snap = d.collection_ts AND d.hostname STARTS WITH 'core' RETURN d",
@@ -419,6 +465,42 @@ def test_a_query_with_an_unpinned_pattern_gets_the_refusal_or_the_note(query):
         check_pinned(query)
     assert str(refusal.value) == UNPINNED_QUERY
     assert check_pinned(query, "warn") == UNPINNED_QUERY
+
+
+@pytest.mark.parametrize(
+    "query",
+    [
+        "MATCH (d:Device:Obj) WHERE d.collection_ts = $snap WITH d LIMIT 1MATCH (x:Device) RETURN x",
+        "MATCH (d:Device:Obj) WHERE d.collection_ts = $snap WITH d LIMIT 0x1FMATCH (x:Device) RETURN x",
+        "MATCH (d:Device:Obj) WHERE d.collection_ts = $snap WITH d LIMIT 1OPTIONAL MATCH (x:Device) RETURN x",
+        "MATCH (d:Device:Obj) WHERE d.collection_ts = $snap RETURN d LIMIT 1UNION MATCH (d:Device) RETURN d",
+    ],
+)
+def test_an_unpinned_clause_right_after_a_number_is_not_pinned(query):
+    assert not is_pinned(query)
+    with pytest.raises(QueryRejected, match="not pinned to \\$snap"):
+        check_pinned(query)
+
+
+@pytest.mark.parametrize(
+    ("query", "refusal"),
+    [
+        (
+            "MATCH (d:Device:Obj) WHERE d.collection_ts = $snap WITH d LIMIT 1LOAD CSV FROM $u AS r "
+            "RETURN r, d",
+            "LOAD CSV",
+        ),
+        (
+            "MATCH (d:Device:Obj) WHERE d.collection_ts = $snap WITH d LIMIT 1CALL db.ping() YIELD success "
+            "RETURN success, d",
+            "procedure",
+        ),
+    ],
+)
+def test_a_pinned_query_with_a_keyword_right_after_a_number_is_refused(query, refusal):
+    assert is_pinned(query)
+    with pytest.raises(QueryRejected, match=refusal):
+        check_readonly(query)
 
 
 def test_every_catalog_query_that_holds_snap_is_pinned():

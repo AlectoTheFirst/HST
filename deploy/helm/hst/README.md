@@ -13,7 +13,7 @@ single-host compose stack in `compose.yaml`.
 | `StatefulSet` neo4j | the twin. `neo4j.enabled=false` for an external Neo4j |
 | `Job` migrate | Alembic, once per release, gating the app rollout |
 | `Job` initdb | `hst init-db`: Neo4j constraints and the fulltext index |
-| `NetworkPolicy` | the pods of the release reach bolt and Postgres. The peers in `networkPolicy.ingressFrom` reach port 8787 of the app pod. No peer reaches the worker, backup, migrate and initdb pods |
+| `NetworkPolicy` | the pods of the release reach bolt and Postgres. The peers in `networkPolicy.ingressFrom` reach port 8787 of the app pod. No peer reaches the worker, backup, migrate and initdb pods. `networkPolicy.egress` limits the egress of the app, worker, backup, migrate and initdb pods. See "Egress of the app pods" |
 | `Ingress` | every host in `ingress.host` + `extraHosts`; the SPA and `/api` share an origin |
 | `PodDisruptionBudget` | app pods, when `podDisruptionBudget.enabled` |
 
@@ -34,12 +34,20 @@ helm upgrade --install hst deploy/helm/hst -n hst \
   --set ingress.host=hst.example.com \
   --set ingress.tls.enabled=true --set ingress.tls.secretName=hst-tls \
   --set auth.cookieSecure=true \
+  --set neo4j.tls.enabled=true --set neo4j.tls.caSecret=hst-db-tls --set neo4j.tls.serverSecret=hst-db-tls \
+  --set postgres.tls.enabled=true --set postgres.tls.caSecret=hst-db-tls --set postgres.tls.serverSecret=hst-db-tls \
   --set-json 'networkPolicy.ingressFrom=[{"namespaceSelector":{"matchLabels":{"kubernetes.io/metadata.name":"ingress-nginx"}}}]' \
   --wait
 ```
 
 The chart refuses to render an ingress without TLS. `ingress.acceptInsecureHttp=true`
 installs the ingress on plain HTTP.
+
+The chart refuses to render the bundled Neo4j or Postgres without its TLS listener
+(`tls.serverSecret`). `hst-db-tls` is a `kubernetes.io/tls` Secret with the key `ca.crt`,
+such as a cert-manager Secret. Its certificate has the names `hst-neo4j` and
+`hst-postgres`. `neo4j.acceptInsecure=true` and `postgres.acceptInsecure=true` install
+the bundled databases without TLS.
 
 `networkPolicy.ingressFrom` takes the namespace or the pods of the ingress controller.
 The chart refuses to render `app.forwardedAllowIps` without a peer. See "Access to the
@@ -128,8 +136,9 @@ false, runs `hst migrate` in a Job, and holds the app pods behind an init contai
 
 ### Database access
 
-`networkPolicy.enabled`, on by default, controls access to the databases. Bolt is
-unencrypted unless `neo4j.tls.serverSecret` is set. The CNI must enforce NetworkPolicy.
+`networkPolicy.enabled`, on by default, controls access to the databases. Bolt and the
+Postgres session are unencrypted with `neo4j.acceptInsecure=true` and
+`postgres.acceptInsecure=true`. The CNI must enforce NetworkPolicy.
 Verify that ingress is blocked:
 
 ```
@@ -149,8 +158,8 @@ kubectl -n hst exec statefulset/hst-postgres -- \
 
 ### Access to the app pod
 
-With a peer in `networkPolicy.ingressFrom` the chart renders a NetworkPolicy for the app
-pod. The policy admits those peers to port 8787. The peers are standard NetworkPolicy
+With a peer in `networkPolicy.ingressFrom` the NetworkPolicy of the app pod admits those
+peers to port 8787. The peers are standard NetworkPolicy
 `from` entries:
 
 ```
@@ -177,6 +186,33 @@ Verify that another pod is blocked:
 kubectl -n hst run np-probe --rm -i --restart=Never --image=busybox:1.36 -- \
   sh -c 'nc -z -w3 hst 8787 && echo REACHABLE || echo blocked'
 ```
+
+### Egress of the app pods
+
+With `networkPolicy.egress.enabled`, on by default, the policies of the app, worker,
+backup, migrate and initdb pods have egress rules. Each pod reaches DNS on port 53, to the
+peers in `networkPolicy.dnsTo`. Each pod reaches the pod of each bundled database that it
+opens, Neo4j on port 7687 and Postgres on port 5432. The migrate pod opens Postgres, and
+the initdb pod opens Neo4j. The app, worker and backup pods also reach every IPv4 and IPv6 address outside
+`networkPolicy.egress.except`. The collectors, sign-in, the AI providers, an external
+database and the S3 endpoint of the backup use this rule. The migrate and initdb pods
+reach those addresses only with an external Postgres or an external Neo4j.
+
+The default `except` list holds `169.254.0.0/16`, `fe80::/10` and `fd00:ec2::254/128`,
+which cover the cloud metadata addresses. Add the pod CIDR, the service CIDR, the node and
+control-plane addresses and the other ranges of the cluster. Without them, the app pods
+reach the pods of other namespaces and the Kubernetes API. `10.244.0.0/16` and
+`10.96.0.0/12` are the default pod CIDR and service CIDR of kind:
+
+```
+networkPolicy:
+  egress:
+    except: [169.254.0.0/16, fe80::/10, fd00:ec2::254/128, 10.244.0.0/16, 10.96.0.0/12]
+```
+
+On some CNIs an ipBlock does not match the address of a pod. There the app pods reach no
+other pod than DNS and the bundled databases, and an `except` entry does not block a pod.
+`networkPolicy.egress.enabled=false` removes the egress rules.
 
 ### Probes
 
@@ -219,9 +255,12 @@ podman inspect <cluster>-control-plane --format '{{json .HostConfig.PortBindings
 | `auth.cookieSecure` | `false` | Set true only with TLS. A browser sends no Secure cookie over HTTP. True without TLS breaks login |
 | `app.publicUrl` | `""` | The origin that users reach (`HST_PUBLIC_URL`), for example `https://hst.example.net`, with no path. SAML and OIDC sign-in need it. Empty with `ingress.enabled=true` gives `https://<ingress.host>` when `ingress.tls.enabled` is true and `http://<ingress.host>` otherwise |
 | `app.forwardedAllowIps` | private and loopback ranges | `HST_FORWARDED_ALLOW_IPS` of the app pod, set only with `ingress.enabled=true`. It lists the proxies whose `X-Forwarded-For` and `X-Forwarded-Proto` the app accepts. A value requires `networkPolicy.enabled=true` and a peer in `networkPolicy.ingressFrom`. The ingress must replace the `X-Forwarded-For` of a client. `""` trusts no proxy. An entry in `app.extraEnv` replaces the value, and the chart does not check that entry |
-| `networkPolicy.ingressFrom` | `[]` | The NetworkPolicy `from` peers that reach port 8787 of the app pod: the pods of the ingress controller. Empty renders no policy for the app pod. See "Access to the app pod" |
-| `networkPolicy.dnsTo` | `[]` | The `to` peers of the DNS egress rule of the databases. Empty allows port 53 to any host |
-| `neo4j.tls.serverSecret` / `postgres.tls.serverSecret` | `""` | Opt-in TLS listener of the bundled database: a `kubernetes.io/tls` Secret whose certificate names `<fullname>-neo4j` / `<fullname>-postgres`. Requires `tls.enabled=true` and `tls.caSecret` for the same database |
+| `networkPolicy.ingressFrom` | `[]` | The NetworkPolicy `from` peers that reach port 8787 of the app pod: the pods of the ingress controller. With no peer the app policy has no Ingress type, and every pod reaches port 8787. See "Access to the app pod" |
+| `networkPolicy.dnsTo` | `[]` | The `to` peers of the DNS egress rule of every pod of the release. Empty allows port 53 to any host |
+| `networkPolicy.egress.enabled` | `true` | The egress rules of the app, worker, backup, migrate and initdb pods. See "Egress of the app pods" |
+| `networkPolicy.egress.except` | `169.254.0.0/16`, `fe80::/10`, `fd00:ec2::254/128` | The CIDRs that the egress rule to every other address excludes. Add the pod CIDR, the service CIDR, the node and control-plane addresses and the other ranges of the cluster. On some CNIs an ipBlock does not match the address of a pod |
+| `neo4j.tls.serverSecret` / `postgres.tls.serverSecret` | `""` | TLS listener of the bundled database: a `kubernetes.io/tls` Secret whose certificate names `<fullname>-neo4j` / `<fullname>-postgres`. Requires `tls.enabled=true` and `tls.caSecret` for the same database. The bundled database renders without it only with `acceptInsecure=true` |
+| `neo4j.acceptInsecure` / `postgres.acceptInsecure` | `false` | `true` renders the bundled database without `tls.serverSecret`, and a non-loopback `neo4j.externalUri` / `postgres.externalDsn` without `tls.enabled` |
 | `app.persistence.enabled` | `true` | Raw snapshots. The PVC has `resource-policy: keep` and survives `helm uninstall` |
 | `neo4j.heap` / `pagecache` | `1G` | Sized against the container limit. When unset, the JVM sizes them from the RAM of the node |
 | `postgres.externalDsn` | `""` | Required when `postgres.enabled=false` and `secrets.existingSecret` is empty |
@@ -302,7 +341,7 @@ Local kind side-loads the image into the node, with `image.pullPolicy: IfNotPres
 ```
 make k8s-secret     # once: generates the app key and the DB passwords
 make k8s-image      # podman build, save, kind load
-make k8s-install INGRESS_NS=ingress-nginx INGRESS_INSECURE_HTTP=true
+make k8s-install INGRESS_NS=ingress-nginx INGRESS_INSECURE_HTTP=true DB_INSECURE=true
 make k8s-verify     # checks that the deployment serves
 ```
 
@@ -324,6 +363,10 @@ make k8s-verify
 `make k8s-install` requires `INGRESS_TLS_SECRET` or `INGRESS_INSECURE_HTTP=true`.
 `INGRESS_TLS_SECRET` sets `ingress.tls.enabled`, `ingress.tls.secretName` and
 `auth.cookieSecure`. `INGRESS_INSECURE_HTTP=true` sets `ingress.acceptInsecureHttp`.
+
+`DB_INSECURE=true` sets `neo4j.acceptInsecure` and `postgres.acceptInsecure`, and the
+bundled Neo4j and Postgres run without TLS. An install with TLS to the bundled
+databases sets the `neo4j.tls` and `postgres.tls` values in `HELM_EXTRA`.
 
 `PLATFORM` must match the architecture of the cluster nodes. With `REGISTRY` set it
 defaults to `linux/amd64`. Without `REGISTRY` it defaults to the architecture of the host.

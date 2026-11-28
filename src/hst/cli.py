@@ -2417,7 +2417,11 @@ def sources_set(
         from hst.app.inventory.legacy import LegacyConnections, active
 
         if await active(store):
-            await LegacyConnections(store, settings).patch(name, overlay or None, enable)
+            try:
+                await LegacyConnections(store, settings).patch(name, overlay or None, enable)
+            except glue.CredentialsRequired as exc:
+                console.print(f"[red]{exc}[/red]")
+                raise typer.Exit(1) from exc
             console.print(f"ok {name}")
             return
         key = _secret_key_or_die(settings) if overlay else ""
@@ -2429,7 +2433,7 @@ def sources_set(
                 except SecretKeyError as exc:
                     console.print(f"[red]{exc}[/red]")
                     raise typer.Exit(1) from exc
-                except glue.SecretsUnreadable as exc:
+                except (glue.SecretsUnreadable, glue.CredentialsRequired) as exc:
                     console.print(f"[red]{exc}[/red]")
                     raise typer.Exit(1) from exc
                 except ValidationError as exc:

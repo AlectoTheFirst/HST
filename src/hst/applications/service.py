@@ -19,7 +19,7 @@ from hst.applications.yaml_format import (
     canonical_yaml,
     definition_digest,
     normalized_document,
-    parse_application_yaml,
+    parse_application_bounded,
 )
 from hst.assessment.store import RevisionConflict
 
@@ -79,7 +79,7 @@ async def preview_import(
     member at the snapshot of the resolution. A member of a group that the
     resolution did not read has the note `inventory-not-resolved`.
     """
-    document = parse_application_yaml(yaml_text, partial=mode == "merge")
+    document = (await parse_application_bounded(yaml_text, partial=mode == "merge")).document
     if mode == "replace":
         if not isinstance(document, BusinessApplicationDefinition):
             raise TypeError("replace import did not produce a complete application definition")

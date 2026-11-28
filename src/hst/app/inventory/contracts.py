@@ -650,6 +650,10 @@ class ConnectionCreate(Request):
     enabled: bool = False
 
 
+def _plain(secrets: dict[str, SecretStr] | None) -> dict[str, str] | None:
+    return None if secrets is None else {k: v.get_secret_value() for k, v in secrets.items()}
+
+
 class ConnectionPatch(Request):
     display_name: str | None = Field(default=None, max_length=200)
     config: dict[str, Any] | None = None
@@ -657,7 +661,13 @@ class ConnectionPatch(Request):
     clear_profile: bool = False
     enabled: bool | None = None
     clear_jump_host_keys: bool = False
+    # The map holds every secret of the bound credential for an edit of the endpoint or of the
+    # TLS check. The map becomes a new credential of the connection.
+    secrets: dict[str, SecretStr] | None = None
     expected_revision: int = Field(ge=1)
+
+    def secret_values(self) -> dict[str, str] | None:
+        return _plain(self.secrets)
 
 
 class TargetView(Response):
@@ -1223,6 +1233,11 @@ class RoutingMembersChange(Request):
 
 class ReplacementChange(Request):
     endpoint_config: dict[str, Any]
+    # The map holds every secret of the bound credential. It becomes a new credential of the target.
+    secrets: dict[str, SecretStr] | None = None
+
+    def secret_values(self) -> dict[str, str] | None:
+        return _plain(self.secrets)
 
 
 Change = (
@@ -1341,6 +1356,7 @@ class FieldMetadata(Response):
     identity_sensitivity: IdentitySensitivity
     profile_applicability: str
     label: str
+    endpoint: str = ""
 
 
 class CollectorFieldMetadata(Response):

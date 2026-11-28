@@ -135,7 +135,10 @@ async def create_source(request: Request, body: SourceCreate) -> dict:
 async def patch_source(request: Request, name: str, body: SourcePatch) -> dict:
     service = await _inventory_service(request)
     if service is not None:
-        row = await service.patch(name, body.config, body.enabled)
+        try:
+            row = await service.patch(name, body.config, body.enabled)
+        except glue.CredentialsRequired as exc:
+            raise HTTPException(400, detail=str(exc)) from exc
         return await _with_scope_warnings(
             request, _json(row, crypto.dek(request.app.state.settings)), service
         )
@@ -151,6 +154,8 @@ async def patch_source(request: Request, name: str, body: SourcePatch) -> dict:
                 raise HTTPException(422, detail=_first_error(exc)) from exc
             except glue.SecretsUnreadable as exc:
                 raise HTTPException(422, detail=str(exc)) from exc
+            except glue.CredentialsRequired as exc:
+                raise HTTPException(400, detail=str(exc)) from exc
         if body.enabled is not None:
             row.enabled = body.enabled
         return row

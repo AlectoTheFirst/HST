@@ -8,14 +8,18 @@ pysaml2/xmlsec1 rejection.
 from __future__ import annotations
 
 import base64
+import re
 from datetime import UTC, datetime, timedelta
 
 import pytest
+import saml2
 from tests.app.conftest import login
+from tests.app.saml_fixtures import IDP_ENTITY_ID as IDP_ENTITY
 from tests.app.saml_fixtures import FakeSamlIdp, authn_request, extract_authn_request_id
 
 from hst.app import saml_flow
 from hst.app.routes.sso import SAML_REQUEST_COOKIE
+from hst.app.sso_flow import SsoLoginError
 
 BASE_URL = "http://t"
 ENTITY_ID = f"{BASE_URL}/api/auth/adfs/metadata"
@@ -618,6 +622,237 @@ async def test_the_sp_metadata_ignores_the_host_header(client, idp):
     assert r.status_code == 200
     assert DET.fromstring(r.content).get("entityID") == ENTITY_ID
     assert ACS_URL in r.text and OTHER_HOST not in r.text
+
+
+# --- the IdP entity -------------------------------------------------------------
+
+OTHER_IDP_ENTITY_ID = "https://other-idp.example/saml"
+SAML_ASSERTION_NS = "urn:oasis:names:tc:SAML:2.0:assertion"
+
+
+def _other_idp() -> FakeSamlIdp:
+    return FakeSamlIdp(
+        entity_id=OTHER_IDP_ENTITY_ID,
+        sso_url="https://other-idp.example/saml/sso",
+        key_cn="other-idp.example",
+    )
+
+
+def _aggregate_metadata(*idps: FakeSamlIdp) -> str:
+    return (
+        '<?xml version="1.0"?><EntitiesDescriptor xmlns="urn:oasis:names:tc:SAML:2.0:metadata">'
+        + "".join(idp.entity_descriptor_xml() for idp in idps)
+        + "</EntitiesDescriptor>"
+    )
+
+
+def _with_response_issuer(saml_response_b64: str, issuer: str | None) -> str:
+    """The response with another Issuer as the child of the Response, or with none.
+    The Response is unsigned, so the signature of the assertion stays valid."""
+    raw = base64.b64decode(saml_response_b64).decode()
+    # The first Issuer element of the document is the child of the Response.
+    match = re.search(r"<(\w+:)?Issuer\b[^>]*>[^<]*</\1Issuer>", raw)
+    assert match is not None and match.start() < raw.index("Assertion ")
+    prefix = match.group(1) or ""
+    replacement = "" if issuer is None else f"<{prefix}Issuer>{issuer}</{prefix}Issuer>"
+    return base64.b64encode((raw[: match.start()] + replacement + raw[match.end() :]).encode()).decode()
+
+
+async def test_a_response_signed_by_another_entity_of_the_metadata_is_refused(client, store, idp, caplog):
+    other = _other_idp()
+    await _register_provider(client, idp, idp_metadata_xml=_aggregate_metadata(idp, other))
+    provider = await store.get_auth_provider("adfs")
+    assert provider.config[saml_flow.IDP_ENTITY_ID_KEY] == idp.entity_id
+
+    request_id = await _start_login(client)
+    own = idp.create_signed_response(
+        sp_entity_id=ENTITY_ID,
+        acs_url=ACS_URL,
+        in_response_to=request_id,
+        name_id="victim@example.com",
+        attributes={"uid": ["victim"]},
+    )
+    assert (await _acs(client, own)).headers["location"] == "/"
+    await client.post("/api/logout")
+
+    request_id = await _start_login(client)
+    forged = other.create_signed_response(
+        sp_entity_id=ENTITY_ID,
+        acs_url=ACS_URL,
+        in_response_to=request_id,
+        name_id="victim@example.com",
+        attributes={"uid": ["victim"]},
+    )
+    with caplog.at_level("WARNING", logger="hst.sso"):
+        r = await _acs(client, forged)
+
+    assert r.status_code == 302 and r.headers["location"] == "/login?error=sso"
+    assert "hst_session=" not in r.headers.get("set-cookie", "")
+    assert (await client.get("/api/me")).status_code == 401
+    events = [e for e in await store.list_login_events() if e.provider == "adfs"]
+    assert [e.outcome for e in events] == ["failed", "ok"]
+    (refusal,) = [
+        rec for rec in caplog.records if rec.name == "hst.sso" and "SAML ACS failed" in rec.getMessage()
+    ]
+    assert refusal.getMessage().endswith(f"assertion validation failed: MissingKey: {OTHER_IDP_ENTITY_ID}")
+
+
+@pytest.mark.parametrize("issuer", [None, OTHER_IDP_ENTITY_ID], ids=["none", "other"])
+async def test_a_response_without_the_issuer_of_the_idp_is_refused(client, store, idp, caplog, issuer):
+    await _register_provider(client, idp)
+    request_id = await _start_login(client)
+    saml_response = idp.create_signed_response(
+        sp_entity_id=ENTITY_ID,
+        acs_url=ACS_URL,
+        in_response_to=request_id,
+        name_id="ivan@example.com",
+        attributes={"uid": ["ivan"]},
+    )
+
+    with caplog.at_level("WARNING", logger="hst.sso"):
+        r = await _acs(client, _with_response_issuer(saml_response, issuer))
+
+    assert r.status_code == 302 and r.headers["location"] == "/login?error=sso"
+    assert "hst_session=" not in r.headers.get("set-cookie", "")
+    assert await store.get_user_by_username("ivan") is None
+    events = [e for e in await store.list_login_events() if e.provider == "adfs"]
+    assert [e.outcome for e in events] == ["failed"]
+    refusals = [rec for rec in caplog.records if rec.name == "hst.sso" and "Issuer" in rec.getMessage()]
+    assert len(refusals) == 1
+
+
+async def test_a_response_with_the_issuer_of_the_idp_is_accepted(client, store, idp):
+    await _register_provider(client, idp)
+    request_id = await _start_login(client)
+    saml_response = idp.create_signed_response(
+        sp_entity_id=ENTITY_ID,
+        acs_url=ACS_URL,
+        in_response_to=request_id,
+        name_id="jo@example.com",
+        attributes={"uid": ["jo"]},
+    )
+    r = await _acs(client, _with_response_issuer(saml_response, idp.entity_id))
+    assert r.status_code == 302 and r.headers["location"] == "/"
+
+
+def _authn_response(response_issuer: str, *assertion_issuers: str | None):
+    from types import SimpleNamespace
+
+    from saml2.saml import Assertion, Issuer
+
+    assertions = [Assertion(issuer=None if text is None else Issuer(text=text)) for text in assertion_issuers]
+    return SimpleNamespace(issuer=lambda: response_issuer, assertions=assertions)
+
+
+@pytest.mark.parametrize(
+    ("response_issuer", "assertion_issuers", "refused"),
+    [
+        (IDP_ENTITY, (IDP_ENTITY,), False),
+        (IDP_ENTITY, (IDP_ENTITY, IDP_ENTITY), False),
+        ("", (IDP_ENTITY,), True),
+        (OTHER_IDP_ENTITY_ID, (IDP_ENTITY,), True),
+        (IDP_ENTITY, (None,), True),
+        (IDP_ENTITY, (OTHER_IDP_ENTITY_ID,), True),
+        (IDP_ENTITY, (IDP_ENTITY, OTHER_IDP_ENTITY_ID), True),
+        (IDP_ENTITY, (), True),
+    ],
+    ids=[
+        "own",
+        "own-2",
+        "no-response-issuer",
+        "other-response-issuer",
+        "no-assertion-issuer",
+        "other-assertion-issuer",
+        "own-and-other-assertion-issuer",
+        "no-assertion",
+    ],
+)
+def test_the_issuer_check_compares_each_issuer_with_the_idp_entity_id(
+    response_issuer, assertion_issuers, refused
+):
+    authn_resp = _authn_response(response_issuer, *assertion_issuers)
+    if refused:
+        with pytest.raises(SsoLoginError, match=r"Issuer|no assertion"):
+            saml_flow._check_issuers(authn_resp, IDP_ENTITY)
+    else:
+        saml_flow._check_issuers(authn_resp, IDP_ENTITY)
+
+
+def test_the_sp_client_loads_only_the_entity_of_the_idp(idp):
+    key_pem, cert_pem = saml_flow.generate_sp_keypair()
+    with saml_flow._sp_client(
+        entity_id=ENTITY_ID,
+        acs_url=ACS_URL,
+        sp_key_pem=key_pem,
+        sp_cert_pem=cert_pem,
+        idp_metadata_xml=_aggregate_metadata(_other_idp(), idp),
+        idp_entity_id=idp.entity_id,
+    ) as client:
+        assert client.metadata.keys() == [idp.entity_id]
+        with pytest.raises(KeyError):
+            client.metadata.certs(OTHER_IDP_ENTITY_ID, "any", "signing")
+
+
+def test_the_issuer_check_refuses_a_response_that_pysaml2_verified_with_the_key_of_another_entity(
+    idp, monkeypatch
+):
+    monkeypatch.setattr(saml_flow, "_keep_only_entity", lambda mds, idp_entity_id: None)
+    other = _other_idp()
+    forged = other.create_signed_response(
+        sp_entity_id=ENTITY_ID, acs_url=ACS_URL, in_response_to="id-request", name_id="victim@example.com"
+    )
+    key_pem, cert_pem = saml_flow.generate_sp_keypair()
+    with saml_flow._sp_client(
+        entity_id=ENTITY_ID,
+        acs_url=ACS_URL,
+        sp_key_pem=key_pem,
+        sp_cert_pem=cert_pem,
+        idp_metadata_xml=_aggregate_metadata(idp, other),
+        idp_entity_id=idp.entity_id,
+    ) as client:
+        authn_resp = client.parse_authn_request_response(
+            forged, saml2.BINDING_HTTP_POST, outstanding={"id-request": "/"}
+        )
+
+    assert authn_resp.name_id.text == "victim@example.com"
+    with pytest.raises(
+        SsoLoginError, match=re.escape(f"Issuer of the SAML response is {OTHER_IDP_ENTITY_ID!r}")
+    ):
+        saml_flow._check_issuers(authn_resp, idp.entity_id)
+
+
+def test_the_sp_client_refuses_metadata_without_the_entity_of_the_idp(idp):
+    key_pem, cert_pem = saml_flow.generate_sp_keypair()
+    with (
+        pytest.raises(SsoLoginError, match="no EntityDescriptor"),
+        saml_flow._sp_client(
+            entity_id=ENTITY_ID,
+            acs_url=ACS_URL,
+            sp_key_pem=key_pem,
+            sp_cert_pem=cert_pem,
+            idp_metadata_xml=_other_idp().metadata_xml(),
+            idp_entity_id=idp.entity_id,
+        ),
+    ):
+        pass
+
+
+async def test_a_login_with_cached_metadata_without_the_entity_of_the_idp_is_refused(
+    client, store, idp, caplog
+):
+    await _register_provider(client, idp)
+    provider = await store.get_auth_provider("adfs")
+    config = {**provider.config, saml_flow.IDP_METADATA_XML_KEY: _other_idp().metadata_xml()}
+    await store.update_auth_provider("adfs", config=config)
+
+    with caplog.at_level("WARNING", logger="hst.sso"):
+        r = await client.get("/api/auth/adfs/login")
+
+    assert r.status_code == 404
+    refusals = [
+        rec for rec in caplog.records if rec.name == "hst.sso" and "no EntityDescriptor" in rec.getMessage()
+    ]
+    assert len(refusals) == 1
 
 
 # --- required group ------------------------------------------------------------

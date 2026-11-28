@@ -63,23 +63,35 @@ def _decode_unicode_escapes(query: str) -> str:
 
 # The tokenizer runs once, ahead of every other check. The named alternatives
 # below are tried in order, and the first match wins. A line comment ends at a line feed or a carriage
-# return, the two characters that end it in the Neo4j lexers.
+# return, the two characters that end it in the Neo4j lexers. A number is a
+# hexadecimal (`0x1F`), octal (`0o17`), decimal (`.5`, `1.5e-3`) or integer
+# (`1_000`, `1e5`) literal of Cypher 5. A word starts with a `\w` character
+# that is no decimal digit.
 _TOKEN = re.compile(
     r"(?P<string>'(?:\\.|[^'\\])*'|\"(?:\\.|[^\"\\])*\")"
     r"|(?P<backtick>`[^`]*`)"
     r"|(?P<block_comment>/\*.*?\*/)"
     r"|(?P<line_comment>//[^\r\n]*)"
+    r"|(?P<word>[^\W\d]\w*)"
+    r"|(?P<number>0[xX][\dA-Fa-f_]+|0[oO][0-7_]+"
+    r"|(?:\d[\d_]*)?\.\d[\d_]*(?:[eE][+-]?\d[\d_]*)?|\d[\d_]*(?:[eE][+-]?\d[\d_]*)?)"
     r"|(?P<other>.)",
     re.DOTALL,
 )
+_WORD_CHAR = re.compile(r"\w")
 
 
 def _tokenize(query: str, literal: str = " ") -> tuple[str, list[str]]:
     """Split `query` into code text and the string literals it contains.
 
     Code text is `query` with every string literal replaced by `literal` and
-    every block comment and line comment replaced by one space. A
-    backtick-quoted identifier and every other character stay in place.
+    every block comment and line comment replaced by one space. A number
+    that a letter, a digit or `_` follows gets one space after it. In
+    `LIMIT 1LOAD CSV` and `LIMIT 0x1FLOAD CSV` the code text holds
+    `LIMIT 1 LOAD CSV` and `LIMIT 0x1F LOAD CSV`. In a word, each character
+    that is no identifier character (`²`, `½`) is a space, and the word is
+    tokenized again. A backtick-quoted identifier and every other character
+    stay in place.
 
     The second value holds the string literals with their quotes, in order.
     `_URL` is checked against the string literals.
@@ -92,6 +104,11 @@ def _tokenize(query: str, literal: str = " ") -> tuple[str, list[str]]:
             code_parts.append(literal)
         elif match.lastgroup in ("block_comment", "line_comment"):
             code_parts.append(" ")
+        elif match.lastgroup == "number" and _WORD_CHAR.match(query, match.end()):
+            code_parts.append(match.group() + " ")
+        elif match.lastgroup == "word" and not match.group().isidentifier():
+            name = "".join(c if ("_" + c).isidentifier() else " " for c in match.group())
+            code_parts.append(_tokenize(name)[0] if name != match.group() else match.group())
         else:
             code_parts.append(match.group())
     return "".join(code_parts), strings
@@ -363,11 +380,12 @@ def check_readonly(query: str) -> None:
     of a subquery.
 
     The decoded query is tokenized once, left to right, into string literals,
-    backtick identifiers, block comments, line comments and other characters
-    (see `_tokenize`). A `/*` or `//` inside a string literal starts no
-    comment. The URL scheme check runs on the string literals. `LOAD CSV`,
-    `CALL`, the library-namespace check and the identifier check run on the
-    code text.
+    backtick identifiers, block comments, line comments, words, numbers and
+    other characters (see `_tokenize`). A keyword directly after a number,
+    as in `LIMIT 1LOAD CSV`, is a keyword in the code text. A `/*` or `//`
+    inside a string literal starts no comment. The URL scheme check runs on
+    the string literals. `LOAD CSV`, `CALL`, the library-namespace check and
+    the identifier check run on the code text.
 
     The function also rejects a `:Label` or `[:REL_TYPE]` token that is not
     registered in core.labels (LABELS, RELS). This check validates identifier

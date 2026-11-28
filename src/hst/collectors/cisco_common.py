@@ -1877,9 +1877,10 @@ _FILTER_BINDING_RE = re.compile(r"^(?:ip|ipv4|ipv6|mac) (?:port )?(?:access-grou
 # inspect policies. The membership is bound as its own family, and the placeholder
 # rule of the family names the gap.
 _ZONE_MEMBER_RE = re.compile(r"^zone-member security (?P<zone>\S+)\s*$")
-_VLAN_FILTER_RE = re.compile(r"^vlan filter (?P<map>\S+) vlan-list (?P<vlans>[^\s,]*(?:\s*,\s*[^\s,]*)*)\s*$")
+_VLAN_FILTER_RE = re.compile(r"^vlan filter (?P<map>\S+) vlan-list ")
+_HAS_SPACE = re.compile(r"\s").search
 _DIRECTIONS = {"in": "in", "out": "out", "ingress": "in", "egress": "out"}
-_INTERFACE_STANZA_RE = re.compile(r"^interface (?P<name>\S.*?)\s*$")
+_INTERFACE_STANZA_RE = re.compile(r"^interface (?P<name>\S(?:.*\S)?)\s*$")
 
 # Maps a binding family to (rulebase uid segment, rulebase af, the reason that the
 # gate cannot read the entries of a list of the family). The IPv4 family reads
@@ -1993,6 +1994,23 @@ def _vlan_ids(spec: str) -> list[int] | None:
     return ids
 
 
+def _vlan_filter(line: str) -> tuple[str, str] | None:
+    """(access map, VLAN list) of a stripped `vlan filter <map> vlan-list <ids>`
+    line, or None.
+
+    The items of the list hold no whitespace. Whitespace can stand on each side
+    of a comma. The first item starts right after `vlan-list `.
+    """
+    m = _VLAN_FILTER_RE.match(line)
+    if m is None:
+        return None
+    vlans = line[m.end() :]
+    first, *rest = vlans.split(",")
+    if _HAS_SPACE(first.rstrip()) or any(_HAS_SPACE(item.strip()) for item in rest):
+        return None
+    return m["map"], vlans
+
+
 @debug_capture.traced
 def parse_vlan_filters(lines: list[str]) -> list[dict[str, str]]:
     """Parse global `vlan filter <map> vlan-list <ids>` lines into "vlan-map"
@@ -2006,15 +2024,16 @@ def parse_vlan_filters(lines: list[str]) -> list[dict[str, str]]:
     """
     out: list[dict[str, str]] = []
     for raw_line in lines:
-        m = _VLAN_FILTER_RE.match(raw_line.strip())
-        if not m:
+        found = _vlan_filter(raw_line.strip())
+        if found is None:
             continue
-        ids = _vlan_ids(m["vlans"])
+        access_map, vlans = found
+        ids = _vlan_ids(vlans)
         if ids is None:
-            logger.warning("vlan filter %s: VLAN list %r does not read; not bound", m["map"], m["vlans"])
+            logger.warning("vlan filter %s: VLAN list %r does not read; not bound", access_map, vlans)
             continue
         out.extend(
-            {"interface": f"Vlan{vid}", "direction": side, "acl": m["map"], "family": "vlan-map"}
+            {"interface": f"Vlan{vid}", "direction": side, "acl": access_map, "family": "vlan-map"}
             for vid in ids
             for side in ("in", "out")
         )
@@ -2520,7 +2539,7 @@ def acl_stage(b: GraphBuilder, inter: dict[str, Any], *, dev: str, scope: str) -
             )
 
 
-_IFNUM_RE = re.compile(r"^\s*[A-Za-z-]+\s*(?P<num>[0-9].*?)\s*$")
+_IFNUM_RE = re.compile(r"^\s*[A-Za-z-]+\s*(?P<num>[0-9](?:.*\S)?)\s*$")
 
 
 def _number_of(name: str) -> str | None:
@@ -3268,7 +3287,7 @@ def lldp_neighbor_rows(lldp_rows: list[dict[str, Any]], *, name_key: str) -> lis
 # A Nexus far end sends its CDP device id as `<hostname>(<serial>)`, with the
 # chassis serial in parentheses. The name can have a domain suffix. Every other
 # platform sends the hostname without parentheses, with or without the domain.
-_CDP_DEVICE_ID_RE = re.compile(r"^(?P<name>[^()]+?)\s*\((?P<serial>[^()]+)\)\s*$")
+_CDP_DEVICE_ID_RE = re.compile(r"^(?P<name>[^()\s](?:[^()]*[^()\s])?)\s*\((?P<serial>[^()]+)\)\s*$")
 
 
 def cdp_device_id(value: Any) -> tuple[str | None, str | None]:
@@ -3533,6 +3552,61 @@ def _mtu_entry(
     }
 
 
+# A head of the QoS policy or class names. The 2 heads of a pattern never start
+# at the same position.
+_QOS_POLICY_HEAD = re.compile(r"(?=(Service-policy(?: \(|:)|policy-map type network-qos))", re.IGNORECASE)
+_QOS_CLASS_HEAD = re.compile(r"(?=(Class-map(?: \(|:)|class type network-qos))", re.IGNORECASE)
+_QOS_NAME = re.compile(r"\s*(\S+)")
+_NXOS_MEMBER = re.compile(r"(?<![\w/.-])([\w/.-]+)\(([A-Za-z]+)\)")
+
+
+def _qos_name(head: re.Pattern[str], line: str) -> str | None:
+    """The first name after a head in `line`, or None.
+
+    A head that ends in `(` reads up to the first `)` after it, and a `:` must
+    follow that `)`. The name is the next run of non-whitespace.
+    """
+    close: int | None = None
+    for m in head.finditer(line):
+        end = m.start() + len(m[1])
+        if m[1].endswith("("):
+            if close is None or 0 <= close < end:
+                close = line.find(")", end)
+            if close == -1 or line[close + 1 : close + 2] != ":":
+                continue
+            end = close + 2
+        if name := _QOS_NAME.match(line, end):
+            return name[1]
+    return None
+
+
+def _is_xr_member_name(token: str) -> bool:
+    """Return whether `token` holds a digit after its first character, followed
+    only by word characters, dots and slashes."""
+    for char in reversed(token[1:]):
+        if char.isdecimal():
+            return True
+        if not (char.isalnum() or char in "_./"):
+            return False
+    return False
+
+
+def _nxos_members(line: str) -> list[tuple[str, str]]:
+    """The (port, status) pairs of a `show port-channel summary` line.
+
+    A pair is a word of word characters, `/`, `.` and `-`, followed by
+    `(<letters>)`. The port starts at the first ASCII letter of the word and
+    holds a digit after that letter.
+    """
+    out = []
+    for m in _NXOS_MEMBER.finditer(line):
+        word = m[1]
+        start = next((i for i, char in enumerate(word) if char.isascii() and char.isalpha()), None)
+        if start is not None and any(char.isdecimal() for char in word[start + 1 :]):
+            out.append((word[start:], m[2]))
+    return out
+
+
 @debug_capture.traced
 def parse_mtu(raw: dict[str, Any], inter: dict[str, Any], *, family: str, config_command: str) -> None:
     """Join optional command evidence only to interfaces present in inventory.
@@ -3729,18 +3803,12 @@ def parse_mtu(raw: dict[str, Any], inter: dict[str, Any], *, family: str, config
                     re.IGNORECASE,
                 )
             else:
-                policy_match = re.search(
-                    r"(?:Service-policy(?: \([^)]*\))?:|policy-map type network-qos)\s*(\S+)",
-                    line,
-                    re.IGNORECASE,
-                )
-                class_match = re.search(
-                    r"(?:Class-map(?: \([^)]*\))?:|class type network-qos)\s*(\S+)", line, re.IGNORECASE
-                )
-                if policy_match:
-                    policy, traffic_class = policy_match[1], None
-                if class_match:
-                    traffic_class = class_match[1]
+                policy_name = _qos_name(_QOS_POLICY_HEAD, line)
+                class_name = _qos_name(_QOS_CLASS_HEAD, line)
+                if policy_name is not None:
+                    policy, traffic_class = policy_name, None
+                if class_name is not None:
+                    traffic_class = class_name
                 match = re.search(r"\bmtu[ :]+(\S+)", line, re.IGNORECASE)
             if match:
                 add(
@@ -3816,12 +3884,12 @@ def parse_mtu(raw: dict[str, Any], inter: dict[str, Any], *, family: str, config
                 aggregate, aggregate_up = f"Bundle-Ether{match[1]}", None
             elif line.strip().startswith("Bundle-"):
                 aggregate = None
-            state = re.match(r"\s+Status:\s+(.+?)\s*$", line)
+            state = re.match(r"\s+Status:(\s.+)", line)
             if state:
-                aggregate_up = state[1] == "Up"
+                aggregate_up = state[1].strip() == "Up"
             # Foreign mLACP members are not ports of the local device.
-            member = re.match(r"\s*(\S+\d[\w./]*)\s+Local\s+(\S+)\b", line)
-            found = [(member[1], member[2])] if member else []
+            member = re.match(r"\s*(\S+)\s+Local\s+(\S+)\b", line)
+            found = [(member[1], member[2])] if member and _is_xr_member_name(member[1]) else []
         else:
             match = re.match(r"\s*\d+\s+(Po\d+)\((\w+)\)", line)
             if match:
@@ -3829,7 +3897,7 @@ def parse_mtu(raw: dict[str, Any], inter: dict[str, Any], *, family: str, config
                 line = line[match.end() :]
             elif line.strip() and not line[0].isspace():
                 aggregate = None
-            found = re.findall(r"([A-Za-z][\w/.-]*\d[\w/.-]*)\(([A-Za-z]+)\)", line)
+            found = _nxos_members(line)
         if aggregate:
             for member_name, status in found:
                 eligible = (

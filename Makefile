@@ -45,12 +45,20 @@ no-run-data:  ## Fail if collected data, dumps or sealed secrets are tracked
 CHART   := deploy/helm/hst
 # helm lint and helm template render only with the 3 secrets and a peer in
 # networkPolicy.ingressFrom. The values are placeholders.
-HELM_NO_PEERS := --set secrets.secretKey=lint --set secrets.neo4jPassword=lint --set secrets.postgresPassword=lint
+# The bundled Neo4j and Postgres without tls.serverSecret render only with the 2
+# acceptInsecure values.
+HELM_PLAIN_DB := --set neo4j.acceptInsecure=true --set postgres.acceptInsecure=true
+HELM_NO_PEERS := --set secrets.secretKey=lint --set secrets.neo4jPassword=lint --set secrets.postgresPassword=lint \
+  $(HELM_PLAIN_DB)
 HELM_FAKE := $(HELM_NO_PEERS) \
   --set-json 'networkPolicy.ingressFrom=[{"namespaceSelector":{"matchLabels":{"kubernetes.io/metadata.name":"ingress"}}}]'
 
 # The default values (ingress on, TLS off) render only with ingress.acceptInsecureHttp=true.
 HELM_INSECURE_OK := --set ingress.acceptInsecureHttp=true
+
+# The TLS listeners of the bundled Neo4j and Postgres.
+HELM_DB_TLS := --set neo4j.tls.enabled=true --set neo4j.tls.caSecret=db-tls --set neo4j.tls.serverSecret=db-tls \
+  --set postgres.tls.enabled=true --set postgres.tls.caSecret=db-tls --set postgres.tls.serverSecret=db-tls
 
 # The values of the backup CronJob, without backup.s3.endpoint.
 HELM_BACKUP := --set backup.enabled=true --set backup.s3.bucket=b \
@@ -74,6 +82,13 @@ helm-check:  ## Lint the chart and prove it renders, with bundled and external b
 	@helm template lint-bundled $(CHART) $(HELM_FAKE) $(HELM_INSECURE_OK) \
 	  --show-only templates/networkpolicy.yaml | grep -q 'name: lint-bundled-hst-app$$' \
 	  || (echo "the default render has no NetworkPolicy for the app pod"; exit 1)
+	@# The default egress rules exclude the cloud metadata range, and egress.enabled=false removes them.
+	@helm template lint-bundled $(CHART) $(HELM_FAKE) $(HELM_INSECURE_OK) \
+	  --show-only templates/networkpolicy.yaml | grep -q -- '- 169.254.0.0/16$$' \
+	  || (echo "the default egress rules do not exclude 169.254.0.0/16"; exit 1)
+	@! helm template lint-no-egress $(CHART) $(HELM_FAKE) $(HELM_INSECURE_OK) --set networkPolicy.egress.enabled=false \
+	  --show-only templates/networkpolicy.yaml | grep -q 'ipBlock' \
+	  || (echo "networkPolicy.egress.enabled=false rendered an egress ipBlock"; exit 1)
 	@# app.forwardedAllowIps without a peer in networkPolicy.ingressFrom must fail.
 	@! helm template lint-no-peers $(CHART) $(HELM_NO_PEERS) $(HELM_INSECURE_OK) >/dev/null 2>&1 \
 	  || (echo "chart rendered app.forwardedAllowIps without networkPolicy.ingressFrom"; exit 1)
@@ -90,13 +105,23 @@ helm-check:  ## Lint the chart and prove it renders, with bundled and external b
 	@! helm template lint-insecure $(CHART) $(HELM_FAKE) >/dev/null 2>&1 \
 	  || (echo "chart rendered ingress without TLS and without acceptInsecureHttp"; exit 1)
 	@# A non-loopback external Neo4j without TLS and without neo4j.acceptInsecure must fail.
-	@! helm template lint-neo4j-insecure $(CHART) $(HELM_FAKE) $(HELM_INSECURE_OK) \
+	@! helm template lint-neo4j-insecure $(CHART) $(HELM_FAKE) $(HELM_INSECURE_OK) --set neo4j.acceptInsecure=false \
 	  --set neo4j.enabled=false --set neo4j.externalUri=bolt://neo4j.example:7687 >/dev/null 2>&1 \
 	  || (echo "chart rendered a non-loopback external neo4j without TLS or acceptInsecure"; exit 1)
 	@# A non-loopback external Postgres without TLS and without postgres.acceptInsecure must fail.
-	@! helm template lint-postgres-insecure $(CHART) $(HELM_FAKE) $(HELM_INSECURE_OK) \
+	@! helm template lint-postgres-insecure $(CHART) $(HELM_FAKE) $(HELM_INSECURE_OK) --set postgres.acceptInsecure=false \
 	  --set postgres.enabled=false --set postgres.externalDsn=postgresql+asyncpg://u:p@pg.example:5432/d >/dev/null 2>&1 \
 	  || (echo "chart rendered a non-loopback external postgres without TLS or acceptInsecure"; exit 1)
+	@# The bundled Neo4j or Postgres without tls.serverSecret and without acceptInsecure must fail.
+	@helm template lint-neo4j-plain $(CHART) $(HELM_FAKE) $(HELM_INSECURE_OK) --set neo4j.acceptInsecure=false 2>&1 \
+	  | grep -q 'neo4j.enabled=true with an empty neo4j.tls.serverSecret' \
+	  || (echo "chart rendered the bundled neo4j without TLS or acceptInsecure"; exit 1)
+	@helm template lint-postgres-plain $(CHART) $(HELM_FAKE) $(HELM_INSECURE_OK) --set postgres.acceptInsecure=false 2>&1 \
+	  | grep -q 'postgres.enabled=true with an empty postgres.tls.serverSecret' \
+	  || (echo "chart rendered the bundled postgres without TLS or acceptInsecure"; exit 1)
+	@# The bundled Neo4j and Postgres with their TLS listeners render without acceptInsecure.
+	helm template lint-db-tls $(CHART) $(HELM_FAKE) $(HELM_INSECURE_OK) $(HELM_DB_TLS) \
+	  --set neo4j.acceptInsecure=false --set postgres.acceptInsecure=false > /dev/null
 	@# tls.enabled=true without tls.caSecret must fail.
 	@! helm template lint-neo4j-tls-missing-ca $(CHART) $(HELM_FAKE) $(HELM_INSECURE_OK) --set neo4j.tls.enabled=true >/dev/null 2>&1 \
 	  || (echo "chart rendered neo4j.tls.enabled=true without a caSecret"; exit 1)
@@ -280,7 +305,7 @@ check-db: ## The three database suites against the test-stack, with CI's env val
 # With REGISTRY unset, k8s-image builds the image and side-loads it into the kind node.
 # With REGISTRY set, k8s-image builds the image and pushes it to that registry.
 #
-#   make k8s-image k8s-install INGRESS_NS=ingress-nginx INGRESS_INSECURE_HTTP=true   # kind
+#   make k8s-image k8s-install INGRESS_NS=ingress-nginx INGRESS_INSECURE_HTTP=true DB_INSECURE=true   # kind
 #   make k8s-image k8s-install REGISTRY=harbor.example/hst \
 #        INGRESS_CLASS=traefik INGRESS_HOST=hst.example \
 #        INGRESS_NS=traefik INGRESS_TLS_SECRET=hst-tls                               # any other cluster
@@ -319,6 +344,9 @@ INGRESS_NS    ?=
 # auth.cookieSecure=true. INGRESS_INSECURE_HTTP=true installs the ingress on plain HTTP.
 INGRESS_TLS_SECRET    ?=
 INGRESS_INSECURE_HTTP ?=
+# DB_INSECURE=true installs the bundled Neo4j and Postgres without TLS. It sets
+# neo4j.acceptInsecure and postgres.acceptInsecure.
+DB_INSECURE           ?=
 SECRET_NAME   ?= hst-secrets
 # The timeout of `helm upgrade --wait`.
 HELM_TIMEOUT  ?= 3m
@@ -370,6 +398,7 @@ k8s-install:  ## Install/upgrade the release. Run k8s-secret first.
 	  --set-json 'networkPolicy.ingressFrom=[{"namespaceSelector":{"matchLabels":{"kubernetes.io/metadata.name":"$(INGRESS_NS)"}}}]' \
 	  $(if $(INGRESS_TLS_SECRET),--set ingress.tls.enabled=true --set ingress.tls.secretName=$(INGRESS_TLS_SECRET) --set auth.cookieSecure=true) \
 	  $(if $(filter true,$(INGRESS_INSECURE_HTTP)),--set ingress.acceptInsecureHttp=true) \
+	  $(if $(filter true,$(DB_INSECURE)),--set neo4j.acceptInsecure=true --set postgres.acceptInsecure=true) \
 	  $(HELM_EXTRA) \
 	  --wait --timeout $(HELM_TIMEOUT)
 

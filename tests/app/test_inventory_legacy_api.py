@@ -183,7 +183,12 @@ async def test_an_edit_of_a_stored_zia_connection_is_refused_only_for_the_tenant
         [conn] = [c for c in response.json() if c["name"] == "zia-acme"]
         url = f"/api/inventory/connections/{conn['id']}"
         edit = {"vanity_domain": "acme2", "tenant": "acme", "location_sites": ""}
-        response = await client.patch(url, json={"expected_revision": conn["revision"], "config": edit})
+        body = {"expected_revision": conn["revision"], "config": edit}
+        refused = await client.patch(url, json=body)
+        assert refused.status_code == 422, refused.text
+        assert refused.json()["detail"] == {"credentials": ["auth.client_secret"]}
+        body["secrets"] = {"auth.client_secret": "typed-again"}
+        response = await client.patch(url, json=body)
         assert response.status_code == 200, response.text
         revision = response.json()["revision"]
         refused = await client.patch(url, json={"expected_revision": revision, "config": {"tenant": "other"}})

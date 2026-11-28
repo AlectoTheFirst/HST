@@ -58,6 +58,12 @@ template, so every render runs it.
 {{- if and .Values.postgres.tls.serverSecret (not .Values.postgres.tls.enabled) -}}
 {{- fail "postgres.tls.serverSecret turns on TLS in the bundled Postgres, and postgres.tls.enabled=false leaves the app connecting without verifying it. Set postgres.tls.enabled=true with postgres.tls.caSecret holding the CA of the server certificate." -}}
 {{- end -}}
+{{- if and .Values.neo4j.enabled (not .Values.neo4j.tls.serverSecret) (not .Values.neo4j.acceptInsecure) -}}
+{{- fail "neo4j.enabled=true with an empty neo4j.tls.serverSecret: the bundled Neo4j has no TLS listener, and the bolt session, including the admin password, crosses the pod network in the clear. Set neo4j.tls.serverSecret with neo4j.tls.enabled=true and neo4j.tls.caSecret, or, if the pod network is encrypted or trusted some other way, accept the risk explicitly with neo4j.acceptInsecure=true." -}}
+{{- end -}}
+{{- if and .Values.postgres.enabled (not .Values.postgres.tls.serverSecret) (not .Values.postgres.acceptInsecure) -}}
+{{- fail "postgres.enabled=true with an empty postgres.tls.serverSecret: the bundled Postgres has no TLS listener, and the session, including credentials, crosses the pod network in the clear. Set postgres.tls.serverSecret with postgres.tls.enabled=true and postgres.tls.caSecret, or, if the pod network is encrypted or trusted some other way, accept the risk explicitly with postgres.acceptInsecure=true." -}}
+{{- end -}}
 {{- if and .Values.neo4j.externalUri (not .Values.neo4j.tls.enabled) (not .Values.neo4j.acceptInsecure) (eq (include "hst.isLoopbackHost" .Values.neo4j.externalUri) "false") -}}
 {{- fail "neo4j.externalUri points at a non-loopback host with neo4j.tls.enabled=false: the bolt session, including the admin password, crosses the network in the clear. Set neo4j.tls.enabled=true (with neo4j.tls.caSecret), or, if this hop is already encrypted or trusted some other way, accept the risk explicitly with neo4j.acceptInsecure=true." -}}
 {{- end -}}

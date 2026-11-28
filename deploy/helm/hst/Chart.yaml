@@ -3,7 +3,7 @@ name: hst
 description: Network digital twin on Neo4j with a layered topology and policy graph
 type: application
 # Chart version moves on chart changes; appVersion tracks src/hst/__init__.py.
-version: 0.9.7
+version: 0.11.0
 appVersion: "0.1.0"
 kubeVersion: ">=1.27.0-0"
 home: https://github.com/AlectoTheFirst/HST

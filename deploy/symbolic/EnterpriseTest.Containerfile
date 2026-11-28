@@ -257,7 +257,7 @@ RUN set -eu; \
     .venv/bin/python -c 'import urllib.request; urllib.request.urlretrieve("https://get.helm.sh/helm-v3.16.4-linux-amd64.tar.gz", "/tmp/helm.tgz")'; \
     echo "fc307327959aa38ed8f9f7e66d45492bb022a66c3e5da6063958254b9767d179  /tmp/helm.tgz" | sha256sum -c -; \
     tar -xzf /tmp/helm.tgz -C /tmp; helm=/tmp/linux-amd64/helm; \
-    fake='--set secrets.secretKey=lint --set secrets.neo4jPassword=lint --set secrets.postgresPassword=lint --set ingress.acceptInsecureHttp=true --set app.forwardedAllowIps='; \
+    fake='--set secrets.secretKey=lint --set secrets.neo4jPassword=lint --set secrets.postgresPassword=lint --set ingress.acceptInsecureHttp=true --set neo4j.acceptInsecure=true --set postgres.acceptInsecure=true --set app.forwardedAllowIps='; \
     $helm template standard deploy/helm/hst $fake > /tmp/standard.yaml; \
     $helm template enterprise deploy/helm/hst $fake --set analysis.profile=enterprise > /tmp/enterprise.yaml; \
     grep -A1 'name: ANALYSIS_MEMORY_MB' /tmp/enterprise.yaml | grep -q 'value: "2048"'; \

@@ -18,6 +18,8 @@ SECRETS = [
 ]  # fmt: skip
 BACKUP = [
     "--set", "ingress.acceptInsecureHttp=true",
+    "--set", "neo4j.acceptInsecure=true",
+    "--set", "postgres.acceptInsecure=true",
     "--set", "networkPolicy.ingressFrom[0].namespaceSelector.matchLabels.ns=ingress",
     "--set", "backup.enabled=true",
     "--set", "backup.s3.bucket=b",

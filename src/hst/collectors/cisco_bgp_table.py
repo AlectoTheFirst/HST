@@ -82,8 +82,8 @@ _IPV4_ADDRESS = re.compile(_IPV4).fullmatch
 _IPV4_NETWORK = re.compile(rf"{_IPV4}(?:/(?:3[0-2]|[12]?[0-9]))?").fullmatch
 # The pattern matches the characters of an IPv6 address and a required length.
 # `_ipv6` checks the address.
-_IPV6_NETWORK = re.compile(r"([0-9A-Fa-f:.]*:[0-9A-Fa-f:.]*)/(?:12[0-8]|1[01][0-9]|[1-9]?[0-9])").fullmatch
-_IPV6_CHARS = re.compile(r"[0-9A-Fa-f:.]*:[0-9A-Fa-f:.]*").fullmatch
+_IPV6_NETWORK = re.compile(r"([0-9A-Fa-f.]*:[0-9A-Fa-f:.]*)/(?:12[0-8]|1[01][0-9]|[1-9]?[0-9])").fullmatch
+_IPV6_CHARS = re.compile(r"[0-9A-Fa-f.]*:[0-9A-Fa-f:.]*").fullmatch
 
 # An origin printed against the last AS path token ("65200i", "{65001,65002}?").
 _GLUED_ORIGIN = re.compile(r"([0-9{}(),.]+)([ie?])").fullmatch
