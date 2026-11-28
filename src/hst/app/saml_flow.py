@@ -276,9 +276,19 @@ def build_sp_metadata_xml(*, entity_id: str, acs_url: str, sp_cert_pem: str) -> 
 
 
 @contextmanager
-def _sp_client(*, entity_id: str, acs_url: str, sp_key_pem: str, sp_cert_pem: str, idp_metadata_xml: str):
-    """A Saml2Client with this provider's SP keypair and the cached IdP
-    metadata. An unsigned response is rejected.
+def _sp_client(
+    *,
+    entity_id: str,
+    acs_url: str,
+    sp_key_pem: str,
+    sp_cert_pem: str,
+    idp_metadata_xml: str,
+    idp_entity_id: str,
+):
+    """A Saml2Client with this provider's SP keypair and only the entity
+    `idp_entity_id` of the cached IdP metadata. An unsigned response is
+    rejected. Raises SsoLoginError when the metadata has no IdP entity
+    `idp_entity_id`.
     """
     with saml_tempfiles(), tempfile.TemporaryDirectory() as tmp:
         key_path = Path(tmp) / "sp-key.pem"
@@ -305,7 +315,19 @@ def _sp_client(*, entity_id: str, acs_url: str, sp_key_pem: str, sp_cert_pem: st
             "metadata": {"inline": [idp_metadata_xml]},
         }
         config = SPConfig().load(cnf)
+        _keep_only_entity(config.metadata, idp_entity_id)
         yield Saml2Client(config=config)
+
+
+def _keep_only_entity(mds: Any, idp_entity_id: str) -> None:
+    """Delete each entity except `idp_entity_id` from the pysaml2 MetadataStore `mds`."""
+    for loaded in mds.metadata.values():
+        for other in [eid for eid, _entity in loaded.items() if eid != idp_entity_id]:
+            del loaded[other]
+    if mds.identity_providers() != [idp_entity_id]:
+        raise SsoLoginError(
+            f"IdP metadata has no EntityDescriptor with an IDPSSODescriptor for {idp_entity_id!r}"
+        )
 
 
 def _provider_secret(settings: Settings, provider: AuthProvider) -> str:
@@ -357,6 +379,7 @@ async def start_login(
             sp_key_pem=sp_key_pem,
             sp_cert_pem=sp_cert_pem,
             idp_metadata_xml=idp_metadata_xml,
+            idp_entity_id=idp_entity_id,
         ) as client:
             request_id, info = client.prepare_for_authenticate(
                 entityid=idp_entity_id, binding=saml2.BINDING_HTTP_REDIRECT, sign=True
@@ -400,6 +423,28 @@ def _audience_is(assertion: Any, entity_id: str) -> bool:
         any(audience.text and audience.text.strip() == entity_id for audience in restriction.audience or [])
         for restriction in restrictions
     )
+
+
+def _check_issuers(authn_resp: Any, idp_entity_id: str) -> None:
+    """Raise SsoLoginError unless the Issuer of the Response and the Issuer of
+    each assertion of the pysaml2 AuthnResponse `authn_resp` are `idp_entity_id`.
+
+    pysaml2 verifies a signature with the certificates of the Issuer in the
+    message.
+    """
+    response_issuer = authn_resp.issuer()
+    if response_issuer != idp_entity_id:
+        raise SsoLoginError(
+            f"the Issuer of the SAML response is {response_issuer!r}, expected {idp_entity_id!r}"
+        )
+    if not authn_resp.assertions:
+        raise SsoLoginError("the SAML response has no assertion")
+    for assertion in authn_resp.assertions:
+        issuer = (
+            assertion.issuer.text.strip() if assertion.issuer is not None and assertion.issuer.text else ""
+        )
+        if issuer != idp_entity_id:
+            raise SsoLoginError(f"the Issuer of an assertion is {issuer!r}, expected {idp_entity_id!r}")
 
 
 def _in_response_to(saml_response_b64: str) -> str:
@@ -453,7 +498,7 @@ async def complete_saml_login(
     if pending is None:
         raise SsoLoginError("no matching pending SAML request (unsolicited, expired, or already used)")
 
-    idp_metadata_xml, _idp_entity_id = _cached_idp_metadata(provider)
+    idp_metadata_xml, idp_entity_id = _cached_idp_metadata(provider)
     sp_key_pem = _provider_secret(settings, provider)
     sp_cert_pem = provider.config.get(SP_CERT_CONFIG_KEY, "")
     if not sp_cert_pem:
@@ -466,6 +511,7 @@ async def complete_saml_login(
             sp_key_pem=sp_key_pem,
             sp_cert_pem=sp_cert_pem,
             idp_metadata_xml=idp_metadata_xml,
+            idp_entity_id=idp_entity_id,
         ) as client:
             return client.parse_authn_request_response(
                 saml_response_b64, saml2.BINDING_HTTP_POST, outstanding={in_response_to: "/"}
@@ -473,11 +519,14 @@ async def complete_saml_login(
 
     try:
         authn_resp = await asyncio.to_thread(_verify)
+    except SsoLoginError:
+        raise
     except Exception as exc:
         raise SsoLoginError(f"assertion validation failed: {type(exc).__name__}: {exc}") from exc
 
     if authn_resp is None or not authn_resp.name_id or not authn_resp.name_id.text:
         raise SsoLoginError("SAML response carried no usable assertion or NameID")
+    _check_issuers(authn_resp, idp_entity_id)
     assertions = authn_resp.assertions or [authn_resp.assertion]
     if not all(_audience_is(assertion, entity_id) for assertion in assertions):
         raise SsoLoginError(f"an assertion has no AudienceRestriction that holds {entity_id!r}")
