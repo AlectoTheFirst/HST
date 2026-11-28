@@ -3,8 +3,8 @@
 Validation has 5 stages.
 
 1. The YAML syntax and the bounds.
-2. The schema and its internal references. `parse_application_source` runs
-   stages 1 and 2, and its errors have a line and a column.
+2. The schema and its internal references. `parse_application_bounded` runs
+   stages 1 and 2 in a parse slot, and its errors have a line and a column.
 3. The inventory references at the snapshot. A resolver that the caller
    supplies resolves the complete definition for the base revision.
 4. On request, the flow evaluation of each ready connection in
@@ -45,7 +45,7 @@ from hst.applications.yaml_format import (
     FormatIssue,
     definition_digest,
     normalized_document,
-    parse_application_source,
+    parse_application_bounded,
 )
 from hst.assessment.evaluation import MAX_MEMBERS, MAX_SOURCES
 
@@ -109,7 +109,8 @@ async def validate_application(
     preview. The mapping issues of the preview are the resolution issues of
     the inventory members at `snapshot`. With `evaluate`, `flows` holds the
     stage 4 record of each connection. `flows` is None without `evaluate` or
-    when stage 1 or 2 fails. The store is only read.
+    when stage 1 or 2 fails. The store is only read. `ParseBusy` is raised
+    when no parse slot is free.
     """
     result: dict[str, Any] = {
         "errors": [],
@@ -122,7 +123,7 @@ async def validate_application(
         "snapshot": snapshot,
     }
     try:
-        parsed = parse_application_source(yaml_text, partial=mode == "merge")
+        parsed = await parse_application_bounded(yaml_text, partial=mode == "merge")
     except ApplicationFormatError as exc:
         return _with_errors(result, exc.errors)
     document = parsed.document

@@ -2,14 +2,17 @@
 
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import json
+import threading
 from collections.abc import Sequence
 from dataclasses import asdict, dataclass
 from typing import Any, TypeVar
 
 import yaml
 from pydantic import ValidationError
+from pydantic_core import ErrorDetails
 from yaml.composer import ComposerError
 from yaml.constructor import ConstructorError
 from yaml.error import MarkedYAMLError
@@ -20,6 +23,18 @@ from hst.applications.models import NEW_REVISION, BusinessApplicationDefinition,
 
 MAX_YAML_BYTES = 1024 * 1024
 MAX_YAML_DEPTH = 32
+# A schema error result lists the first MAX_FORMAT_ISSUES errors and one `$`
+# issue with the total count.
+MAX_FORMAT_ISSUES = 100
+# The parse slots of the process. `parse_application_bounded` runs at most
+# MAX_CONCURRENT_PARSES parses at once. At most MAX_WAITING_PARSES callers wait
+# for a slot, each for at most PARSE_WAIT_S seconds.
+MAX_CONCURRENT_PARSES = 2
+MAX_WAITING_PARSES = 8
+PARSE_WAIT_S = 30.0
+_PARSE_POLL_S = 0.05
+_PARSE_SLOTS = threading.BoundedSemaphore(MAX_CONCURRENT_PARSES)
+_waiting = 0
 T = TypeVar("T", BusinessApplicationDefinition, BusinessApplicationPatch)
 
 
@@ -54,6 +69,14 @@ class ApplicationFormatError(ValueError):
         self.errors: list[FormatIssue] = list(errors) if errors else [FormatIssue("$", message)]
 
 
+class ParseBusy(Exception):
+    """No parse slot became free within PARSE_WAIT_S seconds, or
+    MAX_WAITING_PARSES callers already wait."""
+
+    def __init__(self) -> None:
+        super().__init__("Business Application parsing is busy")
+
+
 @dataclass(frozen=True)
 class ParsedApplication:
     """A validated document with the mapping as written and its YAML node tree."""
@@ -63,7 +86,7 @@ class ParsedApplication:
     node: Node
 
     def issue(self, loc: Sequence[int | str], message: str) -> FormatIssue:
-        line, column = _position(self.node, loc)
+        line, column = _position(self.node, loc, {})
         return FormatIssue(_path(loc), message, line, column)
 
 
@@ -123,40 +146,93 @@ def parse_application_source(text: str, *, partial: bool = False) -> ParsedAppli
     try:
         document = model.model_validate(value, context={NEW_REVISION: True})
     except ValidationError as exc:
-        issues = []
-        for error in exc.errors(include_url=False):
-            line, column = _position(node, error["loc"])
-            issues.append(FormatIssue(_path(error["loc"]), error["msg"], line, column))
+        issues = _schema_issues(node, exc.errors(include_url=False))
         raise ApplicationFormatError(
             "; ".join(f"{issue.path}: {issue.message}" for issue in issues), issues
         ) from exc
     return ParsedApplication(document, value, node)
 
 
+async def parse_application_bounded(text: str, *, partial: bool = False) -> ParsedApplication:
+    """`parse_application_source` in a worker thread that holds one of the
+    MAX_CONCURRENT_PARSES parse slots. The caller waits on the event loop for a
+    slot. `ParseBusy` is raised when MAX_WAITING_PARSES callers already wait or
+    no slot is free after PARSE_WAIT_S seconds. The thread releases the slot
+    when the parse ends, also after the caller is cancelled."""
+    global _waiting
+    loop = asyncio.get_running_loop()
+    if not _PARSE_SLOTS.acquire(blocking=False):
+        if _waiting >= MAX_WAITING_PARSES:
+            raise ParseBusy()
+        _waiting += 1
+        try:
+            deadline = loop.time() + PARSE_WAIT_S
+            while not _PARSE_SLOTS.acquire(blocking=False):
+                if loop.time() >= deadline:
+                    raise ParseBusy()
+                await asyncio.sleep(_PARSE_POLL_S)
+        finally:
+            _waiting -= 1
+    try:
+        future = loop.run_in_executor(None, _parse_in_slot, text, partial)
+    except BaseException:
+        _PARSE_SLOTS.release()
+        raise
+    # A cancelled caller leaves the executor job to run and release its slot.
+    return await asyncio.shield(future)
+
+
+def _parse_in_slot(text: str, partial: bool) -> ParsedApplication:
+    try:
+        return parse_application_source(text, partial=partial)
+    finally:
+        _PARSE_SLOTS.release()
+
+
+def _schema_issues(node: Node, errors: list[ErrorDetails]) -> list[FormatIssue]:
+    """The issues of the first MAX_FORMAT_ISSUES errors, and a `$` issue with
+    the total count when there are more."""
+    index: dict[int, dict[str, tuple[ScalarNode, Node]]] = {}
+    issues = []
+    for error in errors[:MAX_FORMAT_ISSUES]:
+        line, column = _position(node, error["loc"], index)
+        issues.append(FormatIssue(_path(error["loc"]), error["msg"], line, column))
+    if len(errors) > MAX_FORMAT_ISSUES:
+        message = (
+            f"the document has {len(errors)} schema errors and the list holds the first {MAX_FORMAT_ISSUES}"
+        )
+        issues.append(FormatIssue("$", message))
+    return issues
+
+
 def _path(loc: Sequence[int | str]) -> str:
     return ".".join(str(part) for part in loc) or "$"
 
 
-def _position(node: Node, loc: Sequence[int | str]) -> tuple[int | None, int | None]:
+def _position(
+    node: Node, loc: Sequence[int | str], index: dict[int, dict[str, tuple[ScalarNode, Node]]]
+) -> tuple[int | None, int | None]:
     """The line and column, from 1, of the deepest key or list item on `loc`.
 
     The walk follows mapping keys by their text and list items by index. A
     location part the tree does not hold, such as a missing field or the
     member name pydantic adds for a union type, ends the walk at the node
     before it. The empty location is the whole document and has no position.
+    `index` maps the id of each mapping node the walk entered to its scalar
+    keys by text. The first key of a text wins. Calls on the same tree share
+    one `index`.
     """
     mark = None
     current = node
     for part in loc:
         if isinstance(current, MappingNode):
-            entry = next(
-                (
-                    (key, value)
-                    for key, value in current.value
-                    if isinstance(key, ScalarNode) and key.value == str(part)
-                ),
-                None,
-            )
+            keys = index.get(id(current))
+            if keys is None:
+                keys = index[id(current)] = {}
+                for key, value in current.value:
+                    if isinstance(key, ScalarNode):
+                        keys.setdefault(key.value, (key, value))
+            entry = keys.get(str(part))
             if entry is None:
                 break
             mark, current = entry[0].start_mark, entry[1]

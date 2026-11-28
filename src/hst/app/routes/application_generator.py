@@ -58,7 +58,7 @@ from hst.applications import generator
 from hst.applications import service as application_service
 from hst.applications.models import BusinessApplicationDefinition, Identifier, stored_definition
 from hst.applications.validation import record_validation, validate_application
-from hst.applications.yaml_format import normalized_document
+from hst.applications.yaml_format import ParseBusy, normalized_document
 from hst.assessment import service as assessment_service
 from hst.core import db as dbmod
 from hst.core import snapshot as snapshotmod
@@ -163,7 +163,7 @@ async def _validate(
 ) -> dict:
     """The `POST .../validate` result of the draft's YAML at the generation's
     snapshot, in replace mode, with the import preview only for a caller who
-    may commit."""
+    may commit. A parse that gets no parse slot gives a failed validation."""
     from hst.app.routes.business_applications import _resolve_graph
 
     async def resolve(definition: BusinessApplicationDefinition, revision: int) -> dict:
@@ -181,15 +181,16 @@ async def _validate(
             application_id=draft.definition.id if draft.definition is not None else None,
             include_preview=can_commit and draft.definition is not None,
         )
-    except ValueError as exc:
+    except (ValueError, ParseBusy) as exc:
         return _failed_validation(reference, str(exc))
 
 
 def _failed_validation(reference: dict, message: str) -> dict:
     """The validation result of a draft whose validation raised, such as a
     resolution over its address bound. The result has the error on `$`. The
-    error blocks a save and the ready state. `POST .../validate` answers 422
-    with the same message. The draft keeps its YAML and its report."""
+    error blocks a save and the ready state. `POST .../validate` answers 422,
+    or 503 for a busy parse, with the same message. The draft keeps its YAML
+    and its report."""
     return {
         "errors": [{"path": "$", "message": message, "line": None, "column": None}],
         "warnings": [],
