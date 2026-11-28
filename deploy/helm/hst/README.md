@@ -34,12 +34,20 @@ helm upgrade --install hst deploy/helm/hst -n hst \
   --set ingress.host=hst.example.com \
   --set ingress.tls.enabled=true --set ingress.tls.secretName=hst-tls \
   --set auth.cookieSecure=true \
+  --set neo4j.tls.enabled=true --set neo4j.tls.caSecret=hst-db-tls --set neo4j.tls.serverSecret=hst-db-tls \
+  --set postgres.tls.enabled=true --set postgres.tls.caSecret=hst-db-tls --set postgres.tls.serverSecret=hst-db-tls \
   --set-json 'networkPolicy.ingressFrom=[{"namespaceSelector":{"matchLabels":{"kubernetes.io/metadata.name":"ingress-nginx"}}}]' \
   --wait
 ```
 
 The chart refuses to render an ingress without TLS. `ingress.acceptInsecureHttp=true`
 installs the ingress on plain HTTP.
+
+The chart refuses to render the bundled Neo4j or Postgres without its TLS listener
+(`tls.serverSecret`). `hst-db-tls` is a `kubernetes.io/tls` Secret with the key `ca.crt`,
+such as a cert-manager Secret. Its certificate has the names `hst-neo4j` and
+`hst-postgres`. `neo4j.acceptInsecure=true` and `postgres.acceptInsecure=true` install
+the bundled databases without TLS.
 
 `networkPolicy.ingressFrom` takes the namespace or the pods of the ingress controller.
 The chart refuses to render `app.forwardedAllowIps` without a peer. See "Access to the
@@ -128,8 +136,9 @@ false, runs `hst migrate` in a Job, and holds the app pods behind an init contai
 
 ### Database access
 
-`networkPolicy.enabled`, on by default, controls access to the databases. Bolt is
-unencrypted unless `neo4j.tls.serverSecret` is set. The CNI must enforce NetworkPolicy.
+`networkPolicy.enabled`, on by default, controls access to the databases. Bolt and the
+Postgres session are unencrypted with `neo4j.acceptInsecure=true` and
+`postgres.acceptInsecure=true`. The CNI must enforce NetworkPolicy.
 Verify that ingress is blocked:
 
 ```
@@ -221,7 +230,8 @@ podman inspect <cluster>-control-plane --format '{{json .HostConfig.PortBindings
 | `app.forwardedAllowIps` | private and loopback ranges | `HST_FORWARDED_ALLOW_IPS` of the app pod, set only with `ingress.enabled=true`. It lists the proxies whose `X-Forwarded-For` and `X-Forwarded-Proto` the app accepts. A value requires `networkPolicy.enabled=true` and a peer in `networkPolicy.ingressFrom`. The ingress must replace the `X-Forwarded-For` of a client. `""` trusts no proxy. An entry in `app.extraEnv` replaces the value, and the chart does not check that entry |
 | `networkPolicy.ingressFrom` | `[]` | The NetworkPolicy `from` peers that reach port 8787 of the app pod: the pods of the ingress controller. Empty renders no policy for the app pod. See "Access to the app pod" |
 | `networkPolicy.dnsTo` | `[]` | The `to` peers of the DNS egress rule of the databases. Empty allows port 53 to any host |
-| `neo4j.tls.serverSecret` / `postgres.tls.serverSecret` | `""` | Opt-in TLS listener of the bundled database: a `kubernetes.io/tls` Secret whose certificate names `<fullname>-neo4j` / `<fullname>-postgres`. Requires `tls.enabled=true` and `tls.caSecret` for the same database |
+| `neo4j.tls.serverSecret` / `postgres.tls.serverSecret` | `""` | TLS listener of the bundled database: a `kubernetes.io/tls` Secret whose certificate names `<fullname>-neo4j` / `<fullname>-postgres`. Requires `tls.enabled=true` and `tls.caSecret` for the same database. The bundled database renders without it only with `acceptInsecure=true` |
+| `neo4j.acceptInsecure` / `postgres.acceptInsecure` | `false` | `true` renders the bundled database without `tls.serverSecret`, and a non-loopback `neo4j.externalUri` / `postgres.externalDsn` without `tls.enabled` |
 | `app.persistence.enabled` | `true` | Raw snapshots. The PVC has `resource-policy: keep` and survives `helm uninstall` |
 | `neo4j.heap` / `pagecache` | `1G` | Sized against the container limit. When unset, the JVM sizes them from the RAM of the node |
 | `postgres.externalDsn` | `""` | Required when `postgres.enabled=false` and `secrets.existingSecret` is empty |
@@ -302,7 +312,7 @@ Local kind side-loads the image into the node, with `image.pullPolicy: IfNotPres
 ```
 make k8s-secret     # once: generates the app key and the DB passwords
 make k8s-image      # podman build, save, kind load
-make k8s-install INGRESS_NS=ingress-nginx INGRESS_INSECURE_HTTP=true
+make k8s-install INGRESS_NS=ingress-nginx INGRESS_INSECURE_HTTP=true DB_INSECURE=true
 make k8s-verify     # checks that the deployment serves
 ```
 
@@ -324,6 +334,10 @@ make k8s-verify
 `make k8s-install` requires `INGRESS_TLS_SECRET` or `INGRESS_INSECURE_HTTP=true`.
 `INGRESS_TLS_SECRET` sets `ingress.tls.enabled`, `ingress.tls.secretName` and
 `auth.cookieSecure`. `INGRESS_INSECURE_HTTP=true` sets `ingress.acceptInsecureHttp`.
+
+`DB_INSECURE=true` sets `neo4j.acceptInsecure` and `postgres.acceptInsecure`, and the
+bundled Neo4j and Postgres run without TLS. An install with TLS to the bundled
+databases sets the `neo4j.tls` and `postgres.tls` values in `HELM_EXTRA`.
 
 `PLATFORM` must match the architecture of the cluster nodes. With `REGISTRY` set it
 defaults to `linux/amd64`. Without `REGISTRY` it defaults to the architecture of the host.

@@ -225,7 +225,10 @@
             }
           }
         },
-        "acceptInsecure": { "type": "boolean" },
+        "acceptInsecure": {
+          "type": "boolean",
+          "description": "true renders the bundled Postgres without tls.serverSecret and a non-loopback externalDsn without tls.enabled"
+        },
         "resources": { "type": "object" },
         "persistence": {
           "type": "object",
@@ -257,7 +260,10 @@
             }
           }
         },
-        "acceptInsecure": { "type": "boolean" },
+        "acceptInsecure": {
+          "type": "boolean",
+          "description": "true renders the bundled Neo4j without tls.serverSecret and a non-loopback externalUri without tls.enabled"
+        },
         "heap": { "type": "string" },
         "pagecache": { "type": "string" },
         "transactionMemory": { "type": "string" },

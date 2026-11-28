@@ -18,6 +18,8 @@ NO_PEERS = [
     "--set", "secrets.neo4jPassword=lint",
     "--set", "secrets.postgresPassword=lint",
     "--set", "ingress.acceptInsecureHttp=true",
+    "--set", "neo4j.acceptInsecure=true",
+    "--set", "postgres.acceptInsecure=true",
 ]  # fmt: skip
 PEER = {"namespaceSelector": {"matchLabels": {"kubernetes.io/metadata.name": "ingress-nginx"}}}
 FAKE = [*NO_PEERS, "--set-json", f"networkPolicy.ingressFrom={json.dumps([PEER])}"]
@@ -237,6 +239,34 @@ def test_the_switch_gives_both_databases_a_tls_listener():
     prepare = cron["initContainers"][0]
     assert {"neo4j-ca", "postgres-ca"} <= {m["name"] for m in prepare["volumeMounts"]}
     assert {"neo4j-ca", "postgres-ca"} <= {v["name"] for v in cron["volumes"]}
+
+
+NEO4J_PLAIN = "neo4j.enabled=true with an empty neo4j.tls.serverSecret"
+POSTGRES_PLAIN = "postgres.enabled=true with an empty postgres.tls.serverSecret"
+
+
+@pytest.mark.parametrize(
+    ("args", "message"),
+    [
+        (["--set", "neo4j.acceptInsecure=false"], NEO4J_PLAIN),
+        (["--set", "postgres.acceptInsecure=false"], POSTGRES_PLAIN),
+        (
+            [
+                "--set", "neo4j.acceptInsecure=false",
+                "--set", "neo4j.tls.enabled=true", "--set", "neo4j.tls.caSecret=c",
+            ],
+            NEO4J_PLAIN,
+        ),
+    ],
+)  # fmt: skip
+def test_a_bundled_database_without_its_tls_listener_fails_the_render(args, message):
+    out = _render(*args)
+    assert out.returncode != 0
+    assert message in out.stderr
+
+
+def test_the_bundled_databases_with_their_tls_listeners_need_no_accept_insecure():
+    _docs(*DB_TLS, "--set", "neo4j.acceptInsecure=false", "--set", "postgres.acceptInsecure=false")
 
 
 @pytest.mark.parametrize(

@@ -151,15 +151,15 @@ describes the estate.
 ### Kubernetes
 
 ```
-make k8s-secret k8s-image k8s-install k8s-verify INGRESS_NS=ingress-nginx INGRESS_INSECURE_HTTP=true
+make k8s-secret k8s-image k8s-install k8s-verify INGRESS_NS=ingress-nginx INGRESS_INSECURE_HTTP=true DB_INSECURE=true
 ```
 
 The command installs on the kind cluster with the name `kind`, with the ingress
-on plain HTTP. `KIND_CLUSTER` sets another cluster name. The targets call podman,
-kind, kubectl, helm and uv. The cluster needs an ingress controller, and
-`INGRESS_NS` is its namespace. Without `REGISTRY`, the image has the
-architecture of the host. On any other cluster, set `REGISTRY`, and set
-`INGRESS_TLS_SECRET` to the name of the TLS Secret of the ingress.
+on plain HTTP and the bundled Neo4j and Postgres without TLS. `KIND_CLUSTER` sets
+another cluster name. The targets call podman, kind, kubectl, helm and uv. The
+cluster needs an ingress controller, and `INGRESS_NS` is its namespace. Without
+`REGISTRY`, the image has the architecture of the host. On any other cluster, set
+`REGISTRY`, and set `INGRESS_TLS_SECRET` to the name of the TLS Secret of the ingress.
 [deploy/helm/hst/README.md](deploy/helm/hst/README.md) describes the registry,
 the ingress and the chart values.
 

@@ -244,9 +244,10 @@ postgres:
     # It requires tls.enabled=true and a caSecret with the CA of that certificate. A
     # cert-manager Secret holds ca.crt, so 1 Secret can serve as both.
     serverSecret: ""
-  # The chart refuses to render a non-loopback `externalDsn` with tls.enabled=false
-  # unless this is true. The chart refuses enabled=false with secrets.existingSecret and
-  # tls.enabled=false unless this is true.
+  # The chart refuses to render the bundled Postgres with an empty tls.serverSecret
+  # unless this is true. The chart refuses to render a non-loopback `externalDsn` with
+  # tls.enabled=false unless this is true. The chart refuses enabled=false with
+  # secrets.existingSecret and tls.enabled=false unless this is true.
   acceptInsecure: false
   resources:
     requests: { cpu: 100m, memory: 256Mi }
@@ -276,8 +277,9 @@ neo4j:
     # tls.enabled=true and a caSecret with the CA of that certificate. A cert-manager
     # Secret holds ca.crt, so 1 Secret can serve as both.
     serverSecret: ""
-  # The chart refuses to render a non-loopback `externalUri` with tls.enabled=false
-  # unless this is true.
+  # The chart refuses to render the bundled Neo4j with an empty tls.serverSecret unless
+  # this is true. The chart refuses to render a non-loopback `externalUri` with
+  # tls.enabled=false unless this is true.
   acceptInsecure: false
   # The heap and the page cache fit in the memory limit below. Without them the JVM
   # sizes both from the RAM of the node.
